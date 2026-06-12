@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML para C-Levels &mdash; Guia Ejecutiva</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--teal:#2dd4bf;--pink:#f472b6;--gold:#d4a657;
+  --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;background:rgba(212,166,87,.15);color:var(--gold)}
+.hdr-title{font-family:var(--font-mono);font-size:13px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto}
+.tab{padding:13px 18px;font-size:11px;font-family:var(--font-mono);color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;white-space:nowrap}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.main{max-width:1100px;margin:0 auto;padding:24px 28px}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px;margin-bottom:16px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:11px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.prose{font-size:13px;color:var(--text2);line-height:1.8}
+.banner{border-radius:var(--rl);padding:22px 24px;margin-bottom:18px;display:flex;gap:18px;align-items:flex-start}
+.banner-icon{font-size:36px;flex-shrink:0;margin-top:2px}
+.banner h1{font-family:var(--font-mono);font-size:20px;font-weight:600;margin-bottom:8px;color:var(--gold)}
+.banner h2{font-family:var(--font-mono);font-size:17px;font-weight:600;margin-bottom:8px}
+.banner p{font-size:13px;line-height:1.8;color:var(--text2)}
+.chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:3px 9px;border-radius:4px;font-weight:500}
+/* stat highlight */
+.stat-row{display:flex;gap:14px;margin:14px 0;flex-wrap:wrap}
+.stat-box{flex:1;min-width:140px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;text-align:center}
+.stat-num{font-family:var(--font-mono);font-size:26px;font-weight:700;margin-bottom:4px}
+.stat-lbl{font-size:11px;color:var(--text3);line-height:1.4}
+/* source citation */
+.cite{font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-top:4px;font-style:italic}
+.source-box{background:var(--bg3);border-left:3px solid var(--gold);border-radius:0 var(--r) var(--r) 0;padding:12px 15px;margin:12px 0;font-size:12px;color:var(--text2);line-height:1.7}
+.source-tag{font-family:var(--font-mono);font-size:10px;color:var(--gold);font-weight:600;margin-bottom:4px;display:block;letter-spacing:.04em}
+/* mex */
+.mex-grid{display:grid;gap:12px;margin-bottom:18px}
+.mex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;cursor:pointer;transition:border-color .15s}
+.mex:hover{border-color:var(--border2)}
+.mex-top{display:flex;align-items:center;gap:12px}
+.mex-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 11px;border-radius:5px;white-space:nowrap}
+.mex-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.mex-toggle{font-size:16px;color:var(--text3);transition:transform .2s;margin-left:6px}
+.mex.open .mex-toggle{transform:rotate(180deg)}
+.mex-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.mex.open .mex-body{display:block}
+.mbg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ibox{background:var(--bg3);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.7}
+/* alert */
+.alert{border-radius:var(--r);padding:12px 14px;font-size:12px;line-height:1.7;margin-bottom:10px}
+.aw{background:rgba(251,196,60,.07);border:1px solid rgba(251,196,60,.2)}
+.ag{background:rgba(74,240,176,.06);border:1px solid rgba(74,240,176,.18)}
+.ar{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2)}
+.ab{background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.18)}
+.ap{background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.18)}
+/* selector / industry buttons */
+.selector-group{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.sel-btn{padding:8px 14px;border-radius:20px;font-size:12px;border:1px solid var(--border2);color:var(--text2);cursor:pointer;transition:all .15s;background:transparent;font-family:var(--font-sans)}
+.sel-btn:hover{border-color:var(--gold);color:var(--gold)}
+.sel-btn.active{background:rgba(212,166,87,.12);border-color:rgba(212,166,87,.35);color:var(--gold)}
+.chart-h{position:relative;height:200px}
+/* canvas editable */
+.canvas-row{display:grid;grid-template-columns:280px 1fr;gap:14px;border-bottom:1px solid var(--border);padding:11px 0;align-items:start}
+.canvas-row:last-child{border-bottom:none}
+.canvas-num{font-family:var(--font-mono);font-size:11px;color:var(--gold);font-weight:600;display:block;margin-bottom:2px}
+.canvas-lbl{font-size:12px;color:var(--text2);line-height:1.5}
+.canvas-val{font-size:13px;color:var(--text);line-height:1.6;padding:6px 10px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border);outline:none}
+.canvas-val:focus{border-color:var(--gold)}
+.btn{background:var(--gold);border:none;color:#1a1206;font-family:var(--font-mono);font-size:12px;font-weight:600;padding:9px 18px;border-radius:6px;cursor:pointer;letter-spacing:.03em;transition:all .15s}
+.btn:hover{opacity:.85}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:11px;padding:7px 14px;border-radius:5px;cursor:pointer}
+.btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--green);color:#0a1a14;padding:10px 18px;border-radius:8px;font-family:var(--font-mono);font-size:12px;font-weight:600;opacity:0;transform:translateY(10px);transition:all .25s;z-index:999;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+/* roadmap */
+.road-stage{display:grid;grid-template-columns:50px 1fr;gap:14px;margin-bottom:4px}
+.road-num{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:16px;font-weight:700;flex-shrink:0}
+.road-line{width:2px;background:var(--border);margin-left:24px;height:24px}
+.road-content{padding-bottom:6px}
+.road-title{font-family:var(--font-mono);font-size:13px;font-weight:600;margin-bottom:4px}
+.road-desc{font-size:12px;color:var(--text2);line-height:1.7}
+/* maturity levels */
+.mat-row{display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.mat-row:last-child{border-bottom:none}
+.mat-lvl{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 10px;border-radius:4px;text-align:center}
+.mat-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+.mat-fill{height:100%;border-radius:4px}
+/* checklist */
+.checklist{display:grid;gap:8px}
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:11px 14px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--border)}
+.check-icon{width:20px;height:20px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:1px}
+.check-text{font-size:12px;color:var(--text2);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="hdr-badge">C-LEVEL EDITION</span>
+  <span class="hdr-title">Machine Learning &mdash; Guia Ejecutiva</span>
+  <span class="hdr-sub">De la intuicion a la prediccion &middot; Framework de decision</span>
+</div>
+<div class="tabs">
+  <div class="tab active" data-tab="que-es" onclick="switchTab('que-es')">&#129504; Que es ML</div>
+  <div class="tab" data-tab="casos" onclick="switchTab('casos')">&#127919; Casos Industriales</div>
+  <div class="tab" data-tab="evaluar" onclick="switchTab('evaluar')">&#128269; Como Evaluar</div>
+  <div class="tab" data-tab="riesgos" onclick="switchTab('riesgos')">&#9888;&#65039; Riesgos y Gobernanza</div>
+  <div class="tab" data-tab="roadmap" onclick="switchTab('roadmap')">&#128506;&#65039; Roadmap de Madurez</div>
+  <div class="tab" data-tab="canvas" onclick="switchTab('canvas')">&#128221; Opportunity Canvas</div>
+</div>
+<div class="main">
+<!-- ===== TAB 1: QUE ES ML ===== -->
+<div class="panel active" id="panel-que-es">
+
+  <div class="banner" style="background:rgba(212,166,87,.05);border:1px solid rgba(212,166,87,.15)">
+    <div class="banner-icon">&#129504;</div>
+    <div>
+      <h1>Machine Learning &amp; IA: La Nueva Ventaja Competitiva</h1>
+      <p>De la intuicion a la prediccion: identifique oportunidades de alto impacto en 8 semanas. Esta guia no requiere conocimientos tecnicos &mdash; esta diseñada para que un C-Level entienda que es ML, cuando usarlo, como evaluar propuestas, y que preguntas hacer a su equipo de datos.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(212,166,87,.12);color:var(--gold)">Framework de decision</span>
+        <span class="chip" style="background:rgba(212,166,87,.12);color:var(--gold)">7 casos industriales con ROI</span>
+        <span class="chip" style="background:rgba(212,166,87,.12);color:var(--gold)">Canvas interactivo</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- La brecha adopcion vs impacto -->
+  <div class="card">
+    <div class="sec">El estado real de la IA en las empresas &mdash; la brecha entre adopcion e impacto</div>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--blue)">88%</div>
+        <div class="stat-lbl">de las organizaciones usan IA en al menos una funcion</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--orange)">~33%</div>
+        <div class="stat-lbl">han escalado IA mas alla de pilotos a nivel empresa</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--red)">5.5%</div>
+        <div class="stat-lbl">son "high performers" con &gt;5% de impacto en EBIT</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--green)">10-20%</div>
+        <div class="stat-lbl">reduccion de costos en funciones donde SI se implementa bien</div>
+      </div>
+    </div>
+    <div class="source-box">
+      <span class="source-tag">FUENTE &mdash; McKinsey State of AI 2025</span>
+      Encuesta a 1,993 participantes en 105 paises (jun-jul 2025). El 88% de las organizaciones usa IA regularmente, pero solo el 39% atribuye algun impacto en EBIT, y la mayoria de esos reporta menos del 5%. Las funciones de ingenieria de software, manufactura e IT reportan reducciones de costos del 10-20%; marketing y desarrollo de producto reportan incrementos de revenue superiores al 10% donde la implementacion fue bien ejecutada.
+    </div>
+    <div class="alert ab" style="margin-top:14px">
+      &#128161; <strong style="color:var(--text)">La leccion para un C-Level:</strong> la pregunta correcta no es "&iquest;deberiamos usar ML?" (la respuesta casi siempre es si, en algun proceso). La pregunta es "&iquest;en cual de nuestros procesos especificos el ML pasa de piloto a impacto medible en P&amp;L?" Esta guia esta diseñada para ayudar a responder esa pregunta con el Canvas de la ultima pestaña.
+    </div>
+  </div>
+
+  <!-- Que es ML en terminos simples -->
+  <div class="mex-grid">
+    <div class="mex open" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">CONCEPTO BASE</div>
+        <div class="mex-title">Que es Machine Learning &mdash; en una frase para el directorio</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              <strong style="color:var(--text)">Machine Learning es un sistema que aprende patrones de datos historicos para hacer predicciones sobre datos nuevos &mdash; sin que un humano programe reglas explicitas para cada caso.</strong><br><br>
+              En lugar de programar "si el cliente no compra en 60 dias Y tiene menos de 2 productos, entonces marcalo como riesgo", el sistema observa miles de clientes que se fueron en el pasado, encuentra los patrones que los caracterizaban, y aplica ese patron aprendido a clientes nuevos.
+            </div>
+          </div>
+          <div>
+            <div class="ibox">
+              <strong style="color:var(--text)">La analogia del medico experimentado:</strong><br><br>
+              Un medico junior sigue un checklist de sintomas. Un medico con 30 años de experiencia "sabe" cuando algo esta mal con solo ver al paciente &mdash; ha visto miles de casos y reconoce el patron, aunque no pueda explicar exactamente cada regla.<br><br>
+              ML es construir esa "experiencia de 30 años" de forma sistematica, a partir de los datos historicos de su empresa, y aplicarla de forma consistente a cada cliente, transaccion o evento &mdash; a una escala que ningun humano podria sostener.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(74,240,176,.12);color:var(--green)">TIPOS DE PROBLEMA</div>
+        <div class="mex-title">Los 3 tipos de pregunta que ML puede responder</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="g3">
+          <div class="card-sm" style="border-left:3px solid var(--blue)">
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--blue);margin-bottom:6px">1. CLASIFICACION</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">"&iquest;Va a pasar X o no?"</strong><br><br>¿Este cliente se va a ir (churn)? ¿Esta transaccion es fraude? ¿Este paciente no llegara a su cita?<br><br>Salida: una probabilidad (0-100%) y una decision binaria o categorica.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--orange)">
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--orange);margin-bottom:6px">2. REGRESION / FORECAST</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">"&iquest;Cuanto va a ser X?"</strong><br><br>¿Cuanto vamos a vender la proxima semana? ¿Cuanto durara hasta que falle esta maquina? ¿Cual sera la demanda de energia el martes a las 3pm?<br><br>Salida: un numero (con un rango de incertidumbre).</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--purple)">
+            <div style="font-family:var(--font-mono);font-size:11px;color:var(--purple);margin-bottom:6px">3. AGRUPACION / OPTIMIZACION</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">"&iquest;Como se agrupan o se organizan mejor X?"</strong><br><br>¿Que segmentos naturales tienen mis clientes? ¿Cual es la ruta optima para mi flota? ¿Que productos recomendar a este usuario?<br><br>Salida: grupos, rankings, o una asignacion optima.</div>
+          </div>
+        </div>
+        <div class="alert ag" style="margin-top:14px">
+          &#9989; <strong style="color:var(--text)">Por que importa esta clasificacion:</strong> cada uno de los 7 casos industriales en la siguiente pestaña corresponde a uno de estos 3 tipos. Cuando su equipo le proponga un proyecto de ML, la primera pregunta util es: <em>"&iquest;cual de estas 3 preguntas estamos respondiendo, y que decision especifica cambiara la respuesta?"</em>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(248,113,113,.12);color:var(--red)">LIMITES</div>
+        <div class="mex-title">Lo que ML NO puede hacer (y por que importa saberlo)</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="alert ar" style="margin-bottom:10px"><strong style="color:var(--text)">No predice eventos sin precedente.</strong> Si nunca ha ocurrido algo similar en sus datos historicos (un nuevo tipo de fraude, un shock regulatorio nunca visto), el modelo no lo "vera venir". ML extrapola patrones del pasado, no predice cisnes negros.</div>
+            <div class="alert ar" style="margin-bottom:0"><strong style="color:var(--text)">No es mejor que sus datos.</strong> "Garbage in, garbage out" sigue aplicando. Si los datos historicos reflejan sesgos (ej. solo se aprobaron creditos a cierto perfil de cliente en el pasado), el modelo aprendera y perpetuara ese sesgo.</div>
+          </div>
+          <div>
+            <div class="alert ar" style="margin-bottom:10px"><strong style="color:var(--text)">No reemplaza la decision de negocio.</strong> El modelo dice "este cliente tiene 73% de probabilidad de irse". La decision de que hacer con esa informacion (¿llamarlo? ¿ofrecerle descuento? ¿ignorarlo?) sigue siendo humana y estrategica.</div>
+            <div class="alert ar" style="margin-bottom:0"><strong style="color:var(--text)">No es "instalalo y olvidalo".</strong> Los modelos se degradan con el tiempo (el comportamiento de los clientes cambia, el mercado cambia). Requieren monitoreo y reentrenamiento periodico &mdash; esto tiene costo operativo continuo, no es una inversion de una sola vez.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- La pregunta correcta -->
+  <div class="card">
+    <div class="sec">La pregunta que un C-Level deberia hacer (en vez de "&iquest;deberiamos usar IA?")</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:12px">La pregunta "&iquest;deberiamos usar ML/IA?" es demasiado amplia para ser util &mdash; casi siempre la respuesta es "depende de donde". La pregunta correcta tiene 3 partes:</p>
+        <div class="card-sm" style="margin-bottom:8px;border-left:3px solid var(--gold)">
+          <strong style="color:var(--gold);font-family:var(--font-mono);font-size:11px">1. DECISION RECURRENTE</strong><br>
+          <span style="font-size:12px;color:var(--text2)">&iquest;Que decision tomamos repetidamente (cientos o miles de veces) que hoy se basa en intuicion, reglas fijas, o un Excel?</span>
+        </div>
+        <div class="card-sm" style="margin-bottom:8px;border-left:3px solid var(--gold)">
+          <strong style="color:var(--gold);font-family:var(--font-mono);font-size:11px">2. DATOS HISTORICOS</strong><br>
+          <span style="font-size:12px;color:var(--text2)">&iquest;Tenemos registros de como termino esa decision en el pasado (se fue el cliente o no, fallo la maquina o no, hubo fraude o no)?</span>
+        </div>
+        <div class="card-sm" style="margin-bottom:0;border-left:3px solid var(--gold)">
+          <strong style="color:var(--gold);font-family:var(--font-mono);font-size:11px">3. IMPACTO MEDIBLE</strong><br>
+          <span style="font-size:12px;color:var(--text2)">Si acertaramos 20% mejor en esa decision, &iquest;cuanto dinero, tiempo o riesgo representaria eso para la empresa?</span>
+        </div>
+      </div>
+      <div>
+        <div class="alert ap" style="margin-bottom:10px">
+          <strong style="color:var(--text)">Si las 3 respuestas son claras y positivas</strong>, tiene un candidato solido para un piloto de ML de 6-10 semanas. Los 7 casos en la siguiente pestaña son ejemplos de exactamente este patron en distintas industrias.
+        </div>
+        <div class="alert aw" style="margin-bottom:0">
+          &#9888;&#65039; <strong style="color:var(--text)">Si alguna de las 3 no esta clara</strong>, eso es precisamente lo que separa a las organizaciones que logran impacto medible del 88% que "usa IA" pero solo el 5.5% que ve resultados reales en su P&amp;L. La claridad de la pregunta de negocio &mdash; no la sofisticacion del algoritmo &mdash; es lo que determina el exito.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- ===== TAB 2: CASOS INDUSTRIALES ===== -->
+<div class="panel" id="panel-casos">
+
+  <div class="banner" style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15)">
+    <div class="banner-icon">&#127919;</div>
+    <div>
+      <h2 style="color:var(--blue)">7 Casos Industriales con ROI Visible</h2>
+      <p>Cada industria tiene patrones recurrentes donde ML genera impacto medible. Seleccione una industria para ver el caso completo: la decision que se mejora, los datos necesarios, el tipo de modelo, y el ROI proyectado segun benchmarks de mercado.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="selector-group" id="industrySelector">
+      <button class="sel-btn active" data-case="0">&#127974; Banca &middot; Fraude</button>
+      <button class="sel-btn" data-case="1">&#128230; Retail &middot; Inventario</button>
+      <button class="sel-btn" data-case="2">&#127981; Manufactura &middot; Mantenimiento</button>
+      <button class="sel-btn" data-case="3">&#128666; Logistica &middot; Rutas</button>
+      <button class="sel-btn" data-case="4">&#128138; Salud &middot; No shows</button>
+      <button class="sel-btn" data-case="5">&#128241; Telco &middot; Churn</button>
+      <button class="sel-btn" data-case="6">&#9889; Energia &middot; Demanda</button>
+    </div>
+
+    <div class="g2">
+      <div class="card-sm" id="caseDescription">
+        <h3 id="caseTitle" style="font-family:var(--font-mono);font-size:14px;margin-bottom:10px;color:var(--text)">Deteccion de fraudes en transacciones</h3>
+        <div id="caseDetail" style="font-size:12px;color:var(--text2);line-height:1.9"></div>
+        <div class="alert ab" style="margin-top:10px;margin-bottom:0">
+          <span id="caseRoi" style="font-size:12px"></span>
+        </div>
+      </div>
+      <div>
+        <div class="chart-h"><canvas id="impactChart"></canvas></div>
+        <div class="card-sm" style="margin-top:10px;text-align:center">
+          <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px">MEJORA ESPERADA VS LINEA BASE</div>
+          <div style="font-size:28px;font-weight:700;color:var(--gold);font-family:var(--font-mono)" id="impactValue">+37%</div>
+          <div style="font-size:12px;color:var(--text2)" id="impactLabel">reduccion de perdidas por fraude</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="g4" style="margin-top:14px">
+      <div class="card-sm" style="text-align:center"><div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px">PRECISION MODELO</div><div style="font-size:16px;font-weight:600;color:var(--blue)" id="metric1">94%</div></div>
+      <div class="card-sm" style="text-align:center"><div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px">IMPLEMENTACION</div><div style="font-size:16px;font-weight:600;color:var(--orange)" id="metric2">6 semanas</div></div>
+      <div class="card-sm" style="text-align:center"><div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px">AHORRO ANUAL</div><div style="font-size:16px;font-weight:600;color:var(--green)" id="metric3">$3.2M</div></div>
+      <div class="card-sm" style="text-align:center"><div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:4px">MADUREZ DATOS</div><div style="font-size:16px;font-weight:600;color:var(--purple)" id="metric4">Alta</div></div>
+    </div>
+  </div>
+
+  <!-- Galeria adicional -->
+  <div class="card">
+    <div class="sec">+9 ejemplos adicionales listos para adaptar a su industria</div>
+    <div class="g3">
+      <div class="card-sm"><strong style="color:var(--text);font-size:12px">&#128176; Fintech &middot; Scoring crediticio</strong><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">KPI: Morosidad &gt;90 dias &middot; Inputs: historial pagos, open banking &middot; Impacto: -25% incobrables</div></div>
+      <div class="card-sm"><strong style="color:var(--text);font-size:12px">&#128722; E-commerce &middot; Abandono de carrito</strong><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">KPI: Tasa recuperacion &middot; Inputs: navegacion, tiempo en checkout &middot; Impacto: +18% conversion</div></div>
+      <div class="card-sm"><strong style="color:var(--text);font-size:12px">&#127973; Clinica &middot; Optimizacion de citas</strong><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">KPI: % utilizacion consultorios &middot; Inputs: historico no-shows, tipo cita &middot; Impacto: +23% eficiencia</div></div>
+      <div class="card-sm"><strong style="color:var(--text);font-size:12px">&#128241; SaaS &middot; Upgrade predictivo</strong><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">KPI: Tasa upgrade de plan &middot; Inputs: uso de features, tickets soporte &middot; Impacto: +31% expansion revenue</div></div>
+      <div class="card-sm"><strong style="color:var(--text);font-size:12px">&#9935;&#65039; Mineria &middot; Rendimiento de equipos</strong><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">KPI: Toneladas/hora &middot; Inputs: sensores, condiciones clima &middot; Impacto: +15% productividad</div></div>
+      <div class="card-sm"><strong style="color:var(--text);font-size:12px">&#128250; Media &middot; Retencion de suscriptores</strong><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">KPI: Tasa cancelacion &middot; Inputs: patrones consumo, interacciones &middot; Impacto: -27% churn mensual</div></div>
+      <div class="card-sm"><strong style="color:var(--text);font-size:12px">&#9889; Utilities &middot; Picos de demanda</strong><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">KPI: Costo energia spot &middot; Inputs: clima, historico consumo &middot; Impacto: -19% en compras de energia</div></div>
+      <div class="card-sm"><strong style="color:var(--text);font-size:12px">&#128663; Seguros &middot; Siniestralidad</strong><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">KPI: Ratio de siniestros &middot; Inputs: telemetria, perfil conductor &middot; Impacto: -22% frecuencia siniestros</div></div>
+      <div class="card-sm"><strong style="color:var(--text);font-size:12px">&#127978; Retail &middot; Planograma dinamico</strong><div style="font-size:11px;color:var(--text2);margin-top:6px;line-height:1.6">KPI: Ventas por m2 &middot; Inputs: rotacion, estacionalidad, ubicacion &middot; Impacto: +14% ticket promedio</div></div>
+    </div>
+  </div>
+
+  <div class="source-box">
+    <span class="source-tag">SOBRE LOS NUMEROS DE ROI</span>
+    Los porcentajes de impacto y ROI mostrados son <strong style="color:var(--text)">rangos orientativos basados en benchmarks de la industria</strong>, no garantias. Sirven como punto de partida para una conversacion con su equipo de datos sobre que magnitud de impacto seria razonable esperar en su contexto especifico &mdash; y para definir el criterio de "exito" del piloto antes de empezar (ver pestaña "Como Evaluar").
+  </div>
+
+</div>
+<!-- ===== TAB 3: COMO EVALUAR ===== -->
+<div class="panel" id="panel-evaluar">
+
+  <div class="banner" style="background:rgba(74,240,176,.05);border:1px solid rgba(74,240,176,.15)">
+    <div class="banner-icon">&#128269;</div>
+    <div>
+      <h2 style="color:var(--green)">Como Evaluar Propuestas de ML &mdash; Sin Saber Programar</h2>
+      <p>No necesita entender el algoritmo. Necesita saber que preguntas hacer para distinguir un proyecto bien planteado de uno que probablemente termine en la categoria del 85% que no entrega valor.</p>
+    </div>
+  </div>
+
+  <!-- La estadistica clave -->
+  <div class="card">
+    <div class="sec">Por que la mayoria de proyectos de ML fracasan &mdash; y no es por el algoritmo</div>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--red)">85%</div>
+        <div class="stat-lbl">de proyectos de IA/ML no entregan el valor esperado</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--orange)">53%</div>
+        <div class="stat-lbl">de los proyectos llegan de prototipo a produccion</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--red)">95%</div>
+        <div class="stat-lbl">de proyectos de GenAI mostraron retorno cero (estudio MIT)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--blue)">93%</div>
+        <div class="stat-lbl">de ejecutivos senalan los datos como la principal barrera</div>
+      </div>
+    </div>
+    <div class="source-box">
+      <span class="source-tag">FUENTES</span>
+      Gartner (citado en multiples reportes 2023-2025): <em>85% de los proyectos de IA/ML fallan en entregar valor, y solo el 53% llega de prototipo a produccion.</em> Las 4 causas raiz identificadas por Gartner: (1) falta de claridad en el caso de uso de negocio, (2) habilidades inadecuadas en el equipo para despliegues end-to-end, (3) ignorar la gestion del cambio organizacional, y (4) no experimentar lo suficiente antes de comprometerse a gran escala.<br><br>
+      MIT Project NANDA (julio 2025): el 95% de las organizaciones que desplegaron IA generativa no vieron retorno medible &mdash; la causa casi nunca fue el modelo en si, sino la preparacion de datos, la integracion con flujos de trabajo existentes, y la ausencia de un resultado de negocio definido antes de empezar a construir.<br><br>
+      NewVantage Partners (2024): 92.7% de los ejecutivos identifica la calidad de los datos como la barrera mas significativa para una implementacion exitosa de IA.
+    </div>
+    <div class="alert ag" style="margin-top:14px">
+      &#9989; <strong style="color:var(--text)">El patron es consistente entre fuentes:</strong> el problema rara vez es la tecnologia. Es la claridad del problema de negocio, la calidad de los datos, y la integracion organizacional. Las preguntas de evaluacion a continuacion apuntan directamente a estas 3 areas.
+    </div>
+  </div>
+
+  <!-- Preguntas clave -->
+  <div class="mex-grid">
+    <div class="mex open" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">PREGUNTA 1</div>
+        <div class="mex-title">"&iquest;Que decision especifica va a cambiar si este modelo funciona?"</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              Esta es la pregunta de la "claridad del caso de uso" &mdash; la causa #1 de fracaso segun Gartner. Una respuesta debil suena asi: <em>"vamos a usar ML para entender mejor a nuestros clientes"</em>. Una respuesta solida suena asi: <em>"cuando el modelo marque a un cliente con &gt;60% de probabilidad de churn, el equipo de retencion lo llamara dentro de 48 horas con una oferta especifica"</em>.
+            </div>
+          </div>
+          <div>
+            <div class="alert ar" style="margin-bottom:0">
+              &#9888;&#65033; <strong style="color:var(--text)">Bandera roja:</strong> si nadie en la sala puede describir el flujo de trabajo especifico que cambiara (quien hace que, cuando, basado en que output del modelo), el proyecto probablemente generara un dashboard interesante que nadie usara para decidir nada &mdash; el patron mas comun de "pilot purgatory".
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(251,146,60,.12);color:var(--orange)">PREGUNTA 2</div>
+        <div class="mex-title">"&iquest;Que tan buenos son nuestros datos historicos para este problema, realmente?"</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              No pregunte "&iquest;tenemos datos?" &mdash; casi siempre la respuesta es si. Pregunte: <strong style="color:var(--text)">"&iquest;cuantos casos historicos del evento que queremos predecir tenemos, y que tan completos/limpios estan?"</strong><br><br>
+              Para fraude: &iquest;cuantos casos confirmados de fraude tenemos etiquetados en los ultimos 2 anos? Para mantenimiento predictivo: &iquest;los sensores han estado funcionando consistentemente, o hay meses de datos faltantes?
+            </div>
+          </div>
+          <div>
+            <div class="alert aw" style="margin-bottom:0">
+              &#9888;&#65039; <strong style="color:var(--text)">Bandera amarilla:</strong> respuestas como "tenemos muchos datos pero estan en 5 sistemas distintos que no se hablan entre si" o "no estamos seguros de la calidad". Esto no descarta el proyecto, pero significa que las primeras 2-4 semanas (de las 6-10 totales) probablemente se dedicaran a consolidar y limpiar datos &mdash; planifique el cronograma y el presupuesto en consecuencia.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(167,139,250,.12);color:var(--purple)">PREGUNTA 3</div>
+        <div class="mex-title">"&iquest;Cual es el benchmark actual, y como sabremos si mejoramos?"</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              Antes de construir un modelo, debe existir una <strong style="color:var(--text)">linea base medible</strong>: &iquest;cual es el costo/tasa/metrica actual sin ML? Por ejemplo: "actualmente detectamos el 40% del fraude con reglas manuales" o "el inventario tiene un 12% de quiebre de stock hoy".<br><br>
+              El criterio de exito debe definirse <strong style="color:var(--text)">antes</strong> de ver los resultados del modelo, no despues &mdash; de otra forma, cualquier resultado puede "venderse" como exitoso retroactivamente.
+            </div>
+          </div>
+          <div>
+            <div class="alert ap" style="margin-bottom:0">
+              &#128161; <strong style="color:var(--text)">Buena practica:</strong> defina explicitamente el criterio de "matar" el proyecto (campo #8 del Canvas en la ultima pestaña): "si despues de 8 semanas el modelo no mejora el benchmark en al menos X%, se descontinua o se replantea". Esto protege al equipo de invertir indefinidamente en algo que no funciona, y le da a usted una fecha de revision concreta.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(248,113,113,.12);color:var(--red)">PREGUNTA 4</div>
+        <div class="mex-title">"&iquest;Quien es el dueño del proceso de negocio, y esta en esta sala?"</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              Esta es la causa #3 de fracaso de Gartner: <strong style="color:var(--text)">ignorar la gestion del cambio organizacional</strong>. Un modelo de churn perfecto es inutil si el equipo de retencion no confia en el, no tiene capacidad para atender las alertas, o nadie les explico como usarlo.<br><br>
+              El "dueño ejecutivo" (campo #7 del Canvas) debe ser alguien que: (a) tiene autoridad para cambiar el proceso de trabajo, (b) sera medido por el resultado, y (c) participa desde el dia 1, no solo al final.
+            </div>
+          </div>
+          <div>
+            <div class="alert ar" style="margin-bottom:0">
+              &#9888;&#65033; <strong style="color:var(--text)">Bandera roja:</strong> el proyecto es liderado enteramente por el equipo de datos/IT sin un sponsor del area de negocio (Operaciones, Marketing, Riesgo, etc.) presente en las reuniones de definicion. Los modelos tecnicamente excelentes que nunca se adoptan casi siempre tienen este patron.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(45,212,191,.12);color:var(--teal)">PREGUNTA 5</div>
+        <div class="mex-title">"&iquest;Que pasa despues del piloto? &iquest;Quien mantiene esto vivo?"</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              Un modelo no es un proyecto de "una sola vez" como instalar un software. Necesita: <strong style="color:var(--text)">monitoreo continuo</strong> (¿sigue funcionando bien?), <strong style="color:var(--text)">reentrenamiento periodico</strong> (los patrones cambian con el tiempo), e <strong style="color:var(--text)">infraestructura</strong> para que las predicciones lleguen a quien las necesita.<br><br>
+              Pregunte: "si el piloto funciona, &iquest;que recursos (personas, presupuesto, infraestructura) se necesitan para mantenerlo funcionando en los proximos 12 meses?"
+            </div>
+          </div>
+          <div>
+            <div class="alert ab" style="margin-bottom:0">
+              &#128161; <strong style="color:var(--text)">Por que esto importa:</strong> esta es la diferencia entre el 88% que "usa IA" en algun lugar y el 5.5% que ve impacto sostenido en EBIT segun McKinsey. El piloto exitoso es solo el primer paso; el "costo de mantenimiento" del modelo en produccion (monitoreo, reentrenamiento, soporte) debe presupuestarse desde el inicio, no descubrirse despues.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checklist resumen -->
+  <div class="card">
+    <div class="sec">Checklist rapido &mdash; antes de aprobar un piloto de ML</div>
+    <div class="checklist">
+      <div class="check-item"><div class="check-icon" style="background:rgba(74,240,176,.15);color:var(--green)">1</div><div class="check-text">Puedo describir en una frase la decision de negocio que cambiara con el modelo (no "entender mejor a los clientes", sino una accion concreta de alguien especifico).</div></div>
+      <div class="check-item"><div class="check-icon" style="background:rgba(74,240,176,.15);color:var(--green)">2</div><div class="check-text">Existe un dueño del area de negocio (no solo IT/Data) presente desde la definicion del proyecto, con autoridad para cambiar procesos.</div></div>
+      <div class="check-item"><div class="check-icon" style="background:rgba(74,240,176,.15);color:var(--green)">3</div><div class="check-text">Conocemos el benchmark actual (sin ML) de la metrica que queremos mejorar, medido de forma consistente.</div></div>
+      <div class="check-item"><div class="check-icon" style="background:rgba(74,240,176,.15);color:var(--green)">4</div><div class="check-text">Hemos discutido honestamente el estado de los datos historicos: cuantos, que tan completos, donde estan.</div></div>
+      <div class="check-item"><div class="check-icon" style="background:rgba(74,240,176,.15);color:var(--green)">5</div><div class="check-text">Definimos un criterio claro de exito Y un criterio de "matar" el proyecto, con fecha de revision (tipicamente 6-10 semanas).</div></div>
+      <div class="check-item"><div class="check-icon" style="background:rgba(74,240,176,.15);color:var(--green)">6</div><div class="check-text">Hemos hablado sobre quien y como mantendra el modelo funcionando si el piloto es exitoso (no solo quien lo construye).</div></div>
+    </div>
+  </div>
+
+</div>
+<!-- ===== TAB 4: RIESGOS Y GOBERNANZA ===== -->
+<div class="panel" id="panel-riesgos">
+
+  <div class="banner" style="background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.15)">
+    <div class="banner-icon">&#9888;&#65039;</div>
+    <div>
+      <h2 style="color:var(--red)">Riesgos y Gobernanza &mdash; Lo que el Directorio debe saber</h2>
+      <p>ML en produccion no es solo una iniciativa de tecnologia: es un proceso de decision automatizado que afecta clientes, empleados y cumplimiento regulatorio. La gobernanza de IA dejo de ser un tema exclusivo de IT y se convirtio en una responsabilidad fiduciaria del directorio.</p>
+    </div>
+  </div>
+
+  <!-- Stats de gobernanza -->
+  <div class="card">
+    <div class="sec">La brecha de gobernanza &mdash; donde estan las empresas hoy</div>
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--green)">48%</div>
+        <div class="stat-lbl">de Fortune 100 ya asignan supervision de IA al directorio (vs 16% en 2024)</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--orange)">22%</div>
+        <div class="stat-lbl">reportan sesgo/alucinaciones de IA como riesgo material en sus 10-K</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--red)">12%</div>
+        <div class="stat-lbl">se siente "muy preparado" para gestionar riesgos de gobernanza de IA</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" style="color:var(--purple)">51%</div>
+        <div class="stat-lbl">de empresas que usan IA ya reportaron al menos un incidente</div>
+      </div>
+    </div>
+    <div class="source-box">
+      <span class="source-tag">FUENTES</span>
+      EY Center for Board Matters (analisis de 80 filings de Fortune 100, 2025): la supervision de IA a nivel de directorio se triplico, de 16% en 2024 a 48% en 2025. La experiencia en IA en biografias de directores subio de 26% a 44%. Sin embargo, solo el 12% de las Fortune 100 reporto que sus directores recibieron capacitacion formal en IA entre enero y noviembre de 2025.<br><br>
+      Corporate Compliance Insights / encuesta sector financiero (2025): solo 12% de las empresas se siente "muy preparada" para evaluar, gestionar y recuperarse de riesgos de gobernanza de IA; 42% no tiene politicas para regular el uso de IA por parte de empleados; 75% no tiene planes dedicados para riesgos de IA generativa.<br><br>
+      McKinsey State of AI 2025: 51% de las organizaciones que usan IA reporto al menos un incidente relacionado (resultados incorrectos, sesgo, violaciones de seguridad). Las organizaciones de alto desempeño se diferencian por tener reglas de "human-in-the-loop", supervision centralizada, y responsabilidad ejecutiva clara.
+    </div>
+  </div>
+
+  <!-- Riesgos especificos -->
+  <div class="mex-grid">
+    <div class="mex open" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(248,113,113,.12);color:var(--red)">RIESGO 1</div>
+        <div class="mex-title">Sesgo algoritmico &mdash; cuando el modelo aprende discriminacion historica</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              <strong style="color:var(--text)">El problema:</strong> si en el pasado su empresa aprobo creditos, contrato personal, o asigno recursos con algun patron sistematico (consciente o no) hacia ciertos grupos, un modelo entrenado con esos datos historicos <strong style="color:var(--text)">aprendera y perpetuara ese patron</strong> &mdash; a veces de forma mas dificil de detectar que en un proceso manual, porque "el algoritmo lo dijo" puede parecer objetivo cuando no lo es.<br><br>
+              <strong style="color:var(--text)">Donde aparece con mas frecuencia:</strong> scoring crediticio, procesos de contratacion (RRHH), pricing dinamico, y sistemas de priorizacion de atencion al cliente.
+            </div>
+          </div>
+          <div>
+            <div class="source-box" style="margin:0">
+              <span class="source-tag">CONTEXTO REGULATORIO</span>
+              En Nueva York, las herramientas de IA para contratacion ya requieren auditorias de sesgo obligatorias antes de su despliegue. En servicios financieros, el scoring crediticio basado en IA debe cumplir leyes de prestamo justo (fair lending), y los algoritmos de trading requieren explicabilidad para revision regulatoria.
+            </div>
+            <div class="alert ar" style="margin-top:10px;margin-bottom:0">
+              &#128161; <strong style="color:var(--text)">Pregunta para su equipo:</strong> "&iquest;hemos probado el modelo para ver si produce resultados sistematicamente distintos para diferentes grupos demograficos (genero, edad, region), aunque esas variables no se usen directamente como input?"
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(251,196,60,.12);color:var(--yellow)">RIESGO 2</div>
+        <div class="mex-title">Explicabilidad &mdash; "&iquest;por que el modelo decidio esto?"</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              Modelos como Decision Tree o Regresion Logistica son <strong style="color:var(--text)">interpretables</strong>: se puede mostrar exactamente que variables influyeron y cuanto. Modelos como Random Forest, XGBoost o redes neuronales son mas precisos pero funcionan como <strong style="color:var(--text)">"cajas negras"</strong> &mdash; requieren herramientas adicionales (como SHAP) para explicar decisiones individuales.<br><br>
+              Esto no es solo un tema tecnico: si a un cliente se le niega un credito, o un empleado es marcado como "riesgo de renuncia", la empresa puede necesitar <strong style="color:var(--text)">explicar esa decision</strong> &mdash; a un regulador, a un tribunal, o simplemente al cliente.
+            </div>
+          </div>
+          <div>
+            <div class="alert aw" style="margin-bottom:0">
+              &#9888;&#65039; <strong style="color:var(--text)">El trade-off que el directorio debe entender:</strong> en general, mayor precision = menor interpretabilidad directa. La decision de "&iquest;que tan importante es poder explicar esta decision especifica?" deberia tomarse <strong style="color:var(--text)">antes</strong> de elegir el tipo de modelo, no despues. Para decisiones de alto riesgo regulatorio (credito, salud, empleo), la explicabilidad suele pesar mas que el ultimo punto porcentual de precision.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">RIESGO 3</div>
+        <div class="mex-title">Dependencia de terceros &mdash; vendors y modelos pre-entrenados</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              Cuando se usa un modelo o servicio de un proveedor externo (incluyendo modelos de IA generativa de terceros), la <strong style="color:var(--text)">transparencia sobre los datos de entrenamiento es limitada</strong>. Esto dificulta hacer pruebas de sesgo propias, auditar la precision, o explicar decisiones automatizadas a reguladores.
+            </div>
+          </div>
+          <div>
+            <div class="ibox" style="margin:0">
+              <strong style="color:var(--text)">Preguntas clave al evaluar un vendor:</strong> &iquest;que datos se usaron para entrenar el modelo y son representativos de nuestra poblacion de clientes? &iquest;que pruebas de sesgo y precision realiza el vendor, y podemos verlas? &iquest;que pasa si el vendor descontinua el servicio o cambia el modelo sin aviso?
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(167,139,250,.12);color:var(--purple)">GOBERNANZA</div>
+        <div class="mex-title">Quien debe ser dueño de la supervision de IA en su organizacion</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="ibox">
+              La investigacion de board governance identifica un riesgo recurrente: la <strong style="color:var(--text)">"propiedad difusa"</strong> &mdash; cuando nadie tiene claramente asignada la responsabilidad de supervisar IA, cada area asume que otra lo esta haciendo. Esto crea un vacio donde modelos de alto impacto operan sin revision adecuada.
+            </div>
+          </div>
+          <div>
+            <div class="alert ap" style="margin-bottom:0">
+              &#9989; <strong style="color:var(--text)">Lo que separa a las organizaciones lideres:</strong> tienen un ejecutivo designado o comite cross-funcional con responsabilidad explicita sobre IA, reflejada en reportes y documentacion de gobernanza &mdash; no solo un "comite de innovacion" generico. La asignacion de IA a un comite del directorio paso de 11% a 40% de las empresas Fortune 100 en un solo año, lo que indica que esto se esta convirtiendo en el estandar esperado, no la excepcion.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checklist de gobernanza minima -->
+  <div class="card">
+    <div class="sec">Gobernanza minima viable &mdash; antes de poner un modelo en produccion</div>
+    <div class="checklist">
+      <div class="check-item"><div class="check-icon" style="background:rgba(167,139,250,.15);color:var(--purple)">A</div><div class="check-text">Hay una persona o comite con responsabilidad explicita sobre la supervision de modelos de ML/IA en produccion (no difusa entre IT, Datos y Negocio).</div></div>
+      <div class="check-item"><div class="check-icon" style="background:rgba(167,139,250,.15);color:var(--purple)">B</div><div class="check-text">Para decisiones de alto impacto (credito, contratacion, pricing, salud), se ha evaluado explicitamente el trade-off precision vs explicabilidad y se documento la decision.</div></div>
+      <div class="check-item"><div class="check-icon" style="background:rgba(167,139,250,.15);color:var(--purple)">C</div><div class="check-text">Existe un proceso (aunque sea basico) para probar si el modelo produce resultados sistematicamente distintos entre grupos demograficos relevantes.</div></div>
+      <div class="check-item"><div class="check-icon" style="background:rgba(167,139,250,.15);color:var(--purple)">D</div><div class="check-text">Si se usan modelos o servicios de terceros, se entiende que datos los entrenaron y que sucede si el proveedor cambia o descontinua el servicio.</div></div>
+      <div class="check-item"><div class="check-icon" style="background:rgba(167,139,250,.15);color:var(--purple)">E</div><div class="check-text">Existe un registro (aunque sea una hoja de calculo) de que modelos estan en produccion, que decisiones afectan, y quien es responsable de cada uno.</div></div>
+    </div>
+  </div>
+
+</div>
+<!-- ===== TAB 5: ROADMAP DE MADUREZ ===== -->
+<div class="panel" id="panel-roadmap">
+
+  <div class="banner" style="background:rgba(212,166,87,.05);border:1px solid rgba(212,166,87,.15)">
+    <div class="banner-icon">&#128506;&#65039;</div>
+    <div>
+      <h2 style="color:var(--gold)">Roadmap de Madurez &mdash; De donde a donde, y en que orden</h2>
+      <p>La diferencia entre el 88% que "usa IA" y el 5.5% que ve impacto real en EBIT no es la cantidad de proyectos, sino la <strong style="color:var(--text)">secuencia y la disciplina</strong> con la que se construyen las capacidades organizacionales. Este roadmap muestra el camino tipico de una empresa que pasa de pilotos aislados a impacto sostenido.</p>
+    </div>
+  </div>
+
+  <!-- Niveles de madurez -->
+  <div class="card">
+    <div class="sec">5 niveles de madurez en ML/IA &mdash; donde esta su organizacion hoy</div>
+    <div class="mat-row">
+      <div class="mat-lvl" style="background:rgba(248,113,113,.12);color:var(--red)">NIVEL 1<br>Exploracion</div>
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px"><strong style="color:var(--text)">Pilotos aislados</strong> sin conexion entre si, generalmente impulsados por entusiasmo individual de algun area. Sin metricas de impacto en negocio definidas de antemano.</div>
+        <div class="mat-bar"><div class="mat-fill" style="width:15%;background:var(--red)"></div></div>
+      </div>
+    </div>
+    <div class="mat-row">
+      <div class="mat-lvl" style="background:rgba(251,146,60,.12);color:var(--orange)">NIVEL 2<br>Pilotos con criterio</div>
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Los pilotos tienen <strong style="color:var(--text)">dueño de negocio, benchmark previo y criterio de exito/fracaso definido</strong>. Aun no escalan a produccion de forma consistente. Aqui se ubica la mayoria de empresas (el "pilot purgatory" del 67% segun McKinsey).</div>
+        <div class="mat-bar"><div class="mat-fill" style="width:35%;background:var(--orange)"></div></div>
+      </div>
+    </div>
+    <div class="mat-row">
+      <div class="mat-lvl" style="background:rgba(251,196,60,.12);color:var(--yellow)">NIVEL 3<br>Produccion puntual</div>
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">1-3 modelos en produccion con <strong style="color:var(--text)">monitoreo y reentrenamiento establecido</strong>. Existe un proceso (aunque informal) para llevar un piloto exitoso a produccion. Empieza a haber gobernanza basica.</div>
+        <div class="mat-bar"><div class="mat-fill" style="width:55%;background:var(--yellow)"></div></div>
+      </div>
+    </div>
+    <div class="mat-row">
+      <div class="mat-lvl" style="background:rgba(96,165,250,.12);color:var(--blue)">NIVEL 4<br>Escalamiento</div>
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Multiples modelos en produccion en <strong style="color:var(--text)">varias areas funcionales</strong>, con infraestructura reutilizable (pipelines de datos, plataformas de ML). Gobernanza formal con responsable designado. Liderazgo activamente involucrado.</div>
+        <div class="mat-bar"><div class="mat-fill" style="width:78%;background:var(--blue)"></div></div>
+      </div>
+    </div>
+    <div class="mat-row">
+      <div class="mat-lvl" style="background:rgba(74,240,176,.12);color:var(--green)">NIVEL 5<br>Transformacion</div>
+      <div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:6px">ML/IA <strong style="color:var(--text)">integrado en como opera el negocio</strong>, no como iniciativas separadas. Impacto medible y atribuible en EBIT (&gt;5%). Solo ~5.5% de las organizaciones globales esta aqui segun McKinsey 2025.</div>
+        <div class="mat-bar"><div class="mat-fill" style="width:95%;background:var(--green)"></div></div>
+      </div>
+    </div>
+    <div class="source-box" style="margin-top:14px">
+      <span class="source-tag">BASE</span>
+      Niveles construidos a partir de los hallazgos de McKinsey State of AI 2025 (la distribucion real de organizaciones entre adopcion inicial, "pilot purgatory" ~67%, y "high performers" ~5.5%) y los 4 factores de fracaso identificados por Gartner que tipicamente bloquean el paso de Nivel 2 a Nivel 3.
+    </div>
+  </div>
+
+  <!-- Lo que distingue a los high performers -->
+  <div class="card">
+    <div class="sec">Que hacen distinto los "high performers" &mdash; segun McKinsey 2025</div>
+    <div class="g2">
+      <div>
+        <div class="alert ab" style="margin-bottom:10px">
+          <strong style="color:var(--text)">1. Liderazgo visiblemente involucrado.</strong> Los altos performers son 3 veces mas propensos a decir que sus lideres senior demuestran ownership activo de las iniciativas de IA &mdash; no solo aprobando presupuestos, sino usando las herramientas y siendo modelo de adopcion.
+        </div>
+        <div class="alert ab" style="margin-bottom:0">
+          <strong style="color:var(--text)">2. Rediseño de flujos de trabajo, no automatizacion de los existentes.</strong> Tratar IA como "automatizar lo que ya hacemos" genera valor limitado. El impacto real viene de repensar el proceso completo alrededor de lo que el modelo permite hacer de forma distinta.
+        </div>
+      </div>
+      <div>
+        <div class="alert ab" style="margin-bottom:10px">
+          <strong style="color:var(--text)">3. Gobernanza de riesgo activa, no reactiva.</strong> Reglas de "human-in-the-loop" para decisiones criticas, supervision centralizada de modelos en produccion, y responsabilidad ejecutiva clara &mdash; antes de que ocurra un incidente, no despues.
+        </div>
+        <div class="alert ab" style="margin-bottom:0">
+          <strong style="color:var(--text)">4. Inversion sostenida, no proyectos puntuales.</strong> Las organizaciones que tratan IA como transformacional (vs experimental) invierten de forma mas agresiva y consistente &mdash; un solo piloto exitoso sin continuidad rara vez escala.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Camino recomendado -->
+  <div class="card">
+    <div class="sec">Camino recomendado para los primeros 6-12 meses</div>
+    <div class="road-stage">
+      <div class="road-num" style="background:rgba(212,166,87,.15);color:var(--gold);border:2px solid rgba(212,166,87,.3)">1</div>
+      <div class="road-content">
+        <div class="road-title" style="color:var(--gold)">Identificar 2-3 casos candidatos con el framework de la pestaña "Que es ML"</div>
+        <div class="road-desc">Use el criterio de decision recurrente + datos historicos + impacto medible para priorizar. Revise los 7 casos industriales como referencia de patrones aplicables a su sector.</div>
+      </div>
+    </div>
+    <div class="road-line"></div>
+    <div class="road-stage">
+      <div class="road-num" style="background:rgba(212,166,87,.15);color:var(--gold);border:2px solid rgba(212,166,87,.3)">2</div>
+      <div class="road-content">
+        <div class="road-title" style="color:var(--gold)">Completar el ML Opportunity Canvas para el caso priorizado</div>
+        <div class="road-desc">Defina con su equipo los 8 campos del Canvas (ultima pestaña) en una sesion de 30-60 minutos, incluyendo el criterio de "matar" el proyecto si no mejora en 8 semanas.</div>
+      </div>
+    </div>
+    <div class="road-line"></div>
+    <div class="road-stage">
+      <div class="road-num" style="background:rgba(212,166,87,.15);color:var(--gold);border:2px solid rgba(212,166,87,.3)">3</div>
+      <div class="road-content">
+        <div class="road-title" style="color:var(--gold)">Validar el caso con el equipo de datos usando el checklist de evaluacion</div>
+        <div class="road-desc">Antes de aprobar el piloto, revise honestamente el estado de los datos y confirme que el dueño de negocio esta presente y comprometido (pestaña "Como Evaluar").</div>
+      </div>
+    </div>
+    <div class="road-line"></div>
+    <div class="road-stage">
+      <div class="road-num" style="background:rgba(212,166,87,.15);color:var(--gold);border:2px solid rgba(212,166,87,.3)">4</div>
+      <div class="road-content">
+        <div class="road-title" style="color:var(--gold)">Ejecutar el piloto (6-10 semanas) con revision en fecha fija</div>
+        <div class="road-desc">Compare contra el benchmark definido. Decida explicitamente: escalar a produccion, ajustar y repetir, o descontinuar segun el criterio acordado.</div>
+      </div>
+    </div>
+    <div class="road-line"></div>
+    <div class="road-stage">
+      <div class="road-num" style="background:rgba(74,240,176,.15);color:var(--green);border:2px solid rgba(74,240,176,.3)">5</div>
+      <div class="road-content">
+        <div class="road-title" style="color:var(--green)">Si escala: establecer gobernanza minima antes de produccion</div>
+        <div class="road-desc">Defina monitoreo, responsable de mantenimiento, y revise el checklist de gobernanza (pestaña "Riesgos") antes de que el modelo tome decisiones reales sobre clientes o empleados.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+<!-- ===== TAB 6: ML OPPORTUNITY CANVAS ===== -->
+<div class="panel" id="panel-canvas">
+
+  <div class="banner" style="background:rgba(212,166,87,.05);border:1px solid rgba(212,166,87,.15)">
+    <div class="banner-icon">&#128221;</div>
+    <div>
+      <h2 style="color:var(--gold)">ML Opportunity Canvas</h2>
+      <p>El toolkit ejecutivo para llevar una idea de "podriamos usar IA para..." a un piloto bien definido. Elija un ejemplo precargado de los 7 casos industriales como punto de partida, o edite directamente los 8 campos para su propio caso. Al final, copie el canvas y compartalo con su equipo.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="selector-group" id="canvasExamples">
+      <button class="sel-btn" data-preset="0">&#127974; Banca &middot; Fraude</button>
+      <button class="sel-btn" data-preset="1">&#128230; Retail &middot; Inventario</button>
+      <button class="sel-btn" data-preset="2">&#127981; Manufactura &middot; Mantenimiento</button>
+      <button class="sel-btn" data-preset="3">&#128666; Logistica &middot; Rutas</button>
+      <button class="sel-btn active" data-preset="4">&#128138; Salud &middot; No shows</button>
+      <button class="sel-btn" data-preset="5">&#128241; Telco &middot; Churn</button>
+      <button class="sel-btn" data-preset="6">&#9889; Energia &middot; Demanda</button>
+      <button class="sel-btn" data-preset="7">&#9999;&#65039; Personalizado</button>
+    </div>
+
+    <div id="dynamicCanvas">
+      <div class="canvas-row">
+        <div><span class="canvas-num">1. DECISION RECURRENTE</span><span class="canvas-lbl">&iquest;Que decision repetitiva queremos mejorar con datos?</span></div>
+        <div class="canvas-val" contenteditable="true" id="c1">Predecir cancelacion de citas medicas con 48h de anticipacion</div>
+      </div>
+      <div class="canvas-row">
+        <div><span class="canvas-num">2. KPI A MEJORAR</span><span class="canvas-lbl">&iquest;Que metrica de negocio cambiaria si acertamos mas?</span></div>
+        <div class="canvas-val" contenteditable="true" id="c2">Tasa de utilizacion de consultorios / No-show rate</div>
+      </div>
+      <div class="canvas-row">
+        <div><span class="canvas-num">3. INPUTS DISPONIBLES</span><span class="canvas-lbl">&iquest;Que datos historicos tenemos para esto?</span></div>
+        <div class="canvas-val" contenteditable="true" id="c3">Historial de citas, tipo especialidad, clima, distancia paciente</div>
+      </div>
+      <div class="canvas-row">
+        <div><span class="canvas-num">4. TIPO DE ML</span><span class="canvas-lbl">&iquest;Que tipo de problema es (ver pestaña "Que es ML")?</span></div>
+        <div class="canvas-val" contenteditable="true" id="c4">Clasificacion binaria (probabilidad de no asistencia)</div>
+      </div>
+      <div class="canvas-row">
+        <div><span class="canvas-num">5. IMPACTO SI ACERTAMOS 20% MEJOR</span><span class="canvas-lbl">&iquest;Cual es el impacto economico estimado de la mejora?</span></div>
+        <div class="canvas-val" contenteditable="true" id="c5">+$1.2M ingresos recuperados / Ahorro en listas de espera</div>
+      </div>
+      <div class="canvas-row">
+        <div><span class="canvas-num">6. FRECUENCIA</span><span class="canvas-lbl">&iquest;Con que frecuencia se necesita la prediccion?</span></div>
+        <div class="canvas-val" contenteditable="true" id="c6">Diaria (cada mañana para el dia siguiente)</div>
+      </div>
+      <div class="canvas-row">
+        <div><span class="canvas-num">7. DUE&Ntilde;O EJECUTIVO</span><span class="canvas-lbl">&iquest;Quien tiene autoridad para cambiar el proceso de negocio?</span></div>
+        <div class="canvas-val" contenteditable="true" id="c7">Director Medico / COO</div>
+      </div>
+      <div class="canvas-row">
+        <div><span class="canvas-num">8. CRITERIO DE "MATAR" EL PROYECTO</span><span class="canvas-lbl">&iquest;Bajo que condicion se descontinua si no funciona?</span></div>
+        <div class="canvas-val" contenteditable="true" id="c8">Si, con revision de comite si no reduce no-shows &gt;15% en 8 semanas</div>
+      </div>
+    </div>
+    <button class="btn" id="copyCanvasBtn" style="margin-top:14px">&#128203; Copiar Canvas al portapapeles</button>
+  </div>
+
+  <div class="card">
+    <div class="sec">Como usar este canvas en una reunion de 30-60 minutos</div>
+    <div class="g2">
+      <div>
+        <div class="card-sm" style="margin-bottom:8px;border-left:3px solid var(--gold)"><strong style="color:var(--gold);font-family:var(--font-mono);font-size:11px">PASO 1 (10 min)</strong><br><span style="font-size:12px;color:var(--text2)">Elija un preset similar a su industria como punto de partida, o "Personalizado" para empezar desde cero.</span></div>
+        <div class="card-sm" style="margin-bottom:8px;border-left:3px solid var(--gold)"><strong style="color:var(--gold);font-family:var(--font-mono);font-size:11px">PASO 2 (20-30 min)</strong><br><span style="font-size:12px;color:var(--text2)">Edite cada campo en conjunto con su equipo de negocio y de datos. Los campos 1-2 deberian discutirse primero entre el dueño de negocio (campo 7) y el resto del equipo.</span></div>
+      </div>
+      <div>
+        <div class="card-sm" style="margin-bottom:8px;border-left:3px solid var(--gold)"><strong style="color:var(--gold);font-family:var(--font-mono);font-size:11px">PASO 3 (10 min)</strong><br><span style="font-size:12px;color:var(--text2)">Revise el campo 8 (criterio de "matar") con especial cuidado &mdash; este es el campo que mas frecuentemente se omite, y el que mas protege a la organizacion de invertir indefinidamente sin resultados.</span></div>
+        <div class="card-sm" style="margin-bottom:0;border-left:3px solid var(--gold)"><strong style="color:var(--gold);font-family:var(--font-mono);font-size:11px">PASO 4</strong><br><span style="font-size:12px;color:var(--text2)">Copie el canvas y compartalo con el equipo tecnico para iniciar el piloto. Use el checklist de la pestaña "Como Evaluar" como validacion final antes de aprobar.</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cierre -->
+  <div class="card" style="background:rgba(212,166,87,.04);border-color:rgba(212,166,87,.15)">
+    <div class="sec">En las proximas 48 horas</div>
+    <div class="g2">
+      <div class="card-sm">
+        <div style="font-size:12px;color:var(--text2);line-height:2">
+          <strong style="color:var(--text)">1.</strong> Complete el canvas con su equipo (30 min)<br>
+          <strong style="color:var(--text)">2.</strong> Valide los inputs con su Data Leader<br>
+          <strong style="color:var(--text)">3.</strong> Autorice un piloto de 6-10 semanas con fecha de revision fija
+        </div>
+      </div>
+      <div class="card-sm">
+        <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:6px">ENTREGABLE PARA EL DIRECTORIO</div>
+        <div style="font-size:14px;color:var(--gold);font-style:italic;line-height:1.6">"3 oportunidades de ML con impacto estimado &gt;$X, cada una con piloto de 8 semanas y criterio de exito/fracaso definido."</div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--text3);font-style:italic">
+      Usted no necesita escribir codigo. Necesita hacer la pregunta correcta &mdash; y esta guia esta diseñada para ayudarle a formularla.
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+</div>
+</div>
+<script>
+(function(){
+
+/* ─────────────── DATA: 7 INDUSTRY CASES ─────────────── */
+var CASES = [
+  { title:"Banca &middot; Deteccion de fraudes", impact:37, metric1:"94%", metric2:"6 semanas", metric3:"$3.2M", metric4:"Alta",
+    decision:"Bloquear transacciones sospechosas en tiempo real", kpi:"Reduccion fraude / Falsos positivos",
+    inputs:"Historial de transacciones, geolocalizacion, dispositivo, velocidad", ml:"Deteccion de anomalias (unsupervised)",
+    roi:"ROI proyectado: 340% en 12 meses &middot; Payback: 4 meses", impactLabel:"reduccion de perdidas por fraude" },
+  { title:"Retail &middot; Optimizacion de inventario", impact:28, metric1:"89%", metric2:"8 semanas", metric3:"$2.1M", metric4:"Media-Alta",
+    decision:"Predecir demanda por SKU y tienda", kpi:"Reduccion quiebre de stock / Exceso inventario",
+    inputs:"Ventas historicas, promociones, estacionalidad, clima", ml:"Series temporales (XGBoost, Prophet)",
+    roi:"ROI proyectado: 210% en 18 meses &middot; Payback: 7 meses", impactLabel:"mejora en precision de forecast de demanda" },
+  { title:"Manufactura &middot; Mantenimiento predictivo", impact:42, metric1:"91%", metric2:"10 semanas", metric3:"$4.5M", metric4:"Media",
+    decision:"Programar mantenimiento antes de falla critica", kpi:"Tiempo muerto no planificado",
+    inputs:"Sensores IoT, ordenes de reparacion, antiguedad de equipos", ml:"Clasificacion + series temporales",
+    roi:"ROI proyectado: 520% en 24 meses &middot; Payback: 5 meses", impactLabel:"reduccion de tiempo muerto no planificado" },
+  { title:"Logistica &middot; Optimizacion de rutas", impact:23, metric1:"87%", metric2:"7 semanas", metric3:"$1.8M", metric4:"Alta",
+    decision:"Asignar rutas dinamicas a la flota", kpi:"Km recorridos / Consumo de combustible",
+    inputs:"GPS, trafico historico, ventanas horarias, clima", ml:"Optimizacion combinatoria + ML",
+    roi:"ROI proyectado: 190% en 12 meses &middot; Payback: 6 meses", impactLabel:"reduccion de km recorridos y combustible" },
+  { title:"Salud &middot; Prediccion de no-shows", impact:31, metric1:"88%", metric2:"5 semanas", metric3:"$1.2M", metric4:"Alta",
+    decision:"Predecir cancelacion de citas con 48h de anticipacion", kpi:"Utilizacion de consultorios / No-show rate",
+    inputs:"Historial de citas, especialidad, clima, distancia del paciente", ml:"Clasificacion binaria",
+    roi:"ROI proyectado: 280% en 12 meses &middot; Payback: 5 meses", impactLabel:"reduccion en tasa de no-shows" },
+  { title:"Telco &middot; Churn predictivo", impact:35, metric1:"92%", metric2:"6 semanas", metric3:"$2.9M", metric4:"Alta",
+    decision:"Identificar clientes con riesgo de cancelacion", kpi:"Tasa de retencion neta (NDR)",
+    inputs:"Uso del servicio, tickets de soporte, facturacion", ml:"Clasificacion binaria + explicabilidad",
+    roi:"ROI proyectado: 410% en 12 meses &middot; Payback: 4 meses", impactLabel:"reduccion en tasa de churn" },
+  { title:"Energia &middot; Demanda electrica", impact:19, metric1:"93%", metric2:"9 semanas", metric3:"$2.3M", metric4:"Media",
+    decision:"Predecir picos de demanda para optimizar compra de energia", kpi:"Costo de energia spot",
+    inputs:"Clima, historico de consumo, dias festivos", ml:"Series temporales (LSTM, Prophet)",
+    roi:"ROI proyectado: 170% en 18 meses &middot; Payback: 8 meses", impactLabel:"reduccion en costo de compra de energia" }
+];
+
+/* ─────────────── DATA: 8 CANVAS PRESETS (matching CASES) ─────────────── */
+var PRESETS = {
+  0:{c1:"Detectar transacciones fraudulentas en tiempo real",c2:"Monto perdido por fraude / Falsos positivos",c3:"Historial transacciones, geolocalizacion, dispositivo, velocidad",c4:"Deteccion de anomalias (unsupervised)",c5:"Reduccion estimada $3.2M anuales en fraude",c6:"Tiempo real (cada transaccion)",c7:"CISO / Director de Riesgo",c8:"Si, si no reduce fraude &gt;15% en 8 semanas"},
+  1:{c1:"Predecir demanda por SKU y tienda para optimizar inventario",c2:"Reduccion quiebre de stock / Exceso de inventario",c3:"Ventas historicas, promociones, estacionalidad, clima",c4:"Series temporales (XGBoost, Prophet)",c5:"-28% quiebre de stock / -22% exceso &rarr; ~$2.1M",c6:"Semanal",c7:"COO / Director de Supply Chain",c8:"Si, si la mejora es &lt;10% en 8 semanas"},
+  2:{c1:"Programar mantenimiento antes de falla critica en equipos",c2:"Tiempo muerto no planificado / Costo de reparacion",c3:"Sensores IoT, ordenes de reparacion, antiguedad de equipos",c4:"Clasificacion + regresion supervisada",c5:"-41% downtime &rarr; ~$4.5M de ahorro",c6:"Diaria (dashboard de monitoreo)",c7:"VP Operaciones / Gerente de Planta",c8:"Si, si la precision es &lt;85% tras el piloto"},
+  3:{c1:"Optimizar rutas de flota en tiempo real",c2:"Km recorridos / Combustible / Tiempo de entrega",c3:"GPS, trafico historico, ventanas horarias, clima",c4:"Optimizacion combinatoria + ML",c5:"-23% km recorridos &rarr; ~$1.8M",c6:"Tiempo real (cada hora)",c7:"Director de Logistica",c8:"Si, si el ahorro es &lt;12% en 8 semanas"},
+  4:{c1:"Predecir cancelacion de citas medicas con 48h de anticipacion",c2:"Tasa de utilizacion de consultorios / No-show rate",c3:"Historial de citas, tipo especialidad, clima, distancia paciente",c4:"Clasificacion binaria (probabilidad de no asistencia)",c5:"+$1.2M ingresos recuperados / Ahorro en listas de espera",c6:"Diaria (cada manana para el dia siguiente)",c7:"Director Medico / COO",c8:"Si, con revision de comite si no reduce no-shows &gt;15% en 8 semanas"},
+  5:{c1:"Identificar clientes con alta probabilidad de cancelar (churn)",c2:"Tasa de retencion neta (NDR) / LTV",c3:"Uso del producto, tickets de soporte, interacciones, facturacion",c4:"Clasificacion binaria + explicabilidad",c5:"-35% churn &rarr; ~$2.9M ARR retenido",c6:"Semanal",c7:"Director de Customer Success",c8:"Si, si la mejora es &lt;12% en 8 semanas"},
+  6:{c1:"Predecir picos de demanda electrica para optimizar compra de energia",c2:"Costo de energia spot / Riesgo de desabastecimiento",c3:"Clima, historico de consumo, dias festivos, actividad industrial",c4:"Series temporales (LSTM, Prophet)",c5:"-19% costo de compra de energia &rarr; ~$2.3M",c6:"Diaria / Horaria",c7:"Director de Energia / CFO",c8:"Si, si el error (MAPE) es &gt;15%"}
+};
+
+var currentCase = 4;
+var impactChart = null;
+
+/* ─────────────── TAB SWITCHING ─────────────── */
+window.switchTab = function(t){
+  var tabs = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.panel');
+  for (var i=0;i<tabs.length;i++) tabs[i].classList.remove('active');
+  for (var i=0;i<panels.length;i++) panels[i].classList.remove('active');
+  document.querySelector('[data-tab="'+t+'"]').classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  if (t==='casos' && !casosBuilt) { initCasos(); casosBuilt = true; }
+};
+var casosBuilt = false;
+
+/* ─────────────── MEX TOGGLE ─────────────── */
+window.toggleMex = function(el){
+  el.classList.toggle('open');
+};
+
+/* ─────────────── TAB 2: CASOS INDUSTRIALES ─────────────── */
+function initCasos(){
+  updateCaseUI(currentCase);
+}
+
+function updateCaseUI(index){
+  var c = CASES[index];
+  document.getElementById('caseTitle').innerHTML = c.title;
+  document.getElementById('impactValue').textContent = '+' + c.impact + '%';
+  document.getElementById('impactLabel').textContent = c.impactLabel;
+  document.getElementById('metric1').textContent = c.metric1;
+  document.getElementById('metric2').textContent = c.metric2;
+  document.getElementById('metric3').textContent = c.metric3;
+  document.getElementById('metric4').textContent = c.metric4;
+
+  document.getElementById('caseDetail').innerHTML =
+    '<strong style="color:var(--text)">&#128204; Decision:</strong> ' + c.decision + '<br>' +
+    '<strong style="color:var(--text)">&#127919; KPI:</strong> ' + c.kpi + '<br>' +
+    '<strong style="color:var(--text)">&#128202; Inputs:</strong> ' + c.inputs + '<br>' +
+    '<strong style="color:var(--text)">&#129302; Tipo ML:</strong> ' + c.ml;
+
+  document.getElementById('caseRoi').innerHTML = '<strong style="color:var(--text)">&#128200; ' + c.roi + '</strong>';
+
+  if (impactChart){
+    impactChart.data.datasets[0].data = [c.impact, 100 - c.impact];
+    impactChart.update();
+  } else {
+    var ctx = document.getElementById('impactChart');
+    if (ctx){
+      impactChart = new Chart(ctx.getContext('2d'), {
+        type:'doughnut',
+        data:{ labels:['Mejora con ML','Linea base'], datasets:[{ data:[c.impact, 100-c.impact], backgroundColor:['#d4a657','rgba(255,255,255,.08)'], borderWidth:0 }] },
+        options:{ responsive:true, maintainAspectRatio:false, animation:false,
+          plugins:{ legend:{ position:'bottom', labels:{ color:'#8891a8', font:{ family:'IBM Plex Mono', size:10 }, boxWidth:10 } } },
+          cutout:'68%'
+        }
+      });
+    }
+  }
+}
+
+window.selectCase = function(idx){
+  currentCase = idx;
+  var btns = document.querySelectorAll('#industrySelector .sel-btn');
+  for (var i=0;i<btns.length;i++) btns[i].classList.remove('active');
+  var el = document.querySelector('#industrySelector [data-case="'+idx+'"]');
+  if (el) el.classList.add('active');
+  updateCaseUI(idx);
+};
+
+/* ─────────────── TAB 6: CANVAS PRESETS ─────────────── */
+window.loadPreset = function(presetId){
+  var btns = document.querySelectorAll('#canvasExamples .sel-btn');
+  for (var i=0;i<btns.length;i++) btns[i].classList.remove('active');
+  var el = document.querySelector('#canvasExamples [data-preset="'+presetId+'"]');
+  if (el) el.classList.add('active');
+  if (presetId === 7) return; // Personalizado: no cargar, dejar lo que el usuario tenga
+  var p = PRESETS[presetId];
+  if (!p) return;
+  ['c1','c2','c3','c4','c5','c6','c7','c8'].forEach(function(id){
+    var node = document.getElementById(id);
+    if (node) node.innerHTML = p[id];
+  });
+};
+
+/* ─────────────── COPY CANVAS ─────────────── */
+window.copyCanvas = function(){
+  var fields = ['c1','c2','c3','c4','c5','c6','c7','c8'];
+  var labels = ['Decision recurrente','KPI a mejorar','Inputs disponibles','Tipo de ML','Impacto si acertamos 20% mejor','Frecuencia','Dueño ejecutivo','Criterio de matar el proyecto'];
+  var text = 'ML OPPORTUNITY CANVAS\n' + new Array(27).join('-') + '\n';
+  fields.forEach(function(id, i){
+    var node = document.getElementById(id);
+    var val = node ? node.innerText.trim() : '';
+    text += labels[i] + ': ' + val + '\n';
+  });
+  var showToast = function(){
+    var toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.textContent = '\u2713 Canvas copiado al portapapeles';
+    toast.classList.add('show');
+    setTimeout(function(){ toast.classList.remove('show'); }, 2500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(showToast, function(){
+      fallbackCopy(text); showToast();
+    });
+  } else {
+    fallbackCopy(text); showToast();
+  }
+};
+
+function fallbackCopy(text){
+  try{
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  } catch(e){}
+}
+
+/* ─────────────── EVENT DELEGATION ─────────────── */
+document.addEventListener('click', function(e){
+  var caseBtn = e.target.closest && e.target.closest('#industrySelector .sel-btn');
+  if (caseBtn && caseBtn.dataset && caseBtn.dataset.case !== undefined){
+    selectCase(parseInt(caseBtn.dataset.case, 10));
+    return;
+  }
+  var presetBtn = e.target.closest && e.target.closest('#canvasExamples .sel-btn');
+  if (presetBtn && presetBtn.dataset && presetBtn.dataset.preset !== undefined){
+    loadPreset(parseInt(presetBtn.dataset.preset, 10));
+    return;
+  }
+  var copyBtn = e.target.closest && e.target.closest('#copyCanvasBtn');
+  if (copyBtn){
+    copyCanvas();
+    return;
+  }
+});
+
+})();
+</script>
+</body>
+</html>
