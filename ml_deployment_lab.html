@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Deployment Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--teal:#2dd4bf;--pink:#f472b6;
+  --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em;background:rgba(96,165,250,.15);color:var(--blue)}
+.hdr-title{font-family:var(--font-mono);font-size:13px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto}
+.tab{padding:13px 20px;font-size:11px;font-family:var(--font-mono);color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;white-space:nowrap;letter-spacing:.04em}
+.tab:hover{color:var(--text2)}
+.tab.t1.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab.t2.active{color:var(--teal);border-bottom-color:var(--teal)}
+.tab.t3.active{color:var(--orange);border-bottom-color:var(--orange)}
+.tab.t4.active{color:var(--purple);border-bottom-color:var(--purple)}
+.main{max-width:1080px;margin:0 auto;padding:24px 28px}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;margin-bottom:16px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:11px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+/* deploy type cards */
+.dtype-card{border-radius:var(--rl);border:2px solid var(--border);padding:18px 20px;cursor:pointer;transition:all .2s;background:var(--bg2)}
+.dtype-card:hover{border-color:var(--border2)}
+.dtype-card.active{border-color:var(--blue)}
+.dtype-icon{font-size:28px;margin-bottom:8px}
+.dtype-name{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.dtype-tag{font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;font-weight:600;margin-bottom:8px;display:inline-block}
+.dtype-desc{font-size:12px;color:var(--text2);line-height:1.6}
+/* flow diagram */
+.flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:12px 0}
+.flow-box{padding:8px 14px;border-radius:6px;font-size:11px;font-family:var(--font-mono);font-weight:500;white-space:nowrap;border:1px solid transparent}
+.flow-arrow{color:var(--text3);font-size:16px;padding:0 6px;flex-shrink:0}
+.flow-sep{width:100%;height:4px}
+/* code block */
+.code-toggle{display:flex;align-items:center;gap:8px;padding:7px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:10px;transition:all .15s;user-select:none}
+.code-toggle:hover{border-color:var(--border2);color:var(--text2)}
+.code-toggle-icon{transition:transform .2s}
+.code-toggle.open .code-toggle-icon{transform:rotate(90deg)}
+.code-block{display:none;margin-top:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;font-family:var(--font-mono);font-size:11px;line-height:1.8;overflow-x:auto}
+.code-block.shown{display:block}
+.kw{color:#a78bfa}.fn{color:#60a5fa}.st{color:#4af0b0}.cm{color:#4d566b}.nu{color:#fb923c}.dc{color:#f472b6}
+/* env cards */
+.env-card{border-radius:var(--rl);padding:16px 18px;border:1px solid var(--border)}
+.env-name{font-family:var(--font-mono);font-size:13px;font-weight:600;margin-bottom:8px}
+.env-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px}
+.env-row:last-child{border-bottom:none}
+.env-lbl{color:var(--text3);font-family:var(--font-mono);font-size:10px}
+.env-val{color:var(--text2)}
+/* monitor */
+.metric-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;text-align:center}
+.metric-val{font-family:var(--font-mono);font-size:20px;font-weight:600;margin-bottom:3px}
+.metric-lbl{font-size:10px;font-family:var(--font-mono);color:var(--text3);letter-spacing:.06em}
+.metric-trend{font-size:10px;font-family:var(--font-mono);margin-top:4px}
+.chart-wrap{position:relative;height:200px}
+.chart-sm{position:relative;height:160px}
+/* alert */
+.alert{border-radius:var(--r);padding:10px 13px;font-size:12px;line-height:1.65;margin-bottom:10px}
+.alert-w{background:rgba(251,196,60,.07);border:1px solid rgba(251,196,60,.2)}
+.alert-g{background:rgba(74,240,176,.06);border:1px solid rgba(74,240,176,.18)}
+.alert-r{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2)}
+.alert-b{background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.18)}
+/* marketing checklist */
+.mkt-card{border-radius:var(--rl);padding:16px 18px;border:1px solid var(--border);background:var(--bg2);margin-bottom:12px}
+.mkt-role{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:2px 8px;border-radius:3px;margin-bottom:10px;display:inline-block}
+.mkt-q{padding:9px 12px;background:var(--bg3);border-radius:var(--r);margin-bottom:6px;font-size:12px;color:var(--text2);line-height:1.6;cursor:pointer;border-left:3px solid transparent;transition:all .15s}
+.mkt-q:hover{background:rgba(255,255,255,.03)}
+.mkt-q.open{border-left-color:var(--purple);background:rgba(167,139,250,.05)}
+.mkt-a{display:none;margin-top:6px;font-size:12px;color:var(--text2);line-height:1.7;padding:8px 10px;background:var(--bg);border-radius:4px}
+.mkt-q.open .mkt-a{display:block}
+/* comparison table */
+.cmp-tbl{width:100%;border-collapse:collapse}
+.cmp-tbl th{font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:.07em;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+.cmp-tbl td{font-size:12px;padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+.cmp-tbl td:first-child{font-family:var(--font-mono);font-size:11px;color:var(--text)}
+.cmp-tbl tr:last-child td{border-bottom:none}
+/* pill */
+.pill{display:inline-block;font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;margin:0 2px;vertical-align:middle}
+.pill-g{background:rgba(74,240,176,.15);color:var(--green)}
+.pill-o{background:rgba(251,146,60,.12);color:var(--orange)}
+.pill-r{background:rgba(248,113,113,.12);color:var(--red)}
+.pill-b{background:rgba(96,165,250,.15);color:var(--blue)}
+.pill-p{background:rgba(167,139,250,.12);color:var(--purple)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="hdr-badge">DEPLOY LAB</span>
+  <span class="hdr-title">ML Deployment &mdash; De modelo a produccion</span>
+  <span class="hdr-sub">Churn API &middot; Forecast Batch &middot; Recomendador Embed</span>
+</div>
+
+<div class="tabs">
+  <div class="tab t1 active" data-tab="tipos" onclick="switchTab('tipos')">&#128640; Tipos de Deployment</div>
+  <div class="tab t2" data-tab="entornos" onclick="switchTab('entornos')">&#9729;&#65039; Entornos y Arquitectura</div>
+  <div class="tab t3" data-tab="monitor" onclick="switchTab('monitor')">&#128202; Monitoring y Mantenimiento</div>
+  <div class="tab t4" data-tab="mkt" onclick="switchTab('mkt')">&#127919; Para el Profesional de Marketing</div>
+</div>
+
+<div class="main">
+
+<!-- ===== TAB 1: TIPOS ===== -->
+<div class="panel active" id="panel-tipos">
+
+  <div class="card">
+    <div class="prose" style="margin-bottom:16px">Entrenar un modelo es el 20% del trabajo. El otro 80% es <strong style="color:var(--text)">ponerlo en produccion</strong> donde genere valor real. Existen 4 patrones de deployment, cada uno adecuado para distintos casos de negocio. Los tres casos de este lab ilustran los tres mas comunes en e-commerce peruano.</div>
+    <div class="g4">
+      <div class="dtype-card active" id="dt-api" onclick="selectType('api')">
+        <div class="dtype-icon">&#9889;</div>
+        <div class="dtype-name">API REST</div>
+        <span class="dtype-tag" style="background:rgba(248,113,113,.12);color:var(--red)">TIEMPO REAL</span>
+        <div class="dtype-desc">El modelo vive en un servidor y responde peticiones HTTP. Predice <strong style="color:var(--text)">un cliente a la vez</strong>, en milisegundos.</div>
+      </div>
+      <div class="dtype-card" id="dt-batch" onclick="selectType('batch')">
+        <div class="dtype-icon">&#128230;</div>
+        <div class="dtype-name">Batch Scoring</div>
+        <span class="dtype-tag" style="background:rgba(96,165,250,.12);color:var(--blue)">PERIODICO</span>
+        <div class="dtype-desc">Corre el modelo sobre <strong style="color:var(--text)">miles de registros</strong> de una vez, en un horario fijo. Resultados se guardan en BD.</div>
+      </div>
+      <div class="dtype-card" id="dt-embed" onclick="selectType('embed')">
+        <div class="dtype-icon">&#128268;</div>
+        <div class="dtype-name">Embedido</div>
+        <span class="dtype-tag" style="background:rgba(74,240,176,.12);color:var(--green)">EN-APP</span>
+        <div class="dtype-desc">El modelo se compila <strong style="color:var(--text)">dentro de la aplicacion</strong>. No requiere servidor externo. Ideal para apps moviles.</div>
+      </div>
+      <div class="dtype-card" id="dt-cloud" onclick="selectType('cloud')">
+        <div class="dtype-icon">&#9729;&#65039;</div>
+        <div class="dtype-name">Cloud Function</div>
+        <span class="dtype-tag" style="background:rgba(167,139,250,.12);color:var(--purple)">SERVERLESS</span>
+        <div class="dtype-desc">Funcion que se activa <strong style="color:var(--text)">por evento</strong>. Solo corre cuando hay demanda. Sin servidor permanente.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail panel -->
+  <div id="type-detail"></div>
+
+  <!-- Comparison table -->
+  <div class="card">
+    <div class="sec">Comparacion de patrones &mdash; cuando usar cada uno</div>
+    <div style="overflow-x:auto">
+      <table class="cmp-tbl">
+        <thead><tr>
+          <th>PATRON</th><th>LATENCIA</th><th>ESCALA</th><th>COSTO</th><th>COMPLEJIDAD</th><th>CASO TIPICO</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td>API REST<span class="pill pill-r">REAL TIME</span></td>
+            <td><span style="color:var(--green)">1&ndash;100 ms</span></td>
+            <td>Alta (con load balancer)</td>
+            <td><span style="color:var(--orange)">Medio&ndash;alto</span></td>
+            <td>Media</td>
+            <td>Prediccion de churn al login, scoring crediticio, detector de fraude</td>
+          </tr>
+          <tr>
+            <td>Batch Scoring<span class="pill pill-b">PERIODICO</span></td>
+            <td><span style="color:var(--blue)">Minutos&ndash;horas</span></td>
+            <td>Muy alta</td>
+            <td><span style="color:var(--green)">Bajo</span></td>
+            <td>Baja</td>
+            <td>Forecast semanal de ventas, scoring de leads overnight, campanas masivas</td>
+          </tr>
+          <tr>
+            <td>Embedido<span class="pill pill-g">EN-APP</span></td>
+            <td><span style="color:var(--green)">&lt; 5 ms</span></td>
+            <td>Limitada por device</td>
+            <td><span style="color:var(--green)">Muy bajo</span></td>
+            <td>Alta (compilacion)</td>
+            <td>Recomendaciones offline, clasificacion de imagenes en movil, NLP ligero</td>
+          </tr>
+          <tr>
+            <td>Cloud Function<span class="pill pill-p">SERVERLESS</span></td>
+            <td><span style="color:var(--orange)">100&ndash;2000 ms</span></td>
+            <td>Auto-scale</td>
+            <td><span style="color:var(--green)">Pay-per-use</span></td>
+            <td>Baja</td>
+            <td>Trigger por upload de archivo, webhook de pago, analisis de formulario</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== TAB 2: ENTORNOS ===== -->
+<div class="panel" id="panel-entornos">
+
+  <div class="card">
+    <div class="sec">El camino del modelo: de notebook a produccion</div>
+    <div style="overflow-x:auto;padding-bottom:8px">
+      <div class="flow" style="min-width:600px">
+        <div class="flow-box" style="background:rgba(96,165,250,.12);border-color:rgba(96,165,250,.3);color:var(--blue)">&#127891; Data Scientist<br><span style="font-size:9px;color:var(--text3)">Jupyter Notebook</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box" style="background:rgba(74,240,176,.10);border-color:rgba(74,240,176,.25);color:var(--green)">&#128230; Serializar modelo<br><span style="font-size:9px;color:var(--text3)">joblib / pickle</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box" style="background:rgba(167,139,250,.10);border-color:rgba(167,139,250,.25);color:var(--purple)">&#9977; Crear API<br><span style="font-size:9px;color:var(--text3)">FastAPI / Flask</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box" style="background:rgba(251,146,60,.10);border-color:rgba(251,146,60,.25);color:var(--orange)">&#127381; Contenedor<br><span style="font-size:9px;color:var(--text3)">Docker</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box" style="background:rgba(248,113,113,.10);border-color:rgba(248,113,113,.25);color:var(--red)">&#9881;&#65039; CI/CD<br><span style="font-size:9px;color:var(--text3)">GitHub Actions</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box" style="background:rgba(45,212,191,.10);border-color:rgba(45,212,191,.25);color:var(--teal)">&#9729;&#65039; Cloud Deploy<br><span style="font-size:9px;color:var(--text3)">GCP Cloud Run</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box" style="background:rgba(74,240,176,.15);border-color:rgba(74,240,176,.4);color:var(--green)">&#127881; PRODUCCION<br><span style="font-size:9px;color:var(--text3)">API lista</span></div>
+      </div>
+    </div>
+    <div class="code-toggle" onclick="toggleCode(this)"><span class="code-toggle-icon">&#9654;</span> Ver el pipeline completo en comandos</div>
+    <div class="code-block">
+<span class="cm"># 1. Serializar el modelo entrenado</span>
+<span class="kw">import</span> joblib
+joblib.<span class="fn">dump</span>(modelo, <span class="st">'churn_model.joblib'</span>)
+
+<span class="cm"># 2. Crear la API con FastAPI (main.py)</span>
+<span class="kw">from</span> fastapi <span class="kw">import</span> FastAPI
+<span class="kw">import</span> joblib, numpy <span class="kw">as</span> np
+
+app = <span class="fn">FastAPI</span>()
+model = joblib.<span class="fn">load</span>(<span class="st">'churn_model.joblib'</span>)
+
+<span class="dc">@app.post</span>(<span class="st">"/predict"</span>)
+<span class="kw">def</span> <span class="fn">predict</span>(data: dict):
+    features = np.<span class="fn">array</span>([data[<span class="st">'edad'</span>], data[<span class="st">'saldo'</span>], ...])
+    prob = model.<span class="fn">predict_proba</span>([features])[<span class="nu">0</span>][<span class="nu">1</span>]
+    <span class="kw">return</span> {<span class="st">"churn_prob"</span>: <span class="fn">round</span>(prob, <span class="nu">3</span>)}
+
+<span class="cm"># 3. Dockerfile</span>
+<span class="cm"># FROM python:3.11-slim</span>
+<span class="cm"># COPY . /app</span>
+<span class="cm"># RUN pip install fastapi uvicorn joblib scikit-learn</span>
+<span class="cm"># CMD ["uvicorn", "main:app", "--host", "0.0.0.0"]</span>
+
+<span class="cm"># 4. Build y deploy en GCP Cloud Run</span>
+gcloud builds submit --tag gcr.io/mi-proyecto/churn-api
+gcloud run deploy churn-api --image gcr.io/mi-proyecto/churn-api
+    </div>
+  </div>
+
+  <!-- On-premise vs Cloud -->
+  <div class="card">
+    <div class="sec">On-premise vs Cloud &mdash; donde vive el modelo</div>
+    <div class="g2" style="margin-bottom:14px">
+      <div class="env-card" style="border-color:rgba(251,146,60,.2)">
+        <div class="env-name" style="color:var(--orange)">&#127970; On-Premise</div>
+        <div class="env-row"><span class="env-lbl">DONDE</span><span class="env-val">Servidores propios o data center</span></div>
+        <div class="env-row"><span class="env-lbl">COSTO</span><span class="env-val">Alto inicial, bajo variable</span></div>
+        <div class="env-row"><span class="env-lbl">CONTROL</span><span class="env-val" style="color:var(--green)">Total</span></div>
+        <div class="env-row"><span class="env-lbl">ESCALA</span><span class="env-val" style="color:var(--red)">Limitada</span></div>
+        <div class="env-row"><span class="env-lbl">REGULACION</span><span class="env-val" style="color:var(--green)">Ideal para datos sensibles</span></div>
+        <div class="env-row"><span class="env-lbl">EJEMPLOS</span><span class="env-val">Bancos, salud, gobierno</span></div>
+      </div>
+      <div class="env-card" style="border-color:rgba(45,212,191,.2)">
+        <div class="env-name" style="color:var(--teal)">&#9729;&#65039; Cloud</div>
+        <div class="env-row"><span class="env-lbl">DONDE</span><span class="env-val">GCP, AWS, Azure (servidores del proveedor)</span></div>
+        <div class="env-row"><span class="env-lbl">COSTO</span><span class="env-val">Bajo inicial, variable por uso</span></div>
+        <div class="env-row"><span class="env-lbl">CONTROL</span><span class="env-val" style="color:var(--orange)">Parcial</span></div>
+        <div class="env-row"><span class="env-lbl">ESCALA</span><span class="env-val" style="color:var(--green)">Ilimitada (auto-scale)</span></div>
+        <div class="env-row"><span class="env-lbl">REGULACION</span><span class="env-val" style="color:var(--orange)">Verificar residencia de datos</span></div>
+        <div class="env-row"><span class="env-lbl">EJEMPLOS</span><span class="env-val">E-commerce, startups, retail</span></div>
+      </div>
+    </div>
+    <div class="alert alert-b">&#128161; <strong style="color:var(--text)">Para e-commerce peruano (Crisol, ICPNA, La Positiva):</strong> la nube es casi siempre la decision correcta al inicio. GCP Cloud Run es serverless: solo pagas cuando el modelo recibe peticiones. Costo tipico de una API de churn con 10,000 predicciones/dia: &lt; $10 USD/mes.</div>
+  </div>
+
+  <!-- Docker + CI/CD -->
+  <div class="g2">
+    <div class="card">
+      <div class="sec">Docker &mdash; por que contenedores</div>
+      <div class="prose" style="margin-bottom:12px">Un contenedor empaqueta el modelo, el codigo y todas sus dependencias en una unidad portatil. <strong style="color:var(--text)">"Funciona en mi maquina"</strong> deja de ser un problema.</div>
+      <div style="display:grid;gap:8px;margin-bottom:12px">
+        <div class="card-sm" style="border-left:3px solid var(--orange)">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--orange);margin-bottom:4px">SIN DOCKER &mdash; EL PROBLEMA</div>
+          <div style="font-size:12px;color:var(--text2)">El modelo usa Python 3.9 + scikit-learn 1.2. El servidor de produccion tiene Python 3.7 + scikit-learn 0.24. El modelo falla silenciosamente o da predicciones incorrectas.</div>
+        </div>
+        <div class="card-sm" style="border-left:3px solid var(--green)">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-bottom:4px">CON DOCKER &mdash; LA SOLUCION</div>
+          <div style="font-size:12px;color:var(--text2)">El contenedor lleva su propio Python 3.9 + scikit-learn 1.2. Corre identico en tu laptop, en staging y en produccion.</div>
+        </div>
+      </div>
+      <div class="code-toggle" onclick="toggleCode(this)"><span class="code-toggle-icon">&#9654;</span> Ver Dockerfile minimo para modelo de churn</div>
+      <div class="code-block">
+<span class="cm"># Dockerfile</span>
+<span class="kw">FROM</span> python:<span class="nu">3.11</span>-slim
+
+<span class="cm"># Copiar archivos</span>
+<span class="kw">WORKDIR</span> /app
+<span class="kw">COPY</span> requirements.txt .
+<span class="kw">COPY</span> churn_model.joblib .
+<span class="kw">COPY</span> main.py .
+
+<span class="cm"># Instalar dependencias</span>
+<span class="kw">RUN</span> pip install -r requirements.txt
+
+<span class="cm"># Exponer puerto y arrancar</span>
+<span class="kw">EXPOSE</span> <span class="nu">8080</span>
+<span class="kw">CMD</span> [<span class="st">"uvicorn"</span>, <span class="st">"main:app"</span>, <span class="st">"--host"</span>, <span class="st">"0.0.0.0"</span>, <span class="st">"--port"</span>, <span class="st">"8080"</span>]
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec">CI/CD &mdash; deploy automatico sin miedo</div>
+      <div class="prose" style="margin-bottom:12px">CI/CD (Continuous Integration / Continuous Deployment) automatiza el proceso: <strong style="color:var(--text)">cada vez que el equipo sube codigo nuevo, los tests corren automaticamente y si pasan, el modelo se despliega solo.</strong></div>
+      <div style="display:grid;gap:7px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:var(--r)">
+          <span style="color:var(--blue);font-size:16px">1</span>
+          <div><div style="font-size:12px;color:var(--text);font-weight:500">Push a GitHub</div><div style="font-size:11px;color:var(--text3)">El data scientist sube el nuevo modelo entrenado</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:var(--r)">
+          <span style="color:var(--orange);font-size:16px">2</span>
+          <div><div style="font-size:12px;color:var(--text);font-weight:500">Tests automaticos</div><div style="font-size:11px;color:var(--text3)">Verifica que el modelo predice correctamente casos conocidos</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:var(--r)">
+          <span style="color:var(--purple);font-size:16px">3</span>
+          <div><div style="font-size:12px;color:var(--text);font-weight:500">Build del contenedor</div><div style="font-size:11px;color:var(--text3)">Docker empaqueta el nuevo modelo</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg3);border-radius:var(--r)">
+          <span style="color:var(--teal);font-size:16px">4</span>
+          <div><div style="font-size:12px;color:var(--text);font-weight:500">Deploy en cloud</div><div style="font-size:11px;color:var(--text3)">Sin downtime: el trafico se migra gradualmente al nuevo modelo</div></div>
+        </div>
+      </div>
+      <div class="alert alert-g" style="margin-bottom:0">&#9989; <strong style="color:var(--text)">Beneficio clave:</strong> el equipo puede actualizar el modelo (reentrenar con datos nuevos) sin coordinacion manual. El modelo en produccion siempre es el mejor disponible.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== TAB 3: MONITORING ===== -->
+<div class="panel" id="panel-monitor">
+
+  <div class="card">
+    <div class="prose" style="margin-bottom:14px">Un modelo desplegado <strong style="color:var(--text)">se degrada con el tiempo</strong>. El comportamiento de los clientes cambia, los datos de entrada cambian, el mundo cambia. Sin monitoring, nunca sabras cuando tu modelo deja de ser util.</div>
+    <div class="g4">
+      <div class="metric-card"><div class="metric-val" style="color:var(--green)">98.2%</div><div class="metric-lbl">UPTIME API</div><div class="metric-trend" style="color:var(--green)">&#9650; estable</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:var(--green)">43ms</div><div class="metric-lbl">LATENCIA P50</div><div class="metric-trend" style="color:var(--green)">&#9650; normal</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:var(--orange)">0.68</div><div class="metric-lbl">F1 ACTUAL</div><div class="metric-trend" style="color:var(--orange)">&#9660; vs 0.71 deploy</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:var(--red)">&#9888;</div><div class="metric-lbl">DATA DRIFT</div><div class="metric-trend" style="color:var(--red)">Detectado en saldo</div></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="sec">Model performance en el tiempo</div>
+      <div class="chart-wrap"><canvas id="m-perf-chart"></canvas></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:var(--font-mono)">F1 Score semanal &middot; linea roja = umbral minimo aceptable</div>
+    </div>
+    <div class="card">
+      <div class="sec">Data drift &mdash; distribucion de "saldo" cambia</div>
+      <div class="chart-wrap"><canvas id="m-drift-chart"></canvas></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:var(--font-mono)">Distribucion al deploy (azul) vs hoy (naranja) &mdash; drift detectado</div>
+    </div>
+  </div>
+
+  <!-- Tipos de degradacion -->
+  <div class="card">
+    <div class="sec">Los 3 tipos de degradacion de un modelo</div>
+    <div class="g3">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--orange);margin-bottom:8px">&#128201; DATA DRIFT</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px">La distribucion de los datos de entrada cambia. El modelo fue entrenado con clientes de 2023, pero en 2024 llegan clientes con un perfil diferente (mas jovenes, mas digitales).</div>
+        <div class="alert alert-w" style="margin-bottom:0">
+          <strong style="color:var(--text)">Ejemplo:</strong> el saldo promedio sube de S/.2,000 a S/.8,000 porque llegaron clientes premium. El modelo nunca vio ese rango en training.
+        </div>
+        <div class="code-toggle" onclick="toggleCode(this)" style="margin-top:8px"><span class="code-toggle-icon">&#9654;</span> Detectar data drift</div>
+        <div class="code-block">
+<span class="kw">from</span> scipy.stats <span class="kw">import</span> ks_2samp
+
+<span class="cm"># Test Kolmogorov-Smirnov</span>
+stat, p_value = <span class="fn">ks_2samp</span>(
+    saldo_train,
+    saldo_produccion
+)
+<span class="kw">if</span> p_value < <span class="nu">0.05</span>:
+    <span class="fn">alert</span>(<span class="st">"Data drift detectado en saldo"</span>)
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--red);margin-bottom:8px">&#127807; CONCEPT DRIFT</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px">La relacion entre features y target cambia. El patron de churn que el modelo aprendio ya no es valido porque el comportamiento de los clientes cambio.</div>
+        <div class="alert alert-r" style="margin-bottom:0">
+          <strong style="color:var(--text)">Ejemplo:</strong> antes del COVID, baja actividad = churn inminente. Durante el COVID, baja actividad = normal. El modelo predice churn masivo erroneamente.
+        </div>
+        <div class="code-toggle" onclick="toggleCode(this)" style="margin-top:8px"><span class="code-toggle-icon">&#9654;</span> Detectar concept drift</div>
+        <div class="code-block">
+<span class="cm"># Monitorear F1 semanal</span>
+<span class="kw">for</span> week <span class="kw">in</span> recent_weeks:
+    y_true = get_real_outcomes(week)
+    y_pred = model.<span class="fn">predict</span>(get_features(week))
+    f1 = <span class="fn">f1_score</span>(y_true, y_pred)
+    
+    <span class="kw">if</span> f1 < threshold * <span class="nu">0.9</span>:
+        <span class="fn">trigger_retrain</span>()
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--blue);margin-bottom:8px">&#9201; MODEL DECAY</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:10px">El modelo se vuelve obsoleto gradualmente aunque los datos no cambien bruscamente. Es el deterioro natural por el paso del tiempo y la acumulacion de cambios pequenos.</div>
+        <div class="alert alert-b" style="margin-bottom:0">
+          <strong style="color:var(--text)">Regla practica:</strong> modelos de churn en retail: reentrenar cada 3-6 meses. Modelos de fraude: cada 2-4 semanas. Forecast de ventas: cada ciclo estacional.
+        </div>
+        <div class="code-toggle" onclick="toggleCode(this)" style="margin-top:8px"><span class="code-toggle-icon">&#9654;</span> Pipeline de reentrenamiento</div>
+        <div class="code-block">
+<span class="cm"># Reentrenamiento automatico (Cloud Scheduler)</span>
+<span class="kw">def</span> <span class="fn">retrain_pipeline</span>():
+    <span class="cm"># 1. Obtener datos nuevos</span>
+    df = <span class="fn">load_last_90_days</span>()
+    
+    <span class="cm"># 2. Reentrenar</span>
+    new_model = <span class="fn">train</span>(df)
+    
+    <span class="cm"># 3. Comparar vs modelo actual</span>
+    <span class="kw">if</span> new_model.f1 > current_model.f1:
+        <span class="fn">deploy</span>(new_model)
+        <span class="fn">log</span>(<span class="st">"Nuevo modelo desplegado"</span>)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checklist monitoring -->
+  <div class="card">
+    <div class="sec">Checklist de monitoring en produccion</div>
+    <div class="g2">
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px">METRICAS TECNICAS (IT/DS)</div>
+        <div style="display:grid;gap:6px">
+          <div class="card-sm" style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--green);font-size:14px">&#9679;</span><span style="font-size:12px;color:var(--text2)">Uptime de la API (&gt;99.5%)</span></div>
+          <div class="card-sm" style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--green);font-size:14px">&#9679;</span><span style="font-size:12px;color:var(--text2)">Latencia p50/p95/p99 por endpoint</span></div>
+          <div class="card-sm" style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--orange);font-size:14px">&#9679;</span><span style="font-size:12px;color:var(--text2)">Tasa de errores HTTP 5xx (&lt;0.1%)</span></div>
+          <div class="card-sm" style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--orange);font-size:14px">&#9679;</span><span style="font-size:12px;color:var(--text2)">Data drift en features criticas</span></div>
+          <div class="card-sm" style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--red);font-size:14px">&#9679;</span><span style="font-size:12px;color:var(--text2)">Distribucion de predicciones (si el 95% predice lo mismo, algo falla)</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px">METRICAS DE NEGOCIO (MARKETING/PRODUCTO)</div>
+        <div style="display:grid;gap:6px">
+          <div class="card-sm" style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--green);font-size:14px">&#9679;</span><span style="font-size:12px;color:var(--text2)">Precision real del modelo: de los clientes marcados como churn, &iquest;cuantos realmente se fueron?</span></div>
+          <div class="card-sm" style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--orange);font-size:14px">&#9679;</span><span style="font-size:12px;color:var(--text2)">Recall: de los que se fueron, &iquest;cuantos habiamos detectado?</span></div>
+          <div class="card-sm" style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--orange);font-size:14px">&#9679;</span><span style="font-size:12px;color:var(--text2)">Revenue retenido por campanas activadas por el modelo</span></div>
+          <div class="card-sm" style="display:flex;gap:8px;align-items:flex-start"><span style="color:var(--red);font-size:14px">&#9679;</span><span style="font-size:12px;color:var(--text2)">Costo por falso positivo (cuanto gasta en retener a alguien que no iba a irse)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== TAB 4: MARKETING ===== -->
+<div class="panel" id="panel-mkt">
+
+  <div class="card">
+    <div class="prose" style="margin-bottom:14px">Como profesional de marketing digital, no necesitas saber programar para tomar decisiones correctas sobre modelos en produccion. Necesitas hacer las <strong style="color:var(--text)">preguntas correctas</strong>, entender las metricas de negocio y saber cuando un modelo esta fallando aunque nadie te lo diga.</div>
+    <div class="g3">
+      <div class="card-sm" style="border-left:3px solid var(--blue)">
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:5px">LO QUE DEBES PEDIR</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">Dashboard de metricas del modelo actualizado semanalmente. No basta con saber que "el modelo esta corriendo".</div>
+      </div>
+      <div class="card-sm" style="border-left:3px solid var(--orange)">
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--orange);margin-bottom:5px">LO QUE DEBES EXIGIR</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">Un plan de reentrenamiento. Cada cuanto se actualiza el modelo con datos nuevos y quien es responsable.</div>
+      </div>
+      <div class="card-sm" style="border-left:3px solid var(--red)">
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:5px">LO QUE DEBES EVITAR</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">Confiar en el accuracy como unica metrica. Un modelo con 96% de accuracy puede tener Recall=0 en la clase que te importa.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q&A interactivo -->
+  <div class="mkt-card">
+    <span class="mkt-role" style="background:rgba(248,113,113,.12);color:var(--red)">&#127919; CASO: MODELO DE CHURN EN PRODUCCION</span>
+    <div class="prose" style="margin-bottom:12px;font-size:12px">Haz clic en cada pregunta para ver la respuesta y por que es importante hacerla:</div>
+
+    <div class="mkt-q" onclick="toggleQ(this)">
+      &#10067; &iquest;Con que datos fue entrenado el modelo y hasta cuando llegan?
+      <div class="mkt-a">Critico para saber si el modelo conoce el comportamiento actual de tus clientes. Si fue entrenado con datos de hace 18 meses y el negocio cambio (nueva app, nuevo segmento, pandemia), el modelo puede estar prediciendo con un patron obsoleto. Exige saber la fecha de corte del training set.</div>
+    </div>
+    <div class="mkt-q" onclick="toggleQ(this)">
+      &#10067; &iquest;Cuantos clientes marcamos como "churn probable" por semana?
+      <div class="mkt-a">Si la respuesta cambia drasticamente de una semana a otra sin razon de negocio, puede indicar data drift o un bug. El volumen de predicciones positivas debe ser estable o seguir la logica del negocio (mas en diciembre, menos en enero).</div>
+    </div>
+    <div class="mkt-q" onclick="toggleQ(this)">
+      &#10067; De los clientes que el modelo marco como churn el mes pasado, &iquest;cuantos realmente se fueron?
+      <div class="mkt-a">Esto es la Precision real del modelo en produccion. Si el modelo marcaba 100 clientes/semana como churn y solo 20 se iban, la Precision es 20%. Cada intervencion de retencion con los otros 80 es costo innecesario (llamada, descuento). Si baja de un mes a otro, el modelo se esta degradando.</div>
+    </div>
+    <div class="mkt-q" onclick="toggleQ(this)">
+      &#10067; &iquest;De los clientes que se fueron sin previo aviso, estaban en la lista del modelo?
+      <div class="mkt-a">Esto es el Recall. Si 50 clientes se fueron y el modelo solo habia detectado 20, el Recall es 40%. Hay 30 churns que el equipo no pudo retener porque el modelo no los vio. Esta metrica es la mas importante para el equipo de marketing: mide las oportunidades perdidas.</div>
+    </div>
+    <div class="mkt-q" onclick="toggleQ(this)">
+      &#10067; &iquest;Con que threshold (umbral) esta operando el modelo?
+      <div class="mkt-a">El modelo devuelve una probabilidad (ej. 0.73 de churn). El threshold define a partir de que probabilidad se marca como "churn". Con threshold=0.5 el modelo es conservador; con 0.2 es mas agresivo (detecta mas pero con mas falsos positivos). Marketing debe decidir este umbral segun el costo de una llamada de retencion vs el costo de perder un cliente.</div>
+    </div>
+    <div class="mkt-q" onclick="toggleQ(this)">
+      &#10067; &iquest;Hay un grupo de control sin intervencion para medir el impacto real del modelo?
+      <div class="mkt-a">Sin grupo de control, es imposible saber si el modelo esta generando valor o si los clientes se habrian quedado de todas formas. Un A/B test correcto: 80% de los clientes marcados como churn reciben la intervencion, 20% no. Comparas la tasa de churn entre ambos grupos. Esta es la unica forma de medir el ROI real del modelo.</div>
+    </div>
+  </div>
+
+  <!-- Vocabulario clave -->
+  <div class="card">
+    <div class="sec">Vocabulario que todo profesional de marketing debe manejar</div>
+    <div style="overflow-x:auto">
+      <table class="cmp-tbl">
+        <thead><tr><th>TERMINO</th><th>QUE SIGNIFICA EN SIMPLE</th><th>POR QUE TE IMPORTA</th></tr></thead>
+        <tbody>
+          <tr><td>Endpoint / API</td><td>La "puerta" por donde tu sistema pide predicciones al modelo</td><td>Si el endpoint cae, el modelo no funciona. Exige SLA de uptime.</td></tr>
+          <tr><td>Latencia</td><td>Cuanto tarda el modelo en responder (en milisegundos)</td><td>Una API con 3 segundos de latencia puede afectar la experiencia de usuario en tiempo real.</td></tr>
+          <tr><td>Batch</td><td>Procesar muchos clientes a la vez en un horario fijo</td><td>El forecast semanal de ventas es batch. Los resultados llegan al dia siguiente, no en tiempo real.</td></tr>
+          <tr><td>Data drift</td><td>Los datos de hoy son distintos a los del training</td><td>Si hay drift, el modelo puede estar prediciendo mal sin que nadie lo sepa aun.</td></tr>
+          <tr><td>Reentrenamiento</td><td>Volver a entrenar el modelo con datos mas recientes</td><td>Debe tener un dueno, una frecuencia y un criterio de activacion.</td></tr>
+          <tr><td>Threshold / Umbral</td><td>A partir de que probabilidad el modelo dice "si" o "no"</td><td>Marketing decide este parametro segun el costo del error en cada direccion.</td></tr>
+          <tr><td>Shadow mode</td><td>El modelo nuevo corre en paralelo al viejo sin afectar produccion</td><td>Permite comparar modelos sin riesgo antes de hacer el switch.</td></tr>
+          <tr><td>Rollback</td><td>Volver al modelo anterior si el nuevo falla</td><td>Exige que haya siempre un plan de rollback antes de cualquier deploy.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Los 3 casos desde perspectiva de negocio -->
+  <div class="card">
+    <div class="sec">Los 3 casos &mdash; perspectiva de negocio y marketing</div>
+    <div class="g3">
+      <div class="card-sm" style="border:1px solid rgba(248,113,113,.2)">
+        <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--red);margin-bottom:8px">&#9889; CHURN API &mdash; TIEMPO REAL</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">
+          <strong style="color:var(--text)">Que hace:</strong> cuando un cliente entra a la app, el sistema consulta la API y recibe la probabilidad de churn en &lt;100ms.<br><br>
+          <strong style="color:var(--text)">Para marketing:</strong> trigger en tiempo real para mostrar oferta de retencion en el momento justo (banner, popup, notificacion push).<br><br>
+          <strong style="color:var(--text)">KPI clave:</strong> tasa de retencion de clientes marcados como churn que recibieron la intervencion vs grupo de control.
+        </div>
+      </div>
+      <div class="card-sm" style="border:1px solid rgba(96,165,250,.2)">
+        <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--blue);margin-bottom:8px">&#128230; FORECAST BATCH &mdash; SEMANAL</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">
+          <strong style="color:var(--text)">Que hace:</strong> cada domingo a las 2am, el modelo predice las ventas de las proximas 4 semanas para las 50 tiendas.<br><br>
+          <strong style="color:var(--text)">Para marketing:</strong> planificacion de campanas, presupuesto de pauta, stock de productos en promocion, asignacion de equipo.<br><br>
+          <strong style="color:var(--text)">KPI clave:</strong> MAPE real (error de prediccion vs ventas reales) por tienda y semana.
+        </div>
+      </div>
+      <div class="card-sm" style="border:1px solid rgba(74,240,176,.2)">
+        <div style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px">&#128268; RECOMENDADOR &mdash; EMBED</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">
+          <strong style="color:var(--text)">Que hace:</strong> el modelo vive dentro de la app movil. Recomienda productos sin necesidad de internet, en &lt;5ms.<br><br>
+          <strong style="color:var(--text)">Para marketing:</strong> personalizacion en zonas sin cobertura, catalogo offline, experiencia fluida sin dependencia de servidor.<br><br>
+          <strong style="color:var(--text)">KPI clave:</strong> CTR de recomendaciones, revenue atribuido al recomendador, tasa de conversion offline vs online.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+(function(){
+
+window.switchTab=function(t){
+  document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.panel').forEach(function(el){el.classList.remove('active');});
+  document.querySelector('[data-tab="'+t+'"]').classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  if(!done[t]){done[t]=true;INIT[t]&&INIT[t]();}
+};
+var done={tipos:true,entornos:false,monitor:false,mkt:false};
+
+window.toggleCode=function(btn){
+  btn.classList.toggle('open');
+  var block=btn.nextElementSibling;
+  if(block) block.classList.toggle('shown');
+};
+
+window.toggleQ=function(el){el.classList.toggle('open');};
+
+// ===== TAB 1: TIPOS =====
+var TYPE_DETAIL={
+  api:{
+    color:'var(--red)',
+    caso:'Churn API &mdash; e-commerce peruano',
+    flujo:[
+      {lbl:'App movil',c:'rgba(96,165,250,.15)',bc:'rgba(96,165,250,.3)',tc:'var(--blue)'},
+      {lbl:'POST /predict',c:'rgba(255,255,255,.05)',bc:'var(--border)',tc:'var(--text3)',arrow:true},
+      {lbl:'API FastAPI\n(Cloud Run)',c:'rgba(248,113,113,.12)',bc:'rgba(248,113,113,.3)',tc:'var(--red)'},
+      {lbl:'Modelo cargado\nen memoria',c:'rgba(255,255,255,.05)',bc:'var(--border)',tc:'var(--text3)',arrow:true},
+      {lbl:'{"churn_prob":\n0.73}',c:'rgba(74,240,176,.10)',bc:'rgba(74,240,176,.25)',tc:'var(--green)'}
+    ],
+    texto:'El modelo vive en un servidor siempre encendido. Cuando el cliente abre la app, el backend hace una peticion HTTP POST con los datos del cliente y recibe la probabilidad de churn en milisegundos. Con esa probabilidad, el sistema decide si muestra o no una oferta de retencion.',
+    codigo:'<span class="cm"># Llamada desde el backend del e-commerce</span>\n<span class="kw">import</span> requests\n\nresponse = requests.<span class="fn">post</span>(\n    <span class="st">"https://churn-api.run.app/predict"</span>,\n    json={<span class="st">"edad"</span>: <span class="nu">34</span>, <span class="st">"saldo"</span>: <span class="nu">1200</span>, <span class="st">"visitas"</span>: <span class="nu">2</span>}\n)\n\nchurn_prob = response.json()[<span class="st">"churn_prob"</span>]\n<span class="kw">if</span> churn_prob > <span class="nu">0.6</span>:\n    <span class="fn">show_retention_offer</span>(cliente_id)',
+    pros:['Prediccion instantanea en tiempo real','Integrable con cualquier sistema via HTTP','Escalable con load balancer'],
+    cons:['Requiere servidor siempre encendido (costo fijo)','Latencia de red (~50ms adicional)','Dependencia de conectividad']
+  },
+  batch:{
+    color:'var(--blue)',
+    caso:'Forecast de ventas &mdash; 50 tiendas cada domingo',
+    texto:'No necesitas prediccion en tiempo real. Cada domingo a las 2am, un job lee todos los datos de la semana y corre el modelo sobre las 50 tiendas. Los resultados se guardan en BigQuery y el equipo de planificacion los tiene el lunes al iniciar el dia.',
+    codigo:'<span class="cm"># Cloud Scheduler activa esto cada domingo 2am</span>\n<span class="kw">def</span> <span class="fn">batch_forecast</span>():\n    tiendas = <span class="fn">load_all_stores</span>()\n    \n    results = []\n    <span class="kw">for</span> tienda <span class="kw">in</span> tiendas:\n        features = <span class="fn">get_features</span>(tienda)\n        forecast = model.<span class="fn">predict</span>(features)\n        results.<span class="fn">append</span>({<span class="st">"tienda"</span>: tienda.id, <span class="st">"forecast"</span>: forecast})\n    \n    <span class="cm"># Guardar en BigQuery para dashboard</span>\n    <span class="fn">save_to_bigquery</span>(results)',
+    pros:['Sin servidor permanente (muy barato)','Puede procesar millones de registros','Simple de implementar y mantener'],
+    cons:['No disponible en tiempo real','Resultados llegan con delay (horas)','Si falla el job, hay que re-ejecutar manualmente']
+  },
+  embed:{
+    color:'var(--green)',
+    caso:'Recomendador de productos &mdash; app movil offline',
+    texto:'El modelo se convierte a formato TFLite o ONNX y se compila dentro de la app movil. Cuando el usuario navega el catalogo sin conexion, el modelo recomienda productos localmente sin hacer ninguna llamada al servidor.',
+    codigo:'<span class="cm"># Convertir modelo a formato movil</span>\n<span class="kw">import</span> tensorflow <span class="kw">as</span> tf\n\n<span class="cm"># Convertir a TFLite (para Android/iOS)</span>\nconverter = tf.lite.<span class="fn">TFLiteConverter</span>.<span class="fn">from_saved_model</span>(model_path)\ntflite_model = converter.<span class="fn">convert</span>()\n\n<span class="cm"># Guardar en el bundle de la app</span>\n<span class="kw">with</span> <span class="fn">open</span>(<span class="st">"recomendador.tflite"</span>, <span class="st">"wb"</span>) <span class="kw">as</span> f:\n    f.<span class="fn">write</span>(tflite_model)\n\n<span class="cm"># En la app (Swift/Kotlin): cargar y predecir localmente</span>',
+    pros:['Funciona sin internet','Latencia &lt;5ms (en device)','Sin costo de servidor'],
+    cons:['Modelos grandes no caben en el dispositivo','Actualizar el modelo requiere actualizar la app','Limitado a modelos simples o cuantizados']
+  },
+  cloud:{
+    color:'var(--purple)',
+    caso:'Analisis de formulario &mdash; trigger por evento',
+    texto:'Cuando un cliente completa el formulario de registro, se dispara automaticamente una Cloud Function que analiza sus datos y calcula su segmento (alto/medio/bajo valor). Sin servidor permanente: solo corre cuando hay un evento.',
+    codigo:'<span class="cm"># Google Cloud Function</span>\n<span class="kw">def</span> <span class="fn">score_new_customer</span>(event, context):\n    <span class="cm"># Triggered al nuevo registro en Firestore</span>\n    customer = event[<span class="st">"value"</span>][<span class="st">"fields"</span>]\n    \n    features = <span class="fn">extract_features</span>(customer)\n    segment = model.<span class="fn">predict</span>([features])[<span class="nu">0</span>]\n    \n    <span class="cm"># Actualizar el perfil del cliente</span>\n    db.<span class="fn">update</span>(customer[<span class="st">"id"</span>], {<span class="st">"segment"</span>: segment})',
+    pros:['Pago por ejecucion (muy barato con pocos eventos)','Auto-scale instantaneo','Sin gestion de servidores'],
+    cons:['Cold start: primera ejecucion puede tardar 2-3 segundos','Limite de tiempo de ejecucion (9 minutos max en GCP)','No ideal para modelos grandes o con mucha RAM']
+  }
+};
+
+window.selectType=function(t){
+  document.querySelectorAll('.dtype-card').forEach(function(c){c.classList.remove('active');});
+  document.getElementById('dt-'+t).classList.add('active');
+  var d=TYPE_DETAIL[t];
+  var prosHtml=d.pros.map(function(p){return '<div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:var(--green)">+</span><span style="font-size:12px;color:var(--text2)">'+p+'</span></div>';}).join('');
+  var consHtml=d.cons.map(function(c){return '<div style="display:flex;gap:6px;margin-bottom:5px"><span style="color:var(--red)">-</span><span style="font-size:12px;color:var(--text2)">'+c+'</span></div>';}).join('');
+  document.getElementById('type-detail').innerHTML=
+    '<div class="card"><div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:'+d.color+';margin-bottom:14px">'+d.caso+'</div>'
+    +'<div class="g2"><div>'
+    +'<div class="prose" style="margin-bottom:12px;font-size:12px">'+d.texto+'</div>'
+    +'<div class="g2" style="gap:10px">'
+    +'<div><div style="font-size:10px;font-family:var(--font-mono);color:var(--green);margin-bottom:6px">VENTAJAS</div>'+prosHtml+'</div>'
+    +'<div><div style="font-size:10px;font-family:var(--font-mono);color:var(--red);margin-bottom:6px">LIMITACIONES</div>'+consHtml+'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div>'
+    +'<div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;letter-spacing:.06em">SNIPPET DE REFERENCIA</div>'
+    +'<div class="code-block shown" style="font-size:10px">'+d.codigo+'</div>'
+    +'</div></div></div>';
+};
+
+// selectType called after INIT
+// ===== TAB 3: MONITOR =====
+var INIT={
+  monitor:function(){
+    // Performance over time
+    var weeks=[];for(var i=1;i<=20;i++) weeks.push('S'+i);
+    var perf=[0.71,0.72,0.70,0.71,0.69,0.70,0.68,0.69,0.67,0.68,0.66,0.67,0.65,0.66,0.64,0.65,0.63,0.62,0.68,0.68];
+    var threshold=new Array(20).fill(0.60);
+    var ctx=document.getElementById('m-perf-chart');
+    if(ctx) new Chart(ctx.getContext('2d'),{type:'line',data:{
+      labels:weeks,
+      datasets:[
+        {label:'F1 Score',data:perf,borderColor:'rgba(96,165,250,.8)',borderWidth:2,pointRadius:2,fill:false,tension:.3},
+        {label:'Minimo',data:threshold,borderColor:'rgba(248,113,113,.5)',borderWidth:1.5,borderDash:[5,3],pointRadius:0,fill:false}
+      ]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{labels:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},boxWidth:10}}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:10}},y:{title:{display:true,text:'F1 Score',color:'#4d566b',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}},min:0.5,max:0.8}}
+    }});
+
+    // Drift chart
+    var bins=[];for(var b=0;b<10;b++) bins.push('S/.'+(b*10)+'K');
+    var orig=[5,12,28,45,52,48,40,28,18,8];
+    var curr=[2,5,12,25,38,52,55,48,35,22];
+    var ctx2=document.getElementById('m-drift-chart');
+    if(ctx2) new Chart(ctx2.getContext('2d'),{type:'bar',data:{
+      labels:bins,
+      datasets:[
+        {label:'Al deploy',data:orig,backgroundColor:'rgba(96,165,250,.5)',borderRadius:3},
+        {label:'Hoy',data:curr,backgroundColor:'rgba(251,146,60,.5)',borderRadius:3}
+      ]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{labels:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},boxWidth:10}}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}}}
+    }});
+  }
+};
+
+// ===== INIT =====
+document.querySelector('[data-tab="tipos"]').classList.add('active');
+
+})();
+</script>
+</body>
+</html>

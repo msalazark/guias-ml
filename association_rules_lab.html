@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Association Rules Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--pink:#f472b6;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em;background:rgba(251,146,60,.15);color:var(--orange)}
+.hdr-title{font-family:var(--font-mono);font-size:14px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.level-bar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg2)}
+.level-btn{display:flex;align-items:center;gap:10px;padding:15px 28px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;flex:1;justify-content:center}
+.level-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s;flex-shrink:0}
+.level-info{display:flex;flex-direction:column;gap:2px}
+.level-name{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text3);transition:color .2s;letter-spacing:.03em}
+.level-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.level-sep{width:1px;background:var(--border);flex-shrink:0}
+.main{max-width:1060px;margin:0 auto;padding:26px 32px}
+.lp{display:none}.lp.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+.banner{border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;display:flex;gap:18px;align-items:flex-start}
+.banner-icon{font-size:34px;flex-shrink:0;margin-top:2px}
+.banner h2{font-family:var(--font-mono);font-size:17px;font-weight:600;margin-bottom:6px}
+.banner p{font-size:13px;line-height:1.7}
+.chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:3px 9px;border-radius:4px;font-weight:500}
+/* expandable metric */
+.mex-grid{display:grid;gap:12px;margin-bottom:18px}
+.mex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;cursor:pointer;transition:border-color .15s}
+.mex:hover{border-color:var(--border2)}
+.mex.open{border-color:var(--orange)}
+.mex-top{display:flex;align-items:center;gap:12px}
+.mex-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 11px;border-radius:5px;white-space:nowrap}
+.mex-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.mex-value{font-family:var(--font-mono);font-size:20px;font-weight:600;min-width:90px;text-align:right}
+.mex-toggle{font-size:16px;color:var(--text3);transition:transform .2s;margin-left:6px}
+.mex.open .mex-toggle{transform:rotate(180deg)}
+.mex-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.mex.open .mex-body{display:block}
+.mbg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fbox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border)}
+.flbl{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:.06em}
+.ibox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.65}
+.bar-track{height:5px;background:var(--border);border-radius:3px;margin-top:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+/* sliders */
+.sl-row{margin-bottom:11px}
+.sl-lbl{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:4px}
+.sl-lbl span:first-child{color:var(--text2)}.sl-lbl span:last-child{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid var(--bg);background:var(--orange)}
+/* basket viz */
+.basket-grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.basket-item{padding:7px 13px;border-radius:var(--r);font-family:var(--font-mono);font-size:12px;font-weight:500;cursor:pointer;border:2px solid transparent;transition:all .15s;user-select:none}
+.basket-item.in-A{background:rgba(96,165,250,.15);border-color:rgba(96,165,250,.3);color:var(--blue)}
+.basket-item.in-B{background:rgba(251,146,60,.15);border-color:rgba(251,146,60,.3);color:var(--orange)}
+.basket-item.in-AB{background:rgba(74,240,176,.15);border-color:rgba(74,240,176,.3);color:var(--green)}
+.basket-item.out{background:var(--bg3);border-color:var(--border);color:var(--text3)}
+/* rules table */
+.rtable{width:100%;border-collapse:collapse}
+.rtable th{font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:.07em;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.rtable th:hover{color:var(--text2)}
+.rtable th.sort-asc::after{content:' ▲'}
+.rtable th.sort-desc::after{content:' ▼'}
+.rtable td{font-size:12px;padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.rtable td:first-child{font-family:var(--font-mono);font-size:11px;color:var(--text)}
+.rtable tr:hover td{background:rgba(255,255,255,.02)}
+.rtable tr:last-child td{border-bottom:none}
+.lift-pill{display:inline-block;font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;font-weight:600}
+/* filter bar */
+.filter-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.filter-group{display:flex;flex-direction:column;gap:4px}
+.filter-label{font-size:10px;font-family:var(--font-mono);color:var(--text3);letter-spacing:.06em}
+.filter-input{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:12px;padding:5px 9px;outline:none;width:90px}
+.filter-input:focus{border-color:var(--orange)}
+/* scatter */
+.chart-wrap{position:relative;height:260px}
+.chart-sm{position:relative;height:200px}
+/* venn */
+.venn-wrap{display:flex;align-items:center;justify-content:center;padding:10px 0}
+svg.venn circle{fill-opacity:.15;stroke-width:2}
+/* buttons */
+.btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:11px;padding:6px 13px;border-radius:4px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.btn:hover{border-color:var(--orange);color:var(--orange)}
+.inp{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:12px;padding:5px 9px;outline:none}
+.inp:focus{border-color:var(--orange)}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;font-weight:600;margin:0 2px;vertical-align:middle}
+.tag-g{background:rgba(74,240,176,.15);color:var(--green)}
+.tag-b{background:rgba(96,165,250,.15);color:var(--blue)}
+.tag-o{background:rgba(251,146,60,.12);color:var(--orange)}
+.tag-r{background:rgba(248,113,113,.12);color:var(--red)}
+.tag-p{background:rgba(167,139,250,.12);color:var(--purple)}
+.badge-lift-hi{background:rgba(74,240,176,.15);color:var(--green);border:1px solid rgba(74,240,176,.2)}
+.badge-lift-ok{background:rgba(251,146,60,.12);color:var(--orange);border:1px solid rgba(251,146,60,.2)}
+.badge-lift-lo{background:rgba(248,113,113,.12);color:var(--red);border:1px solid rgba(248,113,113,.2)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-badge" id="hdrBadge">BASICO</span>
+  <span class="hdr-title">Association Rules Lab</span>
+  <span class="hdr-sub">Market Basket Analysis &mdash; Supermercado Peru</span>
+</div>
+
+<div class="level-bar">
+  <div class="level-btn" id="btn-basic" onclick="switchLevel('basic')">
+    <div class="level-icon" id="icon-basic">&#127807;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-basic">Basico</div>
+      <div class="level-sub">Support &middot; Confidence &middot; Lift</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-inter" onclick="switchLevel('inter')">
+    <div class="level-icon" id="icon-inter">&#9881;&#65039;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-inter">Intermedio</div>
+      <div class="level-sub">Conviction &middot; Leverage &middot; Tabla de reglas</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-adv" onclick="switchLevel('adv')">
+    <div class="level-icon" id="icon-adv">&#128300;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-adv">Avanzado</div>
+      <div class="level-sub">Filtros combinados &middot; Scatter Lift vs Conf &middot; Comparador</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ==================== BASICO ==================== -->
+<div class="lp active" id="panel-basic">
+  <div class="banner" style="background:rgba(251,146,60,.05);border:1px solid rgba(251,146,60,.15)">
+    <div class="banner-icon">&#127807;</div>
+    <div>
+      <h2 style="color:var(--orange)">Nivel Basico &mdash; Las 3 metricas fundamentales</h2>
+      <p class="prose">Un supermercado peruano analiza 1,000 tickets de compra para encontrar que productos se compran juntos. Las reglas de asociacion responden: <strong style="color:var(--text)">si el cliente compra X, &iquest;que probabilidad hay de que compre Y?</strong></p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">Support &mdash; frecuencia del par</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">Confidence &mdash; probabilidad condicional</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">Lift &mdash; mejora sobre el azar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contexto del caso -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">El caso &mdash; tickets del supermercado</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:14px">Tienes 1,000 tickets de compra. Quieres encontrar la regla: <strong style="color:var(--text)">Si compra Pan &rarr; compra Mantequilla</strong>. Para evaluarla necesitas contar cuantos tickets tienen cada combinacion.</p>
+        <div style="display:grid;gap:8px">
+          <div class="card-sm" style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--text2)">Tickets totales (N)</span>
+            <span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--text)">1,000</span>
+          </div>
+          <div class="card-sm" style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--text2)">Contienen Pan (A)</span>
+            <span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--blue)">400</span>
+          </div>
+          <div class="card-sm" style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;color:var(--text2)">Contienen Mantequilla (B)</span>
+            <span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--orange)">300</span>
+          </div>
+          <div class="card-sm" style="display:flex;justify-content:space-between;align-items:center;border-color:rgba(74,240,176,.2)">
+            <span style="font-size:12px;color:var(--text2)">Contienen Pan Y Mantequilla (A&cap;B)</span>
+            <span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--green)" id="b-ab-count">200</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:10px;letter-spacing:.06em">DIAGRAMA DE VENN &mdash; TICKETS</p>
+        <div class="venn-wrap">
+          <svg width="280" height="160" viewBox="0 0 280 160">
+            <circle cx="105" cy="80" r="70" fill="var(--blue)" fill-opacity="0.18" stroke="var(--blue)" stroke-width="1.5"/>
+            <circle cx="175" cy="80" r="70" fill="var(--orange)" fill-opacity="0.18" stroke="var(--orange)" stroke-width="1.5"/>
+            <text x="72" y="75" fill="var(--blue)" font-family="IBM Plex Mono" font-size="11" text-anchor="middle">Pan</text>
+            <text x="72" y="90" fill="var(--blue)" font-family="IBM Plex Mono" font-size="13" text-anchor="middle" font-weight="600">400</text>
+            <text x="208" y="75" fill="var(--orange)" font-family="IBM Plex Mono" font-size="11" text-anchor="middle">Mant.</text>
+            <text x="208" y="90" fill="var(--orange)" font-family="IBM Plex Mono" font-size="13" text-anchor="middle" font-weight="600">300</text>
+            <text x="140" y="75" fill="var(--green)" font-family="IBM Plex Mono" font-size="11" text-anchor="middle">A&cap;B</text>
+            <text x="140" y="91" fill="var(--green)" font-family="IBM Plex Mono" font-size="14" text-anchor="middle" font-weight="700" id="venn-ab">200</text>
+          </svg>
+        </div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Tickets con Pan Y Mantequilla (A&cap;B)</span><span style="color:var(--green)" id="sv-ab">200</span></div>
+          <input type="range" id="sl-ab" min="10" max="300" value="200" step="10">
+        </div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.6">Ajusta para ver como cambian Support, Confidence y Lift en tiempo real.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metricas expandibles -->
+  <div class="mex-grid">
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">SUPPORT</div>
+        <div class="mex-title">Soporte &mdash; frecuencia del itemset</div>
+        <div class="mex-value" style="color:var(--blue)" id="b-sup-val">0.200</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="b-sup-bar" style="width:20%;background:var(--blue)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--blue)"><div class="flbl">FORMULA</div>supp(A&rarr;B) = |A&cap;B| / N</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Proporcion de tickets que contienen <strong style="color:var(--text)">tanto A como B</strong> sobre el total. Es la frecuencia del par. No importa el orden de la regla.<br><br>supp(Pan&rarr;Mant.) = 200 / 1,000 = <strong style="color:var(--blue)">0.20</strong></div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">supp &lt; 0.01</span><span style="color:var(--red)">Muy raro &mdash; descarta</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">0.01 &ndash; 0.05</span><span style="color:var(--orange)">Nicho &mdash; evaluar</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">&gt; 0.05</span><span style="color:var(--green)">Frecuente &mdash; usar</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Como interpreto 0.20?</strong><br><br>El 20% de todos los tickets incluye Pan Y Mantequilla. Es una combinacion <strong style="color:var(--green)">muy frecuente</strong> en este supermercado.<br><br><strong style="color:var(--text)">Limitacion:</strong> el support no dice nada sobre la direccion de la regla. supp(Pan&rarr;Mant.) = supp(Mant.&rarr;Pan) = 0.20. Para la direccion necesitas Confidence.</div>
+            <div style="margin-top:10px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; En Apriori, el min_support es el primer filtro que elimina itemsets raros antes de calcular las reglas. Un valor tipico es 0.01&ndash;0.05.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(251,146,60,.12);color:var(--orange)">CONFIDENCE</div>
+        <div class="mex-title">Confianza &mdash; probabilidad condicional</div>
+        <div class="mex-value" style="color:var(--orange)" id="b-conf-val">0.500</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="b-conf-bar" style="width:50%;background:var(--orange)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--orange)"><div class="flbl">FORMULA</div>conf(A&rarr;B) = supp(A&cap;B) / supp(A)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">De todos los tickets que contienen A, &iquest;que fraccion tambien contiene B? Es una <strong style="color:var(--text)">probabilidad condicional</strong>: P(B | A).<br><br>conf(Pan&rarr;Mant.) = 0.20 / 0.40 = <strong style="color:var(--orange)">0.50</strong></div>
+            <div style="margin-top:10px;background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.15);border-radius:var(--r);padding:10px 12px">
+              <div style="font-size:11px;font-family:var(--font-mono);color:var(--orange);margin-bottom:6px">ASIMETRIA CRITICA</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6">conf(A&rarr;B) &ne; conf(B&rarr;A)<br>conf(Pan&rarr;Mant.) = 200/400 = 0.50<br>conf(Mant.&rarr;Pan) = 200/300 = 0.67<br>La direccion importa.</div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Como interpreto 0.50?</strong><br><br>El 50% de los clientes que compran Pan tambien compran Mantequilla. Si ves a alguien con Pan en su carrito, hay <strong style="color:var(--orange)">1 en 2 chances</strong> de que tambien lleve Mantequilla.<br><br><strong style="color:var(--text)">Limitacion:</strong> una confianza alta puede ser enganosa si B es muy popular en general. Si el 90% de tickets lleva Mantequilla, una confianza de 50% seria MUY baja. Por eso necesitas Lift.</div>
+            <div style="margin-top:10px;background:rgba(251,146,60,.05);border:1px solid rgba(251,146,60,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; El umbral tipico de min_confidence en Apriori es 0.5&ndash;0.8 segun el negocio.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(74,240,176,.12);color:var(--green)">LIFT</div>
+        <div class="mex-title">Lift &mdash; mejora real sobre el azar</div>
+        <div class="mex-value" style="color:var(--green)" id="b-lift-val">1.67</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="b-lift-bar" style="width:55%;background:var(--green)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--green)"><div class="flbl">FORMULA</div>lift(A&rarr;B) = conf(A&rarr;B) / supp(B)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Divide la confianza entre la popularidad de B. Si B aparece en el 30% de tickets (supp=0.30), y la confianza es 0.50, entonces el lift = 0.50/0.30 = <strong style="color:var(--green)">1.67</strong>: la regla es 67% mejor que el azar.</div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Lift &lt; 1</span><span style="color:var(--red)">Relacion negativa &mdash; evitar juntos</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Lift = 1</span><span style="color:var(--text3)">Independientes &mdash; regla inutil</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Lift &gt; 1</span><span style="color:var(--orange)">Relacion positiva &mdash; util</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Lift &gt; 3</span><span style="color:var(--green)">Relacion fuerte &mdash; muy util</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Como interpreto Lift = 1.67?</strong><br><br>Los clientes que compran Pan tienen un <strong style="color:var(--green)">67% mas de probabilidad</strong> de comprar Mantequilla de lo que tendrian al azar.<br><br>Si el Lift fuera 1.0 significaria que Pan y Mantequilla son <em>independientes</em>: saber que alguien compro Pan no te dice nada sobre Mantequilla. La regla seria inutil.<br><br>Si fuera &lt; 1, seria una <em>relacion negativa</em>: comprar Pan hace menos probable comprar Mantequilla.</div>
+            <div style="margin-top:10px;background:rgba(74,240,176,.05);border:1px solid rgba(74,240,176,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; El Lift es la metrica mas importante para evaluar si una regla aporta valor real. Siempre priorizalo sobre Confidence sola.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Calculadora interactiva -->
+  <div class="card">
+    <div class="sec">Calculadora &mdash; experimenta con distintas frecuencias</div>
+    <div class="g2">
+      <div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Tickets con A (Pan)</span><span style="color:var(--blue)" id="sv-a">400</span></div>
+          <input type="range" id="sl-a" min="50" max="800" value="400" step="10">
+        </div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Tickets con B (Mantequilla)</span><span style="color:var(--orange)" id="sv-b">300</span></div>
+          <input type="range" id="sl-b" min="50" max="800" value="300" step="10">
+        </div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Tickets con A y B</span><span style="color:var(--green)" id="sv-ab2">200</span></div>
+          <input type="range" id="sl-ab2" min="10" max="400" value="200" step="10">
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.7" id="b-warning"></div>
+      </div>
+      <div>
+        <div style="display:grid;gap:8px">
+          <div style="background:var(--bg3);border-radius:var(--r);padding:11px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">SUPPORT</div><div style="font-size:10px;color:var(--text3)">|A&cap;B| / N</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--blue)" id="calc-sup">0.200</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:11px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">CONFIDENCE</div><div style="font-size:10px;color:var(--text3)">supp(A&cap;B)/supp(A)</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--orange)" id="calc-conf">0.500</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:11px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">LIFT</div><div style="font-size:10px;color:var(--text3)">conf/supp(B)</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--green)" id="calc-lift">1.667</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:11px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">CONF INVERSA (B&rarr;A)</div><div style="font-size:10px;color:var(--text3)">supp(A&cap;B)/supp(B)</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--purple)" id="calc-conf-inv">0.667</span>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:10px 12px;border-radius:var(--r);font-size:12px;line-height:1.6" id="calc-interp" style="background:var(--bg3)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== INTERMEDIO ==================== -->
+<div class="lp" id="panel-inter">
+  <div class="banner" style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15)">
+    <div class="banner-icon">&#9881;&#65039;</div>
+    <div>
+      <h2 style="color:var(--blue)">Nivel Intermedio &mdash; Metricas complementarias y tabla de reglas</h2>
+      <p class="prose">Support, Confidence y Lift son el inicio. Conviction y Leverage te dan perspectivas adicionales. La tabla interactiva te muestra como filtrar y ordenar el catalogo real de reglas del supermercado.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Conviction &mdash; dependencia direccional</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Leverage &mdash; diferencia vs independencia</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Tabla de reglas interactiva</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)" style="--ac:var(--blue)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">CONVICTION</div>
+        <div class="mex-title">Conviction &mdash; dependencia direccional fuerte</div>
+        <div class="mex-value" style="color:var(--blue)" id="i-conv-val">1.400</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="i-conv-bar" style="width:40%;background:var(--blue)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--blue)"><div class="flbl">FORMULA</div>conv(A&rarr;B) = (1 - supp(B)) / (1 - conf(A&rarr;B))</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Mide cuanto dependeria B de A. Si la confianza fuera 1 (perfecta), el denominador es 0 y Conviction es infinito. Valores altos indican que A y B tienen una relacion muy fuerte.<br><br>conv = (1-0.30)/(1-0.50) = 0.70/0.50 = <strong style="color:var(--blue)">1.40</strong></div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Conv = 1</span><span style="color:var(--text3)">Independientes</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Conv &gt; 1</span><span style="color:var(--orange)">Relacion positiva</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Conv &rarr; &infin;</span><span style="color:var(--green)">Implicacion perfecta</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Conviction vs Lift</strong><br><br>Conviction es <strong style="color:var(--text)">asimetrico como Confidence</strong>: conv(A&rarr;B) &ne; conv(B&rarr;A). En cambio, el Lift es simetrico.<br><br>Ventaja de Conviction: llega a infinito cuando la regla es perfecta (conf=1), mientras que el Lift tiene un maximo finito. Util para ordenar reglas muy buenas que el Lift no diferencia bien.</div>
+            <div style="margin-top:10px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; Se usa menos que Lift en la practica, pero es util cuando buscas reglas de implicacion casi-perfecta (recomendacion de paquetes, reglas de negocio estrictas).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(167,139,250,.12);color:var(--purple)">LEVERAGE</div>
+        <div class="mex-title">Leverage &mdash; diferencia respecto a la independencia</div>
+        <div class="mex-value" style="color:var(--purple)" id="i-lev-val">0.080</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="i-lev-bar" style="width:40%;background:var(--purple)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--purple)"><div class="flbl">FORMULA</div>lev(A&rarr;B) = supp(A&cap;B) &minus; supp(A)&times;supp(B)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Diferencia entre la frecuencia observada del par y la que tendria si A y B fueran completamente independientes.<br><br>lev = 0.20 &minus; (0.40 &times; 0.30) = 0.20 &minus; 0.12 = <strong style="color:var(--purple)">0.08</strong></div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Lev &lt; 0</span><span style="color:var(--red)">Aparecen juntos menos de lo esperado</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Lev = 0</span><span style="color:var(--text3)">Independientes</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">Lev &gt; 0</span><span style="color:var(--green)">Aparecen juntos mas de lo esperado</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Como interpreto 0.08?</strong><br><br>Si Pan y Mantequilla fueran independientes, apareceran juntos en el <strong style="color:var(--text)">12%</strong> de los tickets (0.40 &times; 0.30). Pero aparecen juntos en el <strong style="color:var(--text)">20%</strong>. La diferencia de 8 puntos porcentuales es el Leverage.<br><br>Es una metrica interpretable en terminos de proporcion de tickets. Util para comparar reglas con distintos soportes.</div>
+            <div style="margin-top:10px;background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; Leverage es simetrico como Lift: lev(A&rarr;B) = lev(B&rarr;A). Util como metrica complementaria para rankear reglas.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de reglas interactiva -->
+  <div class="card">
+    <div class="sec" style="margin-bottom:14px">Catalogo de reglas &mdash; supermercado &middot; 1,000 tickets</div>
+    <div class="filter-bar">
+      <div class="filter-group">
+        <div class="filter-label">MIN SUPPORT</div>
+        <input class="filter-input" type="number" id="f-sup" value="0.05" step="0.01" min="0" max="1">
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">MIN CONFIDENCE</div>
+        <input class="filter-input" type="number" id="f-conf" value="0.3" step="0.05" min="0" max="1">
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">MIN LIFT</div>
+        <input class="filter-input" type="number" id="f-lift" value="1.0" step="0.1" min="0">
+      </div>
+      <button class="btn" onclick="filterTable()" style="margin-top:14px">&#9654; Aplicar filtros</button>
+      <button class="btn" onclick="resetFilters()" style="margin-top:14px">&#8635; Reset</button>
+      <span style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-top:14px" id="rule-count">Mostrando todas las reglas</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="rtable" id="rulesTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable('antecedent')" id="th-ant">SI COMPRA (A)</th>
+            <th onclick="sortTable('consequent')" id="th-con">TAMBIEN COMPRA (B)</th>
+            <th onclick="sortTable('support')" id="th-sup">SUPPORT</th>
+            <th onclick="sortTable('confidence')" id="th-conf">CONFIDENCE</th>
+            <th onclick="sortTable('lift')" id="th-lift">LIFT</th>
+            <th onclick="sortTable('leverage')" id="th-lev">LEVERAGE</th>
+            <th onclick="sortTable('conviction')" id="th-conv">CONVICTION</th>
+          </tr>
+        </thead>
+        <tbody id="rulesBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== AVANZADO ==================== -->
+<div class="lp" id="panel-adv">
+  <div class="banner" style="background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.15)">
+    <div class="banner-icon">&#128300;</div>
+    <div>
+      <h2 style="color:var(--purple)">Nivel Avanzado &mdash; Analisis visual y comparador de reglas</h2>
+      <p class="prose">El scatter Lift vs Confidence revela el espacio de reglas de golpe. El comparador te ayuda a elegir entre dos reglas que compiten por la misma decision de negocio.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Scatter Lift vs Confidence</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Bubble chart Support</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Comparador de 2 reglas</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Interpretacion de negocio</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="sec">Scatter: Lift vs Confidence</div>
+      <div class="chart-wrap"><canvas id="adv-scatter"></canvas></div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-top:6px;text-align:center">Tamano del punto = Support &middot; Linea roja = Lift 1 (azar) &middot; Linea naranja = Conf 0.5</div>
+    </div>
+    <div class="card">
+      <div class="sec">Top 5 reglas por Lift</div>
+      <div id="top5-list" style="display:grid;gap:8px"></div>
+    </div>
+  </div>
+
+  <!-- Comparador de reglas -->
+  <div class="card">
+    <div class="sec" style="margin-bottom:14px">Comparador &mdash; elige entre dos reglas para la misma decision</div>
+    <div class="g2" style="margin-bottom:14px">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--blue);margin-bottom:10px">&#9724; Regla A</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Antecedente (A)</label><input class="inp" id="ca-ant" value="Pan" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Consecuente (B)</label><input class="inp" id="ca-con" value="Mantequilla" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Support</label><input class="inp" type="number" id="ca-sup" value="0.20" step="0.01" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Confidence</label><input class="inp" type="number" id="ca-conf" value="0.50" step="0.01" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Lift</label><input class="inp" type="number" id="ca-lift" value="1.67" step="0.01" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Conviction</label><input class="inp" type="number" id="ca-conv" value="1.40" step="0.01" style="width:100%"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--purple);margin-bottom:10px">&#9724; Regla B</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Antecedente (A)</label><input class="inp" id="cb-ant" value="Leche" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Consecuente (B)</label><input class="inp" id="cb-con" value="Cereal" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Support</label><input class="inp" type="number" id="cb-sup" value="0.08" step="0.01" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Confidence</label><input class="inp" type="number" id="cb-conf" value="0.62" step="0.01" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Lift</label><input class="inp" type="number" id="cb-lift" value="3.10" step="0.01" style="width:100%"></div>
+          <div><label style="font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px">Conviction</label><input class="inp" type="number" id="cb-conv" value="2.10" step="0.01" style="width:100%"></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn" onclick="runComparison()" style="border-color:rgba(167,139,250,.3);color:var(--purple);margin-bottom:14px">&#8635; Comparar reglas</button>
+    <div id="cmp-table"></div>
+    <div id="cmp-verdict" style="display:none;margin-top:12px;background:var(--bg3);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.7"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function() {
+
+// ===================== DATA =====================
+var RULES = [
+  {a:'Pan',b:'Mantequilla',sup:0.200,conf:0.500,lift:1.667,lev:0.080,conv:1.400},
+  {a:'Leche',b:'Cereal',sup:0.080,conf:0.620,lift:3.100,lev:0.054,conv:2.105},
+  {a:'Palta',b:'Limon',sup:0.150,conf:0.750,lift:3.750,lev:0.110,conv:2.800},
+  {a:'Pollo',b:'Papa',sup:0.180,conf:0.680,lift:2.267,lev:0.100,conv:1.875},
+  {a:'Cafe',b:'Azucar',sup:0.220,conf:0.780,lift:2.600,lev:0.135,conv:3.182},
+  {a:'Arroz',b:'Aceite',sup:0.260,conf:0.650,lift:1.857,lev:0.120,conv:2.000},
+  {a:'Huevo',b:'Pan',sup:0.120,conf:0.480,lift:1.200,lev:0.020,conv:1.077},
+  {a:'Manzana',b:'Pera',sup:0.060,conf:0.550,lift:2.750,lev:0.038,conv:1.778},
+  {a:'Fideos',b:'Salsa Tomate',sup:0.140,conf:0.700,lift:3.500,lev:0.100,conv:2.333},
+  {a:'Yogurt',b:'Granola',sup:0.045,conf:0.820,lift:4.100,lev:0.034,conv:4.444},
+  {a:'Cebolla',b:'Ajo',sup:0.190,conf:0.760,lift:2.533,lev:0.115,conv:2.917},
+  {a:'Atun',b:'Mayonesa',sup:0.070,conf:0.630,lift:3.150,lev:0.048,conv:2.162},
+  {a:'Pollo',b:'Limon',sup:0.160,conf:0.610,lift:2.033,lev:0.081,conv:1.641},
+  {a:'Leche',b:'Pan',sup:0.090,conf:0.400,lift:1.000,lev:0.000,conv:1.000},
+  {a:'Platano',b:'Avena',sup:0.035,conf:0.700,lift:5.833,lev:0.029,conv:2.667},
+  {a:'Queso',b:'Jamon',sup:0.055,conf:0.650,lift:3.250,lev:0.038,conv:2.000},
+  {a:'Cerveza',b:'Papa Frita',sup:0.110,conf:0.850,lift:4.250,lev:0.084,conv:5.333},
+  {a:'Chocolate',b:'Leche',sup:0.075,conf:0.580,lift:1.450,lev:0.023,conv:1.333},
+];
+
+var filteredRules = RULES.slice();
+var sortKey = 'lift';
+var sortDir = -1;
+
+// ===================== LEVEL SWITCH =====================
+window.switchLevel = function(lv) {
+  var lvs = ['basic','inter','adv'];
+  var colors = {basic:'var(--orange)',inter:'var(--blue)',adv:'var(--purple)'};
+  var bgs = {basic:'rgba(251,146,60,.15)',inter:'rgba(96,165,250,.15)',adv:'rgba(167,139,250,.15)'};
+  var labels = {basic:'BASICO',inter:'INTERMEDIO',adv:'AVANZADO'};
+  lvs.forEach(function(l) {
+    document.getElementById('btn-'+l).style.borderBottom = '3px solid transparent';
+    document.getElementById('icon-'+l).style.background = '';
+    document.getElementById('name-'+l).style.color = 'var(--text3)';
+    document.getElementById('panel-'+l).classList.remove('active');
+  });
+  document.getElementById('btn-'+lv).style.borderBottom = '3px solid '+colors[lv];
+  document.getElementById('icon-'+lv).style.background = bgs[lv];
+  document.getElementById('name-'+lv).style.color = colors[lv];
+  document.getElementById('panel-'+lv).classList.add('active');
+  var badge = document.getElementById('hdrBadge');
+  badge.textContent = labels[lv];
+  badge.style.background = bgs[lv];
+  badge.style.color = colors[lv];
+  if (lv === 'inter' && !initDone.inter) { initInter(); initDone.inter = true; }
+  if (lv === 'adv' && !initDone.adv) { initAdv(); initDone.adv = true; }
+};
+
+window.toggleMex = function(el) { el.classList.toggle('open'); };
+
+var initDone = {basic:true, inter:false, adv:false};
+
+// ===================== BASICO =====================
+function calcBasic(a, b, ab, N) {
+  N = N || 1000;
+  ab = Math.min(ab, Math.min(a, b));
+  var sup = ab / N;
+  var conf = ab / a;
+  var suppB = b / N;
+  var lift = conf / suppB;
+  var confInv = ab / b;
+  var lev = sup - (a/N) * suppB;
+  var conv = (1 - suppB) / (1 - conf + 0.0001);
+  return {sup:sup, conf:conf, lift:lift, confInv:confInv, lev:lev, conv:conv};
+}
+
+function updateVenn(ab) {
+  var el = document.getElementById('venn-ab');
+  if (el) el.textContent = ab;
+  var el2 = document.getElementById('b-ab-count');
+  if (el2) el2.textContent = ab;
+}
+
+function updateBasicMetrics(a, b, ab) {
+  var m = calcBasic(a, b, ab, 1000);
+  updateVenn(ab);
+  document.getElementById('b-sup-val').textContent = m.sup.toFixed(3);
+  document.getElementById('b-conf-val').textContent = m.conf.toFixed(3);
+  document.getElementById('b-lift-val').textContent = m.lift.toFixed(2);
+  document.getElementById('b-sup-bar').style.width = (m.sup * 100).toFixed(1) + '%';
+  document.getElementById('b-conf-bar').style.width = (m.conf * 100).toFixed(1) + '%';
+  document.getElementById('b-lift-bar').style.width = Math.min(100, (m.lift / 6) * 100).toFixed(1) + '%';
+}
+
+document.getElementById('sl-ab').addEventListener('input', function() {
+  var v = parseInt(this.value);
+  document.getElementById('sv-ab').textContent = v;
+  updateBasicMetrics(400, 300, v);
+});
+
+// Calculator sliders
+function updateCalc() {
+  var a = parseInt(document.getElementById('sl-a').value);
+  var b = parseInt(document.getElementById('sl-b').value);
+  var ab2 = parseInt(document.getElementById('sl-ab2').value);
+  document.getElementById('sv-a').textContent = a;
+  document.getElementById('sv-b').textContent = b;
+  document.getElementById('sv-ab2').textContent = ab2;
+  var ab = Math.min(ab2, Math.min(a, b));
+  var m = calcBasic(a, b, ab, 1000);
+  document.getElementById('calc-sup').textContent = m.sup.toFixed(3);
+  document.getElementById('calc-conf').textContent = m.conf.toFixed(3);
+  document.getElementById('calc-lift').textContent = m.lift.toFixed(3);
+  document.getElementById('calc-conf-inv').textContent = m.confInv.toFixed(3);
+  var warn = '';
+  if (ab2 > Math.min(a, b)) warn = '&#9888;&#65039; A&cap;B no puede ser mayor que min(A, B). Se ajusto a ' + ab + '.';
+  document.getElementById('b-warning').innerHTML = warn;
+  var interp = '';
+  var liftColor = m.lift > 3 ? 'var(--green)' : m.lift > 1 ? 'var(--orange)' : 'var(--red)';
+  var liftText = m.lift > 3 ? 'relacion FUERTE' : m.lift > 1 ? 'relacion POSITIVA' : m.lift < 1 ? 'relacion NEGATIVA' : 'INDEPENDIENTES';
+  interp = '<div style="background:var(--bg3);border-radius:var(--r);padding:10px 12px">'
+    + 'Regla A&rarr;B: conf=<strong style="color:var(--orange)">' + m.conf.toFixed(2) + '</strong>'
+    + ', lift=<strong style="color:' + liftColor + '">' + m.lift.toFixed(2) + '</strong> &mdash; ' + liftText + '<br>'
+    + 'Regla B&rarr;A: conf=<strong style="color:var(--purple)">' + m.confInv.toFixed(2) + '</strong>'
+    + ', leverage=<strong style="color:var(--green)">' + m.lev.toFixed(3) + '</strong>'
+    + '</div>';
+  document.getElementById('calc-interp').innerHTML = interp;
+}
+
+['sl-a','sl-b','sl-ab2'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', updateCalc);
+});
+
+// ===================== INTERMEDIO =====================
+function initInter() {
+  var m = calcBasic(400, 300, 200, 1000);
+  document.getElementById('i-conv-val').textContent = m.conv.toFixed(3);
+  document.getElementById('i-lev-val').textContent = m.lev.toFixed(3);
+  document.getElementById('i-conv-bar').style.width = Math.min(100, (m.conv / 5) * 100).toFixed(1) + '%';
+  document.getElementById('i-lev-bar').style.width = Math.min(100, Math.max(0, m.lev) * 500).toFixed(1) + '%';
+  renderTable(RULES);
+}
+
+function liftPill(lift) {
+  var cls = lift > 3 ? 'badge-lift-hi' : lift > 1 ? 'badge-lift-ok' : 'badge-lift-lo';
+  return '<span class="lift-pill ' + cls + '">' + lift.toFixed(2) + '</span>';
+}
+
+function renderTable(rules) {
+  var body = document.getElementById('rulesBody');
+  if (!body) return;
+  body.innerHTML = rules.map(function(r) {
+    return '<tr>'
+      + '<td>' + r.a + '</td>'
+      + '<td>' + r.b + '</td>'
+      + '<td style="font-family:var(--font-mono);color:var(--blue)">' + r.sup.toFixed(3) + '</td>'
+      + '<td style="font-family:var(--font-mono);color:var(--orange)">' + r.conf.toFixed(3) + '</td>'
+      + '<td>' + liftPill(r.lift) + '</td>'
+      + '<td style="font-family:var(--font-mono);color:var(--purple)">' + r.lev.toFixed(3) + '</td>'
+      + '<td style="font-family:var(--font-mono);color:var(--blue)">' + r.conv.toFixed(3) + '</td>'
+      + '</tr>';
+  }).join('');
+  document.getElementById('rule-count').textContent = 'Mostrando ' + rules.length + ' de ' + RULES.length + ' reglas';
+}
+
+window.filterTable = function() {
+  var minSup = parseFloat(document.getElementById('f-sup').value) || 0;
+  var minConf = parseFloat(document.getElementById('f-conf').value) || 0;
+  var minLift = parseFloat(document.getElementById('f-lift').value) || 0;
+  filteredRules = RULES.filter(function(r) {
+    return r.sup >= minSup && r.conf >= minConf && r.lift >= minLift;
+  });
+  sortAndRender();
+};
+
+window.resetFilters = function() {
+  document.getElementById('f-sup').value = '0.05';
+  document.getElementById('f-conf').value = '0.3';
+  document.getElementById('f-lift').value = '1.0';
+  filteredRules = RULES.slice();
+  sortAndRender();
+};
+
+window.sortTable = function(key) {
+  if (sortKey === key) sortDir *= -1;
+  else { sortKey = key; sortDir = -1; }
+  var ths = ['ant','con','sup','conf','lift','lev','conv'];
+  var keys = ['antecedent','consequent','support','confidence','lift','leverage','conviction'];
+  ths.forEach(function(t, i) {
+    var el = document.getElementById('th-'+t);
+    if (el) el.className = keys[i] === sortKey ? (sortDir === -1 ? 'sort-desc' : 'sort-asc') : '';
+  });
+  sortAndRender();
+};
+
+function sortAndRender() {
+  var key = sortKey;
+  var keyMap = {antecedent:'a',consequent:'b',support:'sup',confidence:'conf',lift:'lift',leverage:'lev',conviction:'conv'};
+  var k = keyMap[key] || key;
+  var sorted = filteredRules.slice().sort(function(x,y) {
+    var va = x[k], vb = y[k];
+    if (typeof va === 'string') return sortDir * va.localeCompare(vb);
+    return sortDir * (vb - va);
+  });
+  renderTable(sorted);
+}
+
+// ===================== AVANZADO =====================
+var advChart = null;
+
+function initAdv() {
+  buildScatter();
+  buildTop5();
+  runComparison();
+}
+
+function buildScatter() {
+  var ctx = document.getElementById('adv-scatter').getContext('2d');
+  var data = RULES.map(function(r) {
+    return {x: r.conf, y: r.lift, r: Math.max(5, r.sup * 120), label: r.a + ' -> ' + r.b};
+  });
+  var colors = data.map(function(d) {
+    return d.y > 3 ? 'rgba(74,240,176,0.7)' : d.y > 1 ? 'rgba(251,146,60,0.7)' : 'rgba(248,113,113,0.7)';
+  });
+  advChart = new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        data: data,
+        backgroundColor: colors,
+        borderColor: colors.map(function(c) { return c.replace('0.7','1'); }),
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: {
+        legend: {display: false},
+        tooltip: {callbacks: {label: function(c) {
+          var d = c.raw;
+          return d.label + ' | conf:' + d.x.toFixed(2) + ' lift:' + d.y.toFixed(2);
+        }}}
+      },
+      scales: {
+        x: {
+          title: {display:true, text:'Confidence', color:'#4d566b', font:{family:'IBM Plex Mono', size:10}},
+          grid: {color:'rgba(255,255,255,.04)'}, ticks: {color:'#4d566b', font:{size:9}},
+          min: 0, max: 1
+        },
+        y: {
+          title: {display:true, text:'Lift', color:'#4d566b', font:{family:'IBM Plex Mono', size:10}},
+          grid: {color:'rgba(255,255,255,.04)'}, ticks: {color:'#4d566b', font:{size:9}},
+          min: 0
+        }
+      }
+    }
+  });
+}
+
+function buildTop5() {
+  var sorted = RULES.slice().sort(function(a,b) { return b.lift - a.lift; }).slice(0, 5);
+  var container = document.getElementById('top5-list');
+  if (!container) return;
+  container.innerHTML = sorted.map(function(r, i) {
+    var liftColor = r.lift > 3 ? 'var(--green)' : 'var(--orange)';
+    return '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+      + '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text)">' + r.a + ' &rarr; ' + r.b + '</span>'
+      + '<span style="font-family:var(--font-mono);font-size:14px;font-weight:600;color:' + liftColor + '">Lift ' + r.lift.toFixed(2) + '</span>'
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--text3)">supp=' + r.sup.toFixed(3) + ' &middot; conf=' + r.conf.toFixed(3) + ' &middot; conv=' + r.conv.toFixed(3) + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+window.runComparison = function() {
+  var g = function(id) { return parseFloat(document.getElementById(id).value) || 0; };
+  var aAnt = document.getElementById('ca-ant').value;
+  var aCon = document.getElementById('ca-con').value;
+  var bAnt = document.getElementById('cb-ant').value;
+  var bCon = document.getElementById('cb-con').value;
+  var aSup=g('ca-sup'),aConf=g('ca-conf'),aLift=g('ca-lift'),aConv=g('ca-conv');
+  var bSup=g('cb-sup'),bConf=g('cb-conf'),bLift=g('cb-lift'),bConv=g('cb-conv');
+  var rows = [
+    {label:'Support', va:aSup.toFixed(3), vb:bSup.toFixed(3), w:aSup>bSup?'a':bSup>aSup?'b':'t', note:'Mayor = mas frecuente en la tienda'},
+    {label:'Confidence', va:aConf.toFixed(3), vb:bConf.toFixed(3), w:aConf>bConf?'a':bConf>aConf?'b':'t', note:'Mayor = mas probable la compra de B dado A'},
+    {label:'Lift', va:aLift.toFixed(3), vb:bLift.toFixed(3), w:aLift>bLift?'a':bLift>aLift?'b':'t', note:'Mayor = relacion mas fuerte sobre el azar'},
+    {label:'Conviction', va:aConv.toFixed(3), vb:bConv.toFixed(3), w:aConv>bConv?'a':bConv>aConv?'b':'t', note:'Mayor = dependencia mas fuerte'},
+  ];
+  var wbadge = function(w) {
+    return w==='a' ? '<span style="font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)">A</span>'
+      : w==='b' ? '<span style="font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)">B</span>'
+      : '<span style="font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;background:var(--bg3);color:var(--text3);border:1px solid var(--border2)">-</span>';
+  };
+  var hdr = '<div style="display:grid;grid-template-columns:100px 1fr 1fr 60px 1fr;gap:8px;padding:0 0 8px;border-bottom:1px solid var(--border);margin-bottom:4px">'
+    + '<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">METRICA</span>'
+    + '<span style="font-family:var(--font-mono);font-size:10px;color:var(--blue);text-align:center">REGLA A</span>'
+    + '<span style="font-family:var(--font-mono);font-size:10px;color:var(--purple);text-align:center">REGLA B</span>'
+    + '<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-align:center">MEJOR</span>'
+    + '<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">QUE MIDE</span>'
+    + '</div>';
+  var body = rows.map(function(r) {
+    return '<div style="display:grid;grid-template-columns:100px 1fr 1fr 60px 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+      + '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">' + r.label + '</span>'
+      + '<span style="font-family:var(--font-mono);font-size:13px;color:var(--blue);text-align:center">' + r.va + '</span>'
+      + '<span style="font-family:var(--font-mono);font-size:13px;color:var(--purple);text-align:center">' + r.vb + '</span>'
+      + '<span style="text-align:center">' + wbadge(r.w) + '</span>'
+      + '<span style="font-size:11px;color:var(--text3)">' + r.note + '</span>'
+      + '</div>';
+  }).join('');
+  document.getElementById('cmp-table').innerHTML = hdr + body;
+  var scoreA = rows.filter(function(r){return r.w==='a';}).length;
+  var scoreB = rows.filter(function(r){return r.w==='b';}).length;
+  var v = '';
+  if (bLift > aLift + 0.5) {
+    v = '<strong style="color:var(--purple)">Regla B (' + bAnt + ' &rarr; ' + bCon + ')</strong> tiene Lift superior ('
+      + bLift.toFixed(2) + ' vs ' + aLift.toFixed(2) + '). La relacion es mas fuerte: los clientes que compran '
+      + bAnt + ' tienen una probabilidad ' + Math.round((bLift-1)*100) + '% mayor de comprar ' + bCon + ' sobre el azar. ';
+  } else if (aLift > bLift + 0.5) {
+    v = '<strong style="color:var(--blue)">Regla A (' + aAnt + ' &rarr; ' + aCon + ')</strong> tiene Lift superior ('
+      + aLift.toFixed(2) + ' vs ' + bLift.toFixed(2) + '). ';
+  } else {
+    v = 'Las reglas tienen Lift similar. ';
+  }
+  if (aSup > bSup * 2) {
+    v += 'Sin embargo, la Regla A tiene <strong style="color:var(--blue)">mucho mayor support</strong> ('
+      + aSup.toFixed(3) + ' vs ' + bSup.toFixed(3) + '): aplica a mas clientes y es mas accionable a escala.';
+  } else if (bSup > aSup * 2) {
+    v += 'La Regla B tiene <strong style="color:var(--purple)">support mucho mayor</strong> ('
+      + bSup.toFixed(3) + ' vs ' + aSup.toFixed(3) + '): aplica a mas clientes y es mas accionable a escala.';
+  }
+  v += '<br><br><strong style="color:var(--text)">Recomendacion:</strong> si el objetivo es <em>maximizar impacto en ventas cruzadas masivas</em>, prioriza mayor Support. Si buscas <em>recomendaciones altamente precisas en nichos</em>, prioriza mayor Lift.';
+  var vd = document.getElementById('cmp-verdict');
+  vd.innerHTML = v; vd.style.display = 'block';
+};
+
+// ===================== INIT =====================
+// set initial active style
+document.getElementById('btn-basic').style.borderBottom = '3px solid var(--orange)';
+document.getElementById('icon-basic').style.background = 'rgba(251,146,60,.15)';
+document.getElementById('name-basic').style.color = 'var(--orange)';
+updateCalc();
+updateBasicMetrics(400, 300, 200);
+
+})();
+</script>
+</body>
+</html>

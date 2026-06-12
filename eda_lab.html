@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDA Lab &mdash; Guia de Analisis Exploratorio</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--teal:#2dd4bf;--pink:#f472b6;
+  --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em;background:rgba(45,212,191,.15);color:var(--teal)}
+.hdr-title{font-family:var(--font-mono);font-size:13px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+/* tabs */
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto}
+.tab{padding:13px 22px;font-size:11px;font-family:var(--font-mono);color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;white-space:nowrap;letter-spacing:.04em}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--teal);border-bottom-color:var(--teal)}
+.tab.t-ts.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab.t-imb.active{color:var(--orange);border-bottom-color:var(--orange)}
+.tab.t-corr.active{color:var(--purple);border-bottom-color:var(--purple)}
+.main{max-width:1080px;margin:0 auto;padding:24px 28px}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;margin-bottom:16px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:11px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+.chart-wrap{position:relative;height:220px}
+.chart-sm{position:relative;height:180px}
+.chart-xs{position:relative;height:140px}
+/* stat pills */
+.stat-pill{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;text-align:center}
+.stat-val{font-family:var(--font-mono);font-size:22px;font-weight:600;margin-bottom:3px}
+.stat-lbl{font-size:10px;font-family:var(--font-mono);color:var(--text3);letter-spacing:.06em}
+/* discovery */
+.discovery-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;background:rgba(45,212,191,.08);border:1px solid rgba(45,212,191,.25);border-radius:5px;font-family:var(--font-mono);font-size:11px;color:var(--teal);cursor:pointer;margin-bottom:12px;transition:all .15s;user-select:none}
+.discovery-btn:hover{background:rgba(45,212,191,.14)}
+.discovery-reveal{background:var(--bg3);border-left:3px solid var(--teal);border-radius:0 var(--r) var(--r) 0;padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.7;display:none}
+.discovery-reveal.shown{display:block}
+/* checklist */
+.checklist{display:grid;gap:8px}
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 13px;background:var(--bg3);border-radius:var(--r);cursor:pointer;transition:background .15s;border:1px solid transparent}
+.check-item:hover{background:rgba(255,255,255,.03)}
+.check-item.done{background:rgba(74,240,176,.06);border-color:rgba(74,240,176,.18)}
+.check-box{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s}
+.check-item.done .check-box{background:var(--green);border-color:var(--green);color:#0a1a14;font-size:11px;font-weight:700}
+.check-text{font-size:12px;color:var(--text2);line-height:1.55;flex:1}
+.check-item.done .check-text{color:var(--text3)}
+.check-sub{font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--font-mono)}
+/* null bar */
+.null-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:5px}
+.null-fill{height:100%;border-radius:4px}
+/* corr cell */
+.corr-grid{display:grid;gap:2px}
+.corr-row{display:flex;gap:2px;align-items:center}
+.corr-lbl{font-size:9px;font-family:var(--font-mono);color:var(--text3);width:70px;text-align:right;padding-right:6px;flex-shrink:0}
+.corr-cell{width:52px;height:30px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:var(--font-mono);font-weight:600;cursor:pointer;transition:all .15s}
+.corr-cell:hover{opacity:.8;transform:scale(1.05)}
+/* alert box */
+.alert{border-radius:var(--r);padding:10px 13px;font-size:12px;line-height:1.65;margin-bottom:10px}
+.alert-warn{background:rgba(251,196,60,.07);border:1px solid rgba(251,196,60,.2);color:var(--text2)}
+.alert-ok{background:rgba(74,240,176,.06);border:1px solid rgba(74,240,176,.18);color:var(--text2)}
+.alert-red{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2);color:var(--text2)}
+.alert-blue{background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.18);color:var(--text2)}
+/* feature type badges */
+.ft{display:inline-block;font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;margin-left:5px;vertical-align:middle}
+.ft-num{background:rgba(96,165,250,.15);color:var(--blue)}
+.ft-cat{background:rgba(251,146,60,.12);color:var(--orange)}
+.ft-bin{background:rgba(248,113,113,.12);color:var(--red)}
+.ft-null{background:rgba(248,113,113,.2);color:var(--red);border:1px solid rgba(248,113,113,.3)}
+.btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:11px;padding:6px 13px;border-radius:4px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--teal);color:var(--teal)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="hdr-badge">EDA LAB</span>
+  <span class="hdr-title">Guia de Analisis Exploratorio de Datos</span>
+  <span class="hdr-sub">300 clientes e-commerce &middot; guia para estudiantes</span>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="general" onclick="switchTab('general')">&#128202; EDA General</div>
+  <div class="tab t-ts" data-tab="ts" onclick="switchTab('ts')">&#128197; Series de Tiempo</div>
+  <div class="tab t-imb" data-tab="imb" onclick="switchTab('imb')">&#9878; Datos Desbalanceados</div>
+  <div class="tab t-corr" data-tab="corr" onclick="switchTab('corr')">&#128200; Correlaciones</div>
+</div>
+
+<div class="main">
+
+<!-- ======= TAB 1: EDA GENERAL ======= -->
+<div class="panel active" id="panel-general">
+
+  <!-- 1. Conoce tu dataset -->
+  <div class="card">
+    <div class="sec">1. Conoce tu dataset &mdash; forma, variables y tipos</div>
+    <div class="g2" style="margin-bottom:14px">
+      <div>
+        <div class="g4" style="margin-bottom:14px">
+          <div class="stat-pill"><div class="stat-val" style="color:var(--teal)">300</div><div class="stat-lbl">FILAS</div></div>
+          <div class="stat-pill"><div class="stat-val" style="color:var(--blue)">11</div><div class="stat-lbl">COLUMNAS</div></div>
+          <div class="stat-pill"><div class="stat-val" style="color:var(--orange)">7</div><div class="stat-lbl">NUMERICAS</div></div>
+          <div class="stat-pill"><div class="stat-val" style="color:var(--purple)">4</div><div class="stat-lbl">CATEGORICAS</div></div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:10px;color:var(--text3)">VARIABLE</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:10px;color:var(--text3)">TIPO</th>
+            <th style="text-align:right;padding:6px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:10px;color:var(--text3)">NULOS</th>
+            <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:10px;color:var(--text3)">RANGO / VALORES</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px">edad<span class="ft ft-num">NUM</span></td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text3);font-size:11px">int</td><td style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);color:var(--green)">0</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px">18 &ndash; 75 a&ntilde;os</td></tr>
+            <tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px">antiguedad_meses<span class="ft ft-num">NUM</span></td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text3);font-size:11px">int</td><td style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);color:var(--green)">0</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px">1 &ndash; 60 meses</td></tr>
+            <tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px">saldo<span class="ft ft-num">NUM</span><span class="ft ft-null">4.3% nulo</span></td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text3);font-size:11px">float</td><td style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);color:var(--orange)">13</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px">S/.0 &ndash; 120,000 (skewed)</td></tr>
+            <tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px">visitas_mes<span class="ft ft-num">NUM</span></td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text3);font-size:11px">int</td><td style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);color:var(--green)">0</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px">0 &ndash; 35 visitas</td></tr>
+            <tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px">ticket_promedio<span class="ft ft-num">NUM</span></td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text3);font-size:11px">float</td><td style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);color:var(--green)">0</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px">S/.20 &ndash; S/.900 (<strong style="color:var(--orange)">7 outliers</strong>)</td></tr>
+            <tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px">region<span class="ft ft-cat">CAT</span></td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text3);font-size:11px">str</td><td style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);color:var(--green)">0</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px">Lima, Arequipa, Trujillo, Cusco, Piura</td></tr>
+            <tr><td style="padding:5px 8px;border-bottom:1px solid var(--border);font-family:var(--font-mono);font-size:11px">device<span class="ft ft-cat">CAT</span><span class="ft ft-null">3.0% nulo</span></td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text3);font-size:11px">str</td><td style="text-align:right;padding:5px 8px;border-bottom:1px solid var(--border);color:var(--orange)">9</td><td style="padding:5px 8px;border-bottom:1px solid var(--border);color:var(--text2);font-size:11px">mobile, desktop, tablet</td></tr>
+            <tr><td style="padding:5px 8px;font-family:var(--font-mono);font-size:11px">churn<span class="ft ft-bin">BIN</span></td><td style="padding:5px 8px;color:var(--text3);font-size:11px">int</td><td style="text-align:right;padding:5px 8px;color:var(--green)">0</td><td style="padding:5px 8px;color:var(--text2);font-size:11px">0/1 &mdash; <strong style="color:var(--red)">4.3% churn (muy desbalanceado)</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <div class="discovery-btn" onclick="reveal('d-shape')">&#128269; Descubrir &mdash; &iquest;Que preguntas hacerme aqui?</div>
+        <div class="discovery-reveal" id="d-shape">
+          <strong style="color:var(--teal)">Preguntas clave al ver la forma del dataset:</strong><br><br>
+          &bull; &iquest;Cuantas filas tengo? &iquest;Es suficiente para entrenar un modelo? (regla: al menos 10x el numero de features)<br>
+          &bull; &iquest;Hay mas columnas que filas? &rarr; riesgo alto de overfitting<br>
+          &bull; &iquest;Que porcentaje de nulos tiene cada columna? &gt;30% es critico<br>
+          &bull; &iquest;El target esta balanceado? 4.3% churn es muy desbalanceado &rarr; accuracy no sirve<br>
+          &bull; &iquest;Los tipos de datos son correctos? &iquest;Hay fechas guardadas como texto?<br>
+          &bull; &iquest;Hay IDs o columnas que no deben entrar al modelo?<br><br>
+          <strong style="color:var(--orange)">&#9888;&#65039; Señales de alerta en este dataset:</strong><br>
+          Nulos en saldo (4.3%) y device (3%). Churn con 4.3% &rarr; modelo naive que predice siempre 0 tiene 95.7% de accuracy. Ticket con 7 outliers extremos.
+        </div>
+        <div style="margin-top:12px">
+          <div class="sec" style="margin-bottom:8px">Nulos por columna</div>
+          <div style="display:grid;gap:7px">
+            <div><div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:3px"><span style="color:var(--text2)">saldo</span><span style="color:var(--orange)">4.3% (13)</span></div><div class="null-bar"><div class="null-fill" style="width:4.3%;background:var(--orange)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:3px"><span style="color:var(--text2)">device</span><span style="color:var(--orange)">3.0% (9)</span></div><div class="null-bar"><div class="null-fill" style="width:3%;background:var(--orange)"></div></div></div>
+            <div><div style="display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:3px"><span style="color:var(--text2)">resto de columnas</span><span style="color:var(--green)">0%</span></div><div class="null-bar"><div class="null-fill" style="width:0.5%;background:var(--green)"></div></div></div>
+          </div>
+          <div style="margin-top:10px" class="alert alert-blue">
+            &#128161; <strong style="color:var(--text)">Estrategias para nulos:</strong> &lt;5% &rarr; imputa con media/mediana o elimina filas. 5-30% &rarr; imputa con modelo (KNN, regresion). &gt;30% &rarr; considera eliminar la columna o crear flag "era_nulo".
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Distribuciones -->
+  <div class="card">
+    <div class="sec">2. Distribuciones &mdash; como se comportan las variables numericas</div>
+    <div class="g3" style="margin-bottom:14px">
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:6px">EDAD &mdash; distribucion normal</div>
+        <div class="chart-xs"><canvas id="g-hist-edad"></canvas></div>
+        <div class="discovery-btn" style="margin-top:8px;margin-bottom:0;font-size:10px" onclick="reveal('d-edad')">&#128269; Interpretar</div>
+        <div class="discovery-reveal" id="d-edad">Media=35.2, std=11.7. Distribucion aproximadamente normal (campana). <strong style="color:var(--text)">Esto es ideal</strong>: no necesita transformacion. La mayoria de clientes tiene 25-45 anos.</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:6px">TICKET PROMEDIO &mdash; skewed right + outliers</div>
+        <div class="chart-xs"><canvas id="g-hist-ticket"></canvas></div>
+        <div class="discovery-btn" style="margin-top:8px;margin-bottom:0;font-size:10px" onclick="reveal('d-ticket')">&#128269; Interpretar</div>
+        <div class="discovery-reveal" id="d-ticket">Media=S/.80.8 &gt; Mediana=S/.65.3. La media es jaladada por <strong style="color:var(--orange)">7 outliers extremos</strong> (&gt;300). Senal: distribucion asimetrica (skewed right). Considera log(ticket) antes de modelar. Revisa si los outliers son errores o tickets VIP reales.</div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:6px">SALDO &mdash; lognormal (muy skewed)</div>
+        <div class="chart-xs"><canvas id="g-hist-saldo"></canvas></div>
+        <div class="discovery-btn" style="margin-top:8px;margin-bottom:0;font-size:10px" onclick="reveal('d-saldo')">&#128269; Interpretar</div>
+        <div class="discovery-reveal" id="d-saldo">Media=S/.4,068 &gt;&gt; Mediana=S/.1,800. Diferencia enorme: distribucion lognormal tipica de ingresos. <strong style="color:var(--text)">Solucion: usar log(saldo+1)</strong> como feature. Muchos modelos lineales asumen normalidad; el saldo bruto los perjudica.</div>
+      </div>
+    </div>
+    <div class="g2">
+      <div>
+        <div class="alert alert-warn">
+          &#9888;&#65039; <strong style="color:var(--text)">Media vs Mediana &mdash; la prueba del skew:</strong><br>
+          Si media &gt;&gt; mediana &rarr; skew positivo (cola derecha). Si media &lt;&lt; mediana &rarr; skew negativo. En este dataset: ticket (media 80.8 vs mediana 65.3) y saldo (4,068 vs 1,800) tienen skew positivo fuerte.
+        </div>
+        <div class="alert alert-blue">
+          &#128161; <strong style="color:var(--text)">Preguntas que hacerse:</strong><br>
+          &iquest;La distribucion tiene sentido de negocio?<br>
+          &iquest;Los outliers son errores de datos o casos reales?<br>
+          &iquest;Necesito transformar esta variable antes de modelar?<br>
+          &iquest;Hay valores imposibles (edad=-1, saldo=-500)?
+        </div>
+      </div>
+      <div>
+        <div class="sec" style="margin-bottom:8px">Variables categoricas &mdash; frecuencias</div>
+        <div class="chart-sm"><canvas id="g-bar-region"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Outliers -->
+  <div class="card">
+    <div class="sec">3. Outliers &mdash; deteccion con boxplot y regla IQR</div>
+    <div class="g2">
+      <div>
+        <div class="chart-wrap"><canvas id="g-box-chart"></canvas></div>
+      </div>
+      <div>
+        <div class="discovery-btn" onclick="reveal('d-outliers')">&#128269; Descubrir &mdash; &iquest;como detecto outliers?</div>
+        <div class="discovery-reveal" id="d-outliers">
+          <strong style="color:var(--teal)">Regla IQR:</strong><br>
+          Q1 = percentil 25 = S/.54.9<br>
+          Q3 = percentil 75 = S/.83.7<br>
+          IQR = Q3 - Q1 = S/.28.8<br>
+          Limite superior = Q3 + 1.5&times;IQR = S/.127<br>
+          Cualquier ticket &gt; S/.127 es un outlier.<br><br>
+          <strong style="color:var(--orange)">Resultado: 7 outliers encontrados</strong> con tickets entre S/.300 y S/.900.
+        </div>
+        <div style="margin-top:10px;display:grid;gap:8px">
+          <div class="card-sm">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--orange);margin-bottom:5px">TICKET PROMEDIO &mdash; 7 OUTLIERS</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Q1=S/.54.9, Q3=S/.83.7, IQR=S/.28.8. Limite sup=S/.127. Los 7 outliers tienen tickets &gt;300 &mdash; posibles clientes VIP o errores de registro.</div>
+          </div>
+          <div class="alert alert-warn" style="margin-bottom:0">
+            &#9888;&#65039; <strong style="color:var(--text)">3 preguntas antes de eliminar un outlier:</strong><br>
+            1. &iquest;Es un error de datos o un caso real?<br>
+            2. &iquest;El outlier afecta mi metrica objetivo?<br>
+            3. &iquest;Quiero que el modelo aprenda de ese caso extremo?
+          </div>
+          <div class="alert alert-ok" style="margin-bottom:0">
+            &#9989; <strong style="color:var(--text)">Opciones:</strong> eliminar, capear (winsorize), transformar con log, o crear feature binaria "es_outlier".
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Variables categoricas -->
+  <div class="card">
+    <div class="sec">4. Variables categoricas &mdash; frecuencias y distribucion por target</div>
+    <div class="g2">
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:6px">CHURN RATE POR REGION</div>
+        <div class="chart-sm"><canvas id="g-churn-region"></canvas></div>
+      </div>
+      <div>
+        <div class="discovery-btn" onclick="reveal('d-cat')">&#128269; &iquest;Que busco en las categoricas?</div>
+        <div class="discovery-reveal" id="d-cat">
+          <strong style="color:var(--teal)">Preguntas clave:</strong><br>
+          &bull; &iquest;Hay categorias con muy pocas muestras? (&lt;30 registros &rarr; poco confiable)<br>
+          &bull; &iquest;La distribucion del target varia entre categorias? (si no varia, la variable no aporta al modelo)<br>
+          &bull; &iquest;Hay categorias inesperadas o errores tipograficos? ("Lima" vs "lima" vs "LIMA")<br>
+          &bull; &iquest;Como voy a encodear esta variable? (OHE, label encoding, target encoding)<br>
+          &bull; &iquest;Hay una categoria dominante que deba tratar diferente?
+        </div>
+        <div style="margin-top:10px">
+          <div class="alert alert-blue">
+            &#128161; <strong style="color:var(--text)">Device = None (3% nulos):</strong> los nulos pueden ser una categoria en si misma. Crear "device_unknown = 1" puede ser mejor que imputar, si los clientes sin device tienen un patron diferente de churn.
+          </div>
+          <div style="margin-top:10px">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:6px">DISTRIBUCION POR DEVICE</div>
+            <div class="chart-xs"><canvas id="g-bar-device"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Checklist EDA General -->
+  <div class="card">
+    <div class="sec" style="margin-bottom:14px">Checklist EDA &mdash; marca lo que ya revisaste</div>
+    <div class="checklist" id="checklist-general"></div>
+    <div style="margin-top:12px;font-family:var(--font-mono);font-size:11px;color:var(--text3)">Completado: <span id="check-count" style="color:var(--teal)">0</span>/10</div>
+  </div>
+
+</div>
+
+<!-- ======= TAB 2: SERIES DE TIEMPO ======= -->
+<div class="panel" id="panel-ts">
+  <div class="card">
+    <div class="sec">Serie de ventas semanales &mdash; 52 semanas</div>
+    <div class="chart-wrap"><canvas id="ts-main"></canvas></div>
+    <div class="g2" style="margin-top:14px">
+      <div>
+        <div class="discovery-btn" onclick="reveal('d-ts1')">&#128269; &iquest;Que patrones busco en una serie de tiempo?</div>
+        <div class="discovery-reveal" id="d-ts1">
+          <strong style="color:var(--blue)">Los 4 componentes a identificar:</strong><br><br>
+          &bull; <strong style="color:var(--text)">Tendencia:</strong> &iquest;la serie sube, baja o es estable a largo plazo?<br>
+          &bull; <strong style="color:var(--text)">Estacionalidad:</strong> &iquest;hay patrones que se repiten cada N periodos? (semanas, meses, anos)<br>
+          &bull; <strong style="color:var(--text)">Ciclos:</strong> fluctuaciones de largo plazo no fijas (crisis, expansiones)<br>
+          &bull; <strong style="color:var(--text)">Ruido:</strong> variaciones aleatorias que el modelo no puede predecir<br><br>
+          En esta serie: tendencia creciente + estacionalidad semanal + pico en fin de ano.
+        </div>
+      </div>
+      <div>
+        <div class="discovery-btn" onclick="reveal('d-ts2')">&#128269; &iquest;Que problemas pueden aparecer?</div>
+        <div class="discovery-reveal" id="d-ts2">
+          <strong style="color:var(--orange)">Problemas tipicos en series de tiempo:</strong><br><br>
+          &bull; <strong style="color:var(--text)">Gaps temporales:</strong> semanas sin datos (feriados, outages). &iquest;Hay que imputarlos?<br>
+          &bull; <strong style="color:var(--text)">Cambios de regimen:</strong> la pandemia, un rebrand, un nuevo competidor &rarr; la serie cambia de comportamiento<br>
+          &bull; <strong style="color:var(--text)">No-estacionariedad:</strong> media y varianza cambian en el tiempo &rarr; necesitas diferenciar<br>
+          &bull; <strong style="color:var(--text)">Autocorrelacion:</strong> el valor de hoy depende del de ayer. &iquest;Cuantos lags son relevantes?
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="sec">Descomposicion: tendencia + estacionalidad</div>
+      <div class="chart-sm"><canvas id="ts-decomp"></canvas></div>
+      <div class="discovery-btn" style="margin-top:10px;margin-bottom:0;font-size:10px" onclick="reveal('d-decomp')">&#128269; Interpretar</div>
+      <div class="discovery-reveal" id="d-decomp" style="margin-top:8px">La tendencia muestra el crecimiento sostenido de ~S/.200/semana. La componente estacional muestra el patron que se repite cada 12 semanas (trimestral). El residuo debe ser ruido blanco &mdash; si tiene patron, hay algo que el modelo no capturo.</div>
+    </div>
+    <div class="card">
+      <div class="sec">Checklist series de tiempo</div>
+      <div class="checklist" id="checklist-ts"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= TAB 3: DESBALANCE ======= -->
+<div class="panel" id="panel-imb">
+  <div class="card">
+    <div class="sec">El problema del desbalance &mdash; churn 4.3% vs no-churn 95.7%</div>
+    <div class="g2">
+      <div>
+        <div class="chart-wrap"><canvas id="imb-pie"></canvas></div>
+      </div>
+      <div>
+        <div class="discovery-btn" onclick="reveal('d-imb1')">&#128269; &iquest;Por que es un problema?</div>
+        <div class="discovery-reveal" id="d-imb1">
+          <strong style="color:var(--orange)">El modelo "tonto" gana:</strong><br><br>
+          Si predices siempre "no churn", obtienes <strong style="color:var(--text)">95.7% de accuracy</strong>. Pero detectas 0 casos de churn reales. El Recall = 0, F1 = 0.<br><br>
+          El accuracy es una metrica completamente inutil con clases desbalanceadas. Usa: <strong style="color:var(--text)">Recall, Precision, F1, AUC-ROC, o F-beta score</strong> (con beta&gt;1 si quieres priorizar Recall).
+        </div>
+        <div style="margin-top:10px">
+          <div class="alert alert-red">
+            &#10060; <strong style="color:var(--text)">Modelo naive (predice siempre 0):</strong><br>
+            Accuracy = 95.7% &bull; Recall = 0% &bull; F1 = 0
+          </div>
+          <div class="alert alert-ok" style="margin-top:8px">
+            &#9989; <strong style="color:var(--text)">Modelo util (detecta churns):</strong><br>
+            Accuracy = 82% &bull; Recall = 74% &bull; F1 = 0.68
+          </div>
+        </div>
+        <div class="discovery-btn" style="margin-top:10px" onclick="reveal('d-imb2')">&#128269; &iquest;Como lo soluciono?</div>
+        <div class="discovery-reveal" id="d-imb2">
+          <strong style="color:var(--teal)">Estrategias para datos desbalanceados:</strong><br><br>
+          1. <strong style="color:var(--text)">class_weight='balanced'</strong> en sklearn: penaliza mas los errores en la clase minoritaria<br>
+          2. <strong style="color:var(--text)">Oversampling (SMOTE):</strong> crea ejemplos sinteticos de la clase minoritaria<br>
+          3. <strong style="color:var(--text)">Undersampling:</strong> reduce la clase mayoritaria (pierde datos)<br>
+          4. <strong style="color:var(--text)">Ajustar el threshold:</strong> en vez de 0.5, usa 0.2 como punto de corte para churn<br>
+          5. <strong style="color:var(--text)">Cambiar la metrica:</strong> optimiza F1 o Recall, no accuracy
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="sec">Distribucion de features por clase (churn vs no churn)</div>
+      <div class="chart-sm"><canvas id="imb-feature-dist"></canvas></div>
+      <div class="discovery-btn" style="margin-top:10px;margin-bottom:0" onclick="reveal('d-imb3')">&#128269; &iquest;Que busco aqui?</div>
+      <div class="discovery-reveal" id="d-imb3" style="margin-top:8px">Si las distribuciones de churn y no-churn se solapan completamente para una feature, esa variable no discrimina entre clases. Si hay separacion visible, es una feature util. En nuestro caso: la <strong style="color:var(--text)">actividad y antiguedad</strong> muestran diferencias entre churners y no-churners.</div>
+    </div>
+    <div class="card">
+      <div class="sec">Checklist datos desbalanceados</div>
+      <div class="checklist" id="checklist-imb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======= TAB 4: CORRELACIONES ======= -->
+<div class="panel" id="panel-corr">
+  <div class="card">
+    <div class="sec">Heatmap de correlaciones &mdash; haz clic en una celda para interpretar</div>
+    <div class="g2">
+      <div>
+        <div id="corr-heatmap" style="overflow-x:auto;margin-bottom:8px"></div>
+        <div style="display:flex;gap:10px;font-size:10px;font-family:var(--font-mono);color:var(--text3)">
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(96,165,250,.8);border-radius:2px;margin-right:3px;vertical-align:middle"></span>Correlacion positiva</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(248,113,113,.8);border-radius:2px;margin-right:3px;vertical-align:middle"></span>Correlacion negativa</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:var(--bg3);border-radius:2px;border:1px solid var(--border);margin-right:3px;vertical-align:middle"></span>Sin correlacion</span>
+        </div>
+      </div>
+      <div>
+        <div class="discovery-btn" onclick="reveal('d-corr1')">&#128269; &iquest;Como leo un heatmap?</div>
+        <div class="discovery-reveal" id="d-corr1">
+          <strong style="color:var(--purple)">Reglas de interpretacion:</strong><br><br>
+          &bull; Diagonal siempre = 1.0 (la variable consigo misma)<br>
+          &bull; |r| &gt; 0.7 &rarr; correlacion <strong style="color:var(--red)">fuerte</strong> &mdash; posible multicolinealidad<br>
+          &bull; |r| 0.4&ndash;0.7 &rarr; correlacion <strong style="color:var(--orange)">moderada</strong><br>
+          &bull; |r| &lt; 0.3 &rarr; correlacion <strong style="color:var(--text3)">debil o nula</strong><br><br>
+          Haz clic en cualquier celda para ver la interpretacion especifica.
+        </div>
+        <div id="corr-detail" style="margin-top:10px;background:var(--bg3);border-radius:var(--r);padding:12px 14px;min-height:80px;font-size:12px;color:var(--text3)">
+          &#128205; Haz clic en una celda del heatmap para ver la interpretacion y la pregunta de negocio.
+        </div>
+        <div class="discovery-btn" style="margin-top:10px" onclick="reveal('d-corr2')">&#128269; Correlacion espuria &mdash; &iquest;que es?</div>
+        <div class="discovery-reveal" id="d-corr2" style="margin-top:0">
+          <strong style="color:var(--orange)">Correlacion espuria:</strong> dos variables correlacionan fuerte pero no hay causalidad real. Ejemplo clasico: ventas de helados correlaciona con ahogamientos (ambas suben en verano, pero una no causa la otra).<br><br>
+          En datos de negocio: el numero de clicks correlaciona con revenue, pero puede ser porque ambas dependen del trafico total (variable oculta). <strong style="color:var(--text)">Correlacion no implica causalidad.</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="sec">Scatter: visitas vs revenue</div>
+      <div class="chart-sm"><canvas id="corr-scatter1"></canvas></div>
+      <div class="discovery-btn" style="margin-top:8px;margin-bottom:0;font-size:10px" onclick="reveal('d-sc1')">&#128269; Interpretar</div>
+      <div class="discovery-reveal" id="d-sc1" style="margin-top:6px">r=0.197 &mdash; correlacion debil. El numero de visitas por si solo no explica bien el revenue. Hay mucha varianza: dos clientes con el mismo numero de visitas pueden generar revenues muy distintos (depende del ticket y la conversion).</div>
+    </div>
+    <div class="card">
+      <div class="sec">Checklist correlaciones</div>
+      <div class="checklist" id="checklist-corr"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<script>
+(function(){
+
+// ===== TAB SWITCH =====
+window.switchTab=function(t){
+  document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.panel').forEach(function(el){el.classList.remove('active');});
+  document.querySelector('[data-tab="'+t+'"]').classList.add('active');
+  document.getElementById('panel-'+t).classList.add('active');
+  if(!done[t]){done[t]=true;INIT[t]&&INIT[t]();}
+};
+var done={general:true,ts:false,imb:false,corr:false};
+
+// ===== DISCOVER =====
+window.reveal=function(id){
+  var el=document.getElementById(id);
+  if(el) el.classList.toggle('shown');
+};
+
+// ===== CHART DEFAULTS =====
+function chartOpts(extra){
+  var base={
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:8},maxTicksLimit:8}},
+      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}}
+    }
+  };
+  if(extra) Object.assign(base,extra);
+  return base;
+}
+
+// ===== DATA =====
+var AGE_HIST={labels:[18,23,28,34,39,44,50,55,61,66],counts:[24,42,55,48,45,38,28,12,5,3]};
+var TICKET_HIST={labels:[20,48,76,104,132,160,188,216,244,272],counts:[38,72,85,60,25,8,4,3,3,2]};
+var SALDO_HIST={labels:[0.1,12.1,24.1,36.1,48.1,60.1,72.1,84.1,96.1,108.1],counts:[95,68,42,28,18,12,8,7,5,4]};
+var REGION_DATA={labels:['Lima','Arequipa','Trujillo','Cusco','Piura'],counts:[135,54,45,36,30]};
+var DEVICE_DATA={labels:['mobile','desktop','tablet'],counts:[165,105,21]};
+var CHURN_REGION={labels:['Lima','Arequipa','Trujillo','Cusco','Piura'],churn_rate:[3.7,5.6,4.4,5.6,6.7]};
+
+var CORR_VARS=['edad','antiguedad','saldo','visitas','ticket','conv','revenue'];
+var CORR_MATRIX=[
+  [1.00, 0.05,-0.05,-0.12, 0.08,-0.04,-0.02],
+  [0.05, 1.00, 0.12, 0.08, 0.04, 0.03, 0.09],
+  [-0.05,0.12, 1.00, 0.04, 0.18, 0.08, 0.01],
+  [-0.12,0.08, 0.04, 1.00, 0.15, 0.42, 0.20],
+  [0.08, 0.04, 0.18, 0.15, 1.00, 0.09, 0.74],
+  [-0.04,0.03, 0.08, 0.42, 0.09, 1.00, 0.38],
+  [-0.02,0.09, 0.01, 0.20, 0.74, 0.38, 1.00]
+];
+var CORR_INTERP={
+  'ticket-revenue':'r=0.735 \u2014 Correlacion fuerte. El ticket promedio explica bastante del revenue. \u00bfSentido de negocio? Si: a mayor gasto por compra, mayor revenue acumulado. Esta feature debe entrar al modelo.',
+  'conv-visitas':'r=0.420 \u2014 Correlacion moderada. Mas visitas correlaciona con mejor conversion. Ojo: puede haber causalidad inversa (mayor conversion incentiva mas visitas) o una variable oculta (campanas de marketing).',
+  'conv-revenue':'r=0.380 \u2014 Correlacion moderada positiva. Mayor conversion genera mas revenue. Combinada con ticket y visitas, explica bien el revenue total.',
+  'visitas-revenue':'r=0.197 \u2014 Correlacion debil. Las visitas solas no predicen bien el revenue. Un cliente con 20 visitas puede generar S/.50 o S/.500 dependiendo del ticket y la conversion.',
+  'ticket-conv':'r=0.090 \u2014 Correlacion casi nula. El tamano del ticket no tiene relacion lineal con la tasa de conversion. Son dimensiones independientes del comportamiento del cliente.',
+  'saldo-ticket':'r=0.180 \u2014 Correlacion debil positiva. Clientes con mayor saldo tienden a tener tickets ligeramente mas altos. La relacion no es fuerte \u2014 saldo puede ser proxy de capacidad economica.',
+  'edad-antiguedad':'r=0.050 \u2014 Sin correlacion. La edad no predice cuanto tiempo lleva el cliente. Hay clientes jovenes con mucha antiguedad y viceversa.',
+  'default':'Haz clic en una celda para ver la correlacion entre esas dos variables y su interpretacion de negocio.'
+};
+
+function getCorrInterp(v1,v2){
+  var k1=v1+'-'+v2, k2=v2+'-'+v1;
+  return CORR_INTERP[k1]||CORR_INTERP[k2]||CORR_INTERP['default'];
+}
+
+// ===== CHECKLISTS =====
+var CHECKS={
+  general:[
+    {t:'Verificar shape (filas x columnas)',s:'300 filas x 11 columnas. Suficiente para modelos simples.'},
+    {t:'Identificar tipos de variables',s:'7 numericas, 3 categoricas, 1 binaria (target).'},
+    {t:'Contar y analizar valores nulos',s:'saldo 4.3%, device 3.0%. Por debajo del umbral critico del 30%.'},
+    {t:'Analizar distribucion de cada variable numerica',s:'edad: normal. ticket y saldo: skewed right. Considerar transformaciones.'},
+    {t:'Detectar outliers con IQR o boxplot',s:'7 outliers en ticket_promedio. Investigar si son reales o errores.'},
+    {t:'Analizar frecuencias de variables categoricas',s:'Lima domina con 45%. Piura y Cusco con menos de 12%.'},
+    {t:'Verificar balance del target',s:'Churn 4.3% \u2014 MUY desbalanceado. No usar accuracy como metrica.'},
+    {t:'Buscar duplicados',s:'Verificar que no haya clientes duplicados (mismo ID, mismas features).'},
+    {t:'Revisar rango de fechas si existen',s:'Para series de tiempo: gaps, cambios de frecuencia, zonas sin datos.'},
+    {t:'Documentar hallazgos y decisiones',s:'EDA debe generar un reporte con las transformaciones a aplicar.'}
+  ],
+  ts:[
+    {t:'Graficar la serie completa',s:'Ver tendencia, estacionalidad y anomalias de un vistazo.'},
+    {t:'Identificar tendencia (creciente/decreciente/estable)',s:'La serie crece ~S/.200/semana en promedio.'},
+    {t:'Identificar estacionalidad y su periodo',s:'Patron trimestral visible. Pico en fin de ano.'},
+    {t:'Verificar gaps temporales (semanas sin datos)',s:'Revisar si hay fechas faltantes que requieran imputacion.'},
+    {t:'Test de estacionariedad (ADF)',s:'Si la media y varianza cambian en el tiempo, necesitas diferenciar la serie.'},
+    {t:'Analizar autocorrelacion (ACF/PACF)',s:'Determina cuantos lags pasados son relevantes para predecir el futuro.'}
+  ],
+  imb:[
+    {t:'Medir el ratio de desbalance',s:'4.3% churn. Con <10% de la clase minoritaria, hay desbalance serio.'},
+    {t:'Nunca usar accuracy como metrica principal',s:'Usar F1, Recall, Precision o AUC-ROC.'},
+    {t:'Usar stratify=y en el split',s:'Garantiza la misma proporcion de churn en train y test.'},
+    {t:'Evaluar class_weight="balanced" como primera estrategia',s:'Simple, efectivo, sin cambiar los datos.'},
+    {t:'Analizar distribucion de features por clase',s:'Identificar que features discriminan mejor entre clases.'}
+  ],
+  corr:[
+    {t:'Calcular correlacion de Pearson para variables numericas',s:'Ver el heatmap completo.'},
+    {t:'Identificar correlaciones fuertes con el target',s:'ticket_promedio (0.74) es la feature mas correlacionada con revenue.'},
+    {t:'Detectar multicolinealidad entre features',s:'Si dos features tienen r>0.85, considera eliminar una de las dos.'},
+    {t:'Investigar correlaciones contraintuitivas',s:'Si algo no tiene sentido de negocio, puede ser correlacion espuria.'},
+    {t:'Calcular VIF para detectar multicolinealidad en regresion',s:'VIF>10 indica multicolinealidad severa.'}
+  ]
+};
+
+function buildChecklist(id,items){
+  var el=document.getElementById(id);
+  if(!el) return;
+  el.innerHTML=items.map(function(item,i){
+    return '<div class="check-item" onclick="toggleCheck(this,\''+id+'\')"><div class="check-box"></div><div class="check-text">'+item.t+'<div class="check-sub">'+item.s+'</div></div></div>';
+  }).join('');
+  updateCheckCount(id);
+}
+window.toggleCheck=function(el,listId){
+  el.classList.toggle('done');
+  var box=el.querySelector('.check-box');
+  box.textContent=el.classList.contains('done')?'\u2713':'';
+  updateCheckCount(listId);
+};
+function updateCheckCount(listId){
+  var items=document.querySelectorAll('#'+listId+' .check-item');
+  var done=document.querySelectorAll('#'+listId+' .check-item.done');
+  var countEl=document.getElementById('check-count');
+  if(listId==='checklist-general'&&countEl) countEl.textContent=done.length+'/'+items.length;
+}
+
+// ===== BUILD GENERAL CHARTS =====
+function buildGeneralCharts(){
+  // Histograms
+  function mkHist(id,data,color,xlabel){
+    var ctx=document.getElementById(id);
+    if(!ctx) return;
+    new Chart(ctx.getContext('2d'),{type:'bar',data:{
+      labels:data.labels,
+      datasets:[{data:data.counts,backgroundColor:color,borderRadius:3,borderSkipped:false}]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{title:{display:true,text:xlabel,color:'#4d566b',font:{family:'IBM Plex Mono',size:8}},grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:6}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:7}}}}
+    }});
+  }
+  mkHist('g-hist-edad',AGE_HIST,'rgba(34,211,238,.6)','Edad');
+  mkHist('g-hist-ticket',TICKET_HIST,'rgba(251,146,60,.6)','S/. (ticket)');
+  mkHist('g-hist-saldo',SALDO_HIST,'rgba(96,165,250,.6)','S/. miles (saldo)');
+
+  // Region bar
+  var ctx2=document.getElementById('g-bar-region');
+  if(ctx2) new Chart(ctx2.getContext('2d'),{type:'bar',data:{
+    labels:REGION_DATA.labels,
+    datasets:[{data:REGION_DATA.counts,backgroundColor:'rgba(167,139,250,.6)',borderRadius:4}]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}}}
+  }});
+
+  // Boxplot simulado con bar chart
+  var ctx3=document.getElementById('g-box-chart');
+  if(ctx3) new Chart(ctx3.getContext('2d'),{type:'bar',data:{
+    labels:['Edad','Antiguedad\n(meses)','Visitas/mes','Ticket (S/.)'],
+    datasets:[
+      {label:'Q1-Q3',data:[null,null,null,null],backgroundColor:'rgba(0,0,0,0)'},
+      {label:'Rango',data:[
+        {x:'Edad',y:[22,48]},{x:'Antiguedad\n(meses)',y:[3,38]},{x:'Visitas/mes',y:[1,18]},{x:'Ticket (S/.)',y:[22,128]}
+      ],backgroundColor:['rgba(34,211,238,.4)','rgba(34,211,238,.4)','rgba(34,211,238,.4)','rgba(251,146,60,.4)'],borderColor:['rgba(34,211,238,.8)','rgba(34,211,238,.8)','rgba(34,211,238,.8)','rgba(251,146,60,.8)'],borderWidth:2,borderRadius:4,barPercentage:.4}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.raw?'Rango: '+c.raw[0]+' \u2013 '+c.raw[1]:'';}}},
+    annotation:{annotations:{}}},
+    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}}}
+  }});
+
+  // Churn by region
+  var ctx4=document.getElementById('g-churn-region');
+  if(ctx4) new Chart(ctx4.getContext('2d'),{type:'bar',data:{
+    labels:CHURN_REGION.labels,
+    datasets:[{label:'Churn rate %',data:CHURN_REGION.churn_rate,backgroundColor:CHURN_REGION.churn_rate.map(function(v){return v>6?'rgba(248,113,113,.7)':v>5?'rgba(251,146,60,.7)':'rgba(74,240,176,.6)';}),borderRadius:4}]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Churn: '+c.parsed.y+'%';}}}},
+    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}},y:{title:{display:true,text:'Churn rate (%)',color:'#4d566b',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:10}}
+  }});
+
+  // Device bar
+  var ctx5=document.getElementById('g-bar-device');
+  if(ctx5) new Chart(ctx5.getContext('2d'),{type:'bar',data:{
+    labels:DEVICE_DATA.labels,
+    datasets:[{data:DEVICE_DATA.counts,backgroundColor:'rgba(244,114,182,.6)',borderRadius:4}]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}}}
+  }});
+
+  buildChecklist('checklist-general',CHECKS.general);
+}
+
+// ===== BUILD TS CHARTS =====
+var INIT={
+  ts:function(){
+    var seed=42;
+    function rng(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967295;}
+    function randn(){var u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+    var labels=[];for(var i=1;i<=52;i++) labels.push('S'+i);
+    var base=5000, vals=labels.map(function(_,i){
+      base+=60; var s=1200*Math.sin(2*Math.PI*i/26)+400*Math.sin(2*Math.PI*i/13);
+      return Math.round(base+s+randn()*280);
+    });
+    var trend=labels.map(function(_,i){return Math.round(5000+i*60);});
+    var seasonal=vals.map(function(v,i){return Math.round(v-trend[i]);});
+
+    var ctx=document.getElementById('ts-main');
+    if(ctx) new Chart(ctx.getContext('2d'),{type:'line',data:{
+      labels:labels,
+      datasets:[{data:vals,borderColor:'rgba(96,165,250,.8)',borderWidth:1.5,pointRadius:0,fill:false,tension:.3}]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:13}},y:{title:{display:true,text:'Ventas S/.',color:'#4d566b',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}}}
+    }});
+
+    var ctx2=document.getElementById('ts-decomp');
+    if(ctx2) new Chart(ctx2.getContext('2d'),{type:'line',data:{
+      labels:labels,
+      datasets:[
+        {label:'Tendencia',data:trend,borderColor:'rgba(74,240,176,.8)',borderWidth:2,pointRadius:0,fill:false,tension:.1},
+        {label:'Estacional',data:seasonal.map(function(v){return v/3+5000;}),borderColor:'rgba(251,146,60,.6)',borderWidth:1,pointRadius:0,fill:false,tension:.3,borderDash:[4,3]}
+      ]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{labels:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},boxWidth:10}}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:13}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}}}
+    }});
+
+    buildChecklist('checklist-ts',CHECKS.ts);
+  },
+
+  imb:function(){
+    var ctx=document.getElementById('imb-pie');
+    if(ctx) new Chart(ctx.getContext('2d'),{type:'doughnut',data:{
+      labels:['No Churn (95.7%)','Churn (4.3%)'],
+      datasets:[{data:[287,13],backgroundColor:['rgba(74,240,176,.5)','rgba(248,113,113,.6)'],borderColor:['rgba(74,240,176,.8)','rgba(248,113,113,.8)'],borderWidth:2}]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{labels:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10},boxWidth:10}}}
+    }});
+
+    var ctx2=document.getElementById('imb-feature-dist');
+    if(ctx2) new Chart(ctx2.getContext('2d'),{type:'bar',data:{
+      labels:['Visitas (churn)','Visitas (no-churn)','Antiguedad (churn)','Antiguedad (no-churn)'],
+      datasets:[{data:[3.2,8.4,8.5,22.3],backgroundColor:['rgba(248,113,113,.7)','rgba(74,240,176,.6)','rgba(248,113,113,.7)','rgba(74,240,176,.6)'],borderRadius:4}]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Media: '+c.parsed.y;}}}},
+      scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:8}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:8}}}}
+    }});
+
+    buildChecklist('checklist-imb',CHECKS.imb);
+  },
+
+  corr:function(){
+    // Build heatmap
+    var hm=document.getElementById('corr-heatmap');
+    if(!hm) return;
+    var n=CORR_VARS.length;
+    var html='<div class="corr-grid">';
+    // header row
+    html+='<div class="corr-row"><span class="corr-lbl"></span>';
+    CORR_VARS.forEach(function(v){html+='<div style="width:52px;text-align:center;font-size:8px;font-family:var(--font-mono);color:var(--text3);padding:2px 0">'+v+'</div>';});
+    html+='</div>';
+    for(var i=0;i<n;i++){
+      html+='<div class="corr-row"><span class="corr-lbl">'+CORR_VARS[i]+'</span>';
+      for(var j=0;j<n;j++){
+        var v=CORR_MATRIX[i][j];
+        var abs=Math.abs(v);
+        var bg=v>0?'rgba(96,165,250,'+Math.min(.9,abs*1.2)+')':'rgba(248,113,113,'+Math.min(.9,abs*1.2)+')';
+        if(abs<0.05) bg='rgba(30,40,60,0.8)';
+        var txtColor=abs>0.4?'rgba(255,255,255,.9)':'rgba(255,255,255,.5)';
+        var vi=CORR_VARS[i],vj=CORR_VARS[j];
+        html+='<div class="corr-cell" style="background:'+bg+';color:'+txtColor+'" onclick="showCorrDetail(\''+vi+'\',\''+vj+'\','+v+')">'+v.toFixed(2)+'</div>';
+      }
+      html+='</div>';
+    }
+    html+='</div>';
+    hm.innerHTML=html;
+
+    // Scatter visitas vs revenue
+    var seed=42;
+    function rng(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967295;}
+    function randn(){var u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+    var scData=[];
+    for(var k=0;k<100;k++){
+      var vis=Math.round(Math.abs(randn())*8+4);
+      var rev=Math.max(0,Math.round(vis*80*(0.5+rng()*1.5)+randn()*500));
+      scData.push({x:vis,y:rev});
+    }
+    var ctx=document.getElementById('corr-scatter1');
+    if(ctx) new Chart(ctx.getContext('2d'),{type:'scatter',data:{
+      datasets:[{data:scData,backgroundColor:'rgba(96,165,250,.5)',pointRadius:4,showLine:false}]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{title:{display:true,text:'Visitas/mes',color:'#4d566b',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}},
+        y:{title:{display:true,text:'Revenue 90d (S/.)',color:'#4d566b',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}}
+      }
+    }});
+
+    buildChecklist('checklist-corr',CHECKS.corr);
+  }
+};
+
+window.showCorrDetail=function(v1,v2,val){
+  var el=document.getElementById('corr-detail');
+  if(!el) return;
+  var abs=Math.abs(val);
+  var strength=abs>0.7?'Fuerte':abs>0.4?'Moderada':abs>0.15?'Debil':'Sin correlacion';
+  var direction=val>0?'positiva':'negativa';
+  var color=abs>0.7?'var(--red)':abs>0.4?'var(--orange)':abs>0.15?'var(--blue)':'var(--text3)';
+  var interp=getCorrInterp(v1,v2);
+  el.innerHTML='<strong style="color:'+color+'">'+v1+' vs '+v2+': '+val.toFixed(3)+'</strong><br>'
+    +'<span style="color:var(--text3);font-family:var(--font-mono);font-size:10px">Correlacion '+strength.toLowerCase()+' '+direction+'</span><br><br>'
+    +'<span style="color:var(--text2);font-size:12px;line-height:1.65">'+interp+'</span>';
+};
+
+// ===== INIT GENERAL =====
+buildGeneralCharts();
+
+// ===== INIT =====
+document.getElementById('btn-basic');
+// init tabs on first visit
+INIT.ts=INIT.ts;INIT.imb=INIT.imb;INIT.corr=INIT.corr;
+
+})();
+</script>
+</body>
+</html>

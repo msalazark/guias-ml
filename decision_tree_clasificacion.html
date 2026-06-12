@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Tree · Clasificacion</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--indigo:#818cf8;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em;background:rgba(129,140,248,.15);color:var(--indigo)}
+.hdr-title{font-family:var(--font-mono);font-size:14px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.level-bar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg2)}
+.level-btn{display:flex;align-items:center;gap:10px;padding:15px 28px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;flex:1;justify-content:center}
+.level-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s;flex-shrink:0}
+.level-info{display:flex;flex-direction:column;gap:2px}
+.level-name{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text3);transition:color .2s;letter-spacing:.03em}
+.level-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.level-sep{width:1px;background:var(--border);flex-shrink:0}
+.main{max-width:1060px;margin:0 auto;padding:26px 32px}
+.lp{display:none}.lp.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+.banner{border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;display:flex;gap:18px;align-items:flex-start}
+.banner-icon{font-size:34px;flex-shrink:0;margin-top:2px}
+.banner h2{font-family:var(--font-mono);font-size:17px;font-weight:600;margin-bottom:6px}
+.banner p{font-size:13px;line-height:1.7}
+.chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:3px 9px;border-radius:4px;font-weight:500}
+.mex-grid{display:grid;gap:12px;margin-bottom:18px}
+.mex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;cursor:pointer;transition:border-color .15s}
+.mex:hover{border-color:var(--border2)}
+.mex-top{display:flex;align-items:center;gap:12px}
+.mex-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 11px;border-radius:5px;white-space:nowrap}
+.mex-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.mex-value{font-family:var(--font-mono);font-size:20px;font-weight:600;min-width:90px;text-align:right}
+.mex-toggle{font-size:16px;color:var(--text3);transition:transform .2s;margin-left:6px}
+.mex.open .mex-toggle{transform:rotate(180deg)}
+.mex-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.mex.open .mex-body{display:block}
+.mbg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fbox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border)}
+.flbl{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:.06em}
+.ibox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.65}
+.bar-track{height:5px;background:var(--border);border-radius:3px;margin-top:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.chart-wrap{position:relative;height:260px}
+.chart-sm{position:relative;height:210px}
+/* tree viz */
+.tree-svg{width:100%;overflow-x:auto}
+.node-box{rx:6;ry:6}
+/* depth slider */
+.sl-row{margin-bottom:11px}
+.sl-lbl{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:4px}
+.sl-lbl span:first-child{color:var(--text2)}.sl-lbl span:last-child{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid var(--bg);background:var(--indigo)}
+/* confusion matrix */
+.cm-grid{display:grid;grid-template-columns:auto 1fr 1fr;gap:3px;max-width:280px}
+.cm-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:9px;color:var(--text3)}
+.cm-cell{border-radius:var(--r);padding:10px 8px;text-align:center;transition:all .15s}
+.cm-val{font-family:var(--font-mono);font-size:22px;font-weight:700}
+.cm-lbl{font-size:9px;font-family:var(--font-mono);opacity:.7;display:block;margin-bottom:3px}
+/* hyper table */
+.htrow{display:grid;grid-template-columns:60px 80px 70px 80px 80px 80px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.htrow:last-child{border-bottom:none}
+.btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:11px;padding:6px 13px;border-radius:4px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.btn:hover{border-color:var(--indigo);color:var(--indigo)}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;font-weight:600;margin:0 2px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-badge" id="hdrBadge">BASICO</span>
+  <span class="hdr-title">Decision Tree · Clasificacion</span>
+  <span class="hdr-sub">Churn de clientes &mdash; banco peruano &middot; 200 clientes</span>
+</div>
+
+<div class="level-bar">
+  <div class="level-btn" id="btn-basic" onclick="switchLevel('basic')">
+    <div class="level-icon" id="icon-basic">&#127807;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-basic">Basico</div>
+      <div class="level-sub">Gini &middot; Entropia &middot; Profundidad</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-inter" onclick="switchLevel('inter')">
+    <div class="level-icon" id="icon-inter">&#9881;&#65039;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-inter">Intermedio</div>
+      <div class="level-sub">Overfitting &middot; Poda &middot; min_samples</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-adv" onclick="switchLevel('adv')">
+    <div class="level-icon" id="icon-adv">&#128300;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-adv">Avanzado</div>
+      <div class="level-sub">Feature importance &middot; Curva validacion &middot; Hiperparametros</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ===== BASICO ===== -->
+<div class="lp active" id="panel-basic">
+  <div class="banner" style="background:rgba(129,140,248,.05);border:1px solid rgba(129,140,248,.15)">
+    <div class="banner-icon">&#127807;</div>
+    <div>
+      <h2 style="color:var(--indigo)">Nivel Basico &mdash; Como decide el arbol</h2>
+      <p class="prose">Un banco peruano quiere predecir si un cliente se dara de baja (churn). El arbol de decision aprende reglas del tipo <strong style="color:var(--text)">"si Actividad &lt; 30 Y Antiguedad &lt; 12 meses &rarr; churn probable"</strong>. Para construir esas reglas necesita una metrica de impureza: Gini o Entropia.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(129,140,248,.12);color:var(--indigo)">Gini &mdash; impureza por defecto</span>
+        <span class="chip" style="background:rgba(129,140,248,.12);color:var(--indigo)">Entropia &mdash; criterio de informacion</span>
+        <span class="chip" style="background:rgba(129,140,248,.12);color:var(--indigo)">Profundidad &mdash; cuantas preguntas hace</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arbol visual -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Arbol de decision &mdash; depth=3 &middot; churn bancario</div>
+    <div style="overflow-x:auto">
+      <svg width="760" height="300" viewBox="0 0 760 300" style="display:block;margin:0 auto">
+        <!-- Level 0 root -->
+        <rect x="280" y="10" width="200" height="60" rx="8" fill="rgba(129,140,248,.15)" stroke="rgba(129,140,248,.4)" stroke-width="1.5"/>
+        <text x="380" y="32" text-anchor="middle" fill="#a5b4fc" font-family="IBM Plex Mono" font-size="10" font-weight="600">Actividad &lt; 35?</text>
+        <text x="380" y="48" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">Gini=0.36 | n=140</text>
+        <text x="380" y="62" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">churn=33, ok=107</text>
+        <!-- edges L1 -->
+        <line x1="320" y1="70" x2="175" y2="120" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
+        <line x1="440" y1="70" x2="585" y2="120" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
+        <text x="230" y="102" fill="#4d566b" font-family="IBM Plex Mono" font-size="9">SI (n=68)</text>
+        <text x="490" y="102" fill="#4d566b" font-family="IBM Plex Mono" font-size="9">NO (n=72)</text>
+        <!-- Level 1 left -->
+        <rect x="85" y="120" width="180" height="60" rx="8" fill="rgba(248,113,113,.12)" stroke="rgba(248,113,113,.3)" stroke-width="1.5"/>
+        <text x="175" y="142" text-anchor="middle" fill="#fca5a5" font-family="IBM Plex Mono" font-size="10" font-weight="600">Antiguedad &lt; 18?</text>
+        <text x="175" y="158" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">Gini=0.48 | n=68</text>
+        <text x="175" y="172" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">churn=28, ok=40</text>
+        <!-- Level 1 right -->
+        <rect x="495" y="120" width="180" height="60" rx="8" fill="rgba(74,240,176,.10)" stroke="rgba(74,240,176,.25)" stroke-width="1.5"/>
+        <text x="585" y="142" text-anchor="middle" fill="#6ee7b7" font-family="IBM Plex Mono" font-size="10" font-weight="600">Saldo &lt; 8000?</text>
+        <text x="585" y="158" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">Gini=0.22 | n=72</text>
+        <text x="585" y="172" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">churn=5, ok=67</text>
+        <!-- edges L2 left -->
+        <line x1="130" y1="180" x2="75" y2="230" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
+        <line x1="220" y1="180" x2="275" y2="230" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
+        <!-- edges L2 right -->
+        <line x1="540" y1="180" x2="480" y2="230" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
+        <line x1="630" y1="180" x2="685" y2="230" stroke="rgba(255,255,255,.2)" stroke-width="1.2"/>
+        <!-- Leaves -->
+        <rect x="20" y="230" width="110" height="55" rx="7" fill="rgba(248,113,113,.18)" stroke="rgba(248,113,113,.4)" stroke-width="1.5"/>
+        <text x="75" y="250" text-anchor="middle" fill="#f87171" font-family="IBM Plex Mono" font-size="9" font-weight="600">CHURN</text>
+        <text x="75" y="264" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">n=32 | Gini=0.31</text>
+        <text x="75" y="278" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">churn=22, ok=10</text>
+
+        <rect x="220" y="230" width="110" height="55" rx="7" fill="rgba(251,146,60,.12)" stroke="rgba(251,146,60,.3)" stroke-width="1.5"/>
+        <text x="275" y="250" text-anchor="middle" fill="#fb923c" font-family="IBM Plex Mono" font-size="9" font-weight="600">MIXTO</text>
+        <text x="275" y="264" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">n=36 | Gini=0.44</text>
+        <text x="275" y="278" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">churn=6, ok=30</text>
+
+        <rect x="420" y="230" width="120" height="55" rx="7" fill="rgba(248,113,113,.12)" stroke="rgba(248,113,113,.3)" stroke-width="1.5"/>
+        <text x="480" y="250" text-anchor="middle" fill="#fca5a5" font-family="IBM Plex Mono" font-size="9" font-weight="600">CHURN LEVE</text>
+        <text x="480" y="264" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">n=18 | Gini=0.28</text>
+        <text x="480" y="278" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">churn=4, ok=14</text>
+
+        <rect x="630" y="230" width="110" height="55" rx="7" fill="rgba(74,240,176,.14)" stroke="rgba(74,240,176,.35)" stroke-width="1.5"/>
+        <text x="685" y="250" text-anchor="middle" fill="#4af0b0" font-family="IBM Plex Mono" font-size="9" font-weight="600">OK</text>
+        <text x="685" y="264" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">n=54 | Gini=0.07</text>
+        <text x="685" y="278" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">churn=1, ok=53</text>
+      </svg>
+    </div>
+    <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-top:4px">Gini en cada nodo indica su impureza &middot; hoja izq-roja = alta probabilidad de churn &middot; hoja der-verde = cliente sano</div>
+  </div>
+
+  <!-- MEX Gini y Entropia -->
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(129,140,248,.12);color:var(--indigo)">GINI</div>
+        <div class="mex-title">Impureza de Gini &mdash; criterio por defecto en sklearn</div>
+        <div class="mex-value" style="color:var(--indigo)">0.36</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--indigo)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--indigo)"><div class="flbl">FORMULA</div>Gini = 1 &minus; &sum; p&#8336;&sup2;</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Para clasificacion binaria: Gini = 1 &minus; p&sup2; &minus; (1&minus;p)&sup2; = 2p(1&minus;p).<br><br>Si un nodo tiene 33 churns y 107 no-churns (p=0.236):<br>Gini = 2 &times; 0.236 &times; 0.764 = <strong style="color:var(--indigo)">0.36</strong><br><br>Gini = 0 &rarr; nodo puro (todos de una clase).<br>Gini = 0.5 &rarr; maximo desorden (50/50).</div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">p=0% o 100%</span><span style="color:var(--green)">Gini = 0 (puro)</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">p=25% o 75%</span><span style="color:var(--blue)">Gini = 0.375</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">p=50%</span><span style="color:var(--red)">Gini = 0.5 (max)</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Por que Gini y no Entropia?</strong><br><br>Gini es <strong style="color:var(--text)">mas rapido de calcular</strong> (no requiere logaritmos) y en la practica da resultados casi identicos a la Entropia.<br><br>El arbol elige el split que maximiza la <strong style="color:var(--text)">reduccion de Gini</strong> (Gini del padre &minus; promedio ponderado de hijos). En el nodo raiz, el split "Actividad &lt; 35" reduce el Gini de 0.36 a un promedio ponderado de ~0.37 &times; 0.48 + 0.51 &times; 0.22 = 0.29, una ganancia de 0.07.</div>
+            <div class="chart-xs" style="height:130px;margin-top:10px"><canvas id="b-gini-curve"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">ENTROPIA</div>
+        <div class="mex-title">Entropia &mdash; ganancia de informacion</div>
+        <div class="mex-value" style="color:var(--blue)">0.82 bits</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:82%;background:var(--blue)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--blue)"><div class="flbl">FORMULA</div>H = &minus;&sum; p&#8336; &middot; log&#8322;(p&#8336;)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Mide la <strong style="color:var(--text)">informacion promedio</strong> necesaria para codificar la clase. Con p=0.236:<br>H = &minus;0.236&middot;log&#8322;(0.236) &minus; 0.764&middot;log&#8322;(0.764) = <strong style="color:var(--blue)">0.82 bits</strong><br><br>H = 0 &rarr; nodo puro. H = 1.0 &rarr; maximo desorden (50/50).</div>
+            <div style="margin-top:10px;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:10px 12px">
+              <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:6px">GINI VS ENTROPIA &mdash; DIFERENCIA PRACTICA</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6">En la mayoria de datasets la diferencia en accuracy final es &lt; 0.5%. Entropia es ligeramente mas costosa computacionalmente. sklearn usa Gini por defecto. Usa Entropia cuando quieras splits mas balanceados en arbol multiclase.</div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Ganancia de informacion</strong><br><br>IG(split) = H(padre) &minus; &sum; (n&#8336;/n) &times; H(hijo&#8336;)<br><br>El arbol elige el split con mayor IG en cada nodo. Si el split "Actividad &lt; 35" da IG = 0.12 y "Saldo &lt; 5000" da IG = 0.08, elige Actividad primero.<br><br>La <strong style="color:var(--text)">feature mas importante</strong> tiende a aparecer en los nodos superiores del arbol (cerca de la raiz), donde el IG es mayor.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(74,240,176,.12);color:var(--green)">PROFUNDIDAD</div>
+        <div class="mex-title">max_depth &mdash; cuantas preguntas hace el arbol</div>
+        <div class="mex-value" style="color:var(--green)">depth=3</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:37%;background:var(--green)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--green)"><div class="flbl">IMPACTO</div>Nodos maximos = 2^depth &minus; 1<br>Hojas maximas = 2^depth</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">depth=1 &rarr; 1 pregunta, 2 hojas. Muy simple.<br>depth=3 &rarr; hasta 7 nodos, 8 hojas.<br>depth=10 &rarr; 1,023 nodos posibles.<br><br>Con depth sin limite, el arbol memoriza el training set (Gini=0 en todas las hojas) pero falla en nuevos datos. El truco esta en encontrar la profundidad optima.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Analogia: el interrogatorio</strong><br><br>Imagina que tienes que adivinar si un cliente se va con solo N preguntas Si/No.<br><br>depth=1: "Tiene baja actividad?" &rarr; mucho ruido.<br>depth=3: "Actividad &lt;35? Si &rarr; Antiguedad &lt;18? Si &rarr; Saldo &lt;5000?" &rarr; decision precisa.<br>depth=8: "Pregunta 1... pregunta 2... pregunta 8?" &rarr; memorizas al cliente actual pero no generalizas.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulador de profundidad -->
+  <div class="card">
+    <div class="sec">Simulador &mdash; cambia la profundidad y observa accuracy y matriz de confusion</div>
+    <div class="g2">
+      <div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Profundidad del arbol (max_depth)</span><span style="color:var(--indigo)" id="sv-depth">3</span></div>
+          <input type="range" id="sl-depth" min="1" max="8" value="3" step="1">
+        </div>
+        <div style="display:grid;gap:8px;margin-bottom:14px">
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">ACCURACY TEST</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--indigo)" id="sv-acc">80.0%</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">F1 TEST</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--blue)" id="sv-f1">0.71</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">GAP TRAIN&minus;TEST</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600" id="sv-gap" style="color:var(--green)">4.0%</span>
+          </div>
+        </div>
+        <div style="padding:10px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text3);line-height:1.6" id="depth-interp"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:10px;letter-spacing:.06em">MATRIZ DE CONFUSION &mdash; SET TEST (60)</div>
+        <div class="cm-grid" id="cm-grid">
+          <div class="cm-axis"></div>
+          <div class="cm-axis" style="font-size:9px;height:28px;color:var(--green);font-weight:600">PRED: NO CHURN</div>
+          <div class="cm-axis" style="font-size:9px;height:28px;color:var(--red);font-weight:600">PRED: CHURN</div>
+          <div class="cm-axis" style="font-size:9px;writing-mode:vertical-rl;transform:rotate(180deg);color:var(--green)">REAL: NO</div>
+          <div class="cm-cell" style="background:rgba(74,240,176,.1);border:1px solid rgba(74,240,176,.2)">
+            <span class="cm-lbl" style="color:var(--green)">TN</span>
+            <span class="cm-val" style="color:var(--green)" id="cm-tn">34</span>
+          </div>
+          <div class="cm-cell" style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2)">
+            <span class="cm-lbl" style="color:var(--red)">FP</span>
+            <span class="cm-val" style="color:var(--red)" id="cm-fp">8</span>
+          </div>
+          <div class="cm-axis" style="font-size:9px;writing-mode:vertical-rl;transform:rotate(180deg);color:var(--red)">REAL: SI</div>
+          <div class="cm-cell" style="background:rgba(251,146,60,.08);border:1px solid rgba(251,146,60,.2)">
+            <span class="cm-lbl" style="color:var(--orange)">FN</span>
+            <span class="cm-val" style="color:var(--orange)" id="cm-fn">4</span>
+          </div>
+          <div class="cm-cell" style="background:rgba(74,240,176,.08);border:1px solid rgba(74,240,176,.15)">
+            <span class="cm-lbl" style="color:var(--green)">TP</span>
+            <span class="cm-val" style="color:var(--green)" id="cm-tp">14</span>
+          </div>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text3);font-family:var(--font-mono)">Precision: <span id="cm-prec" style="color:var(--blue)">0.64</span> &middot; Recall: <span id="cm-recall" style="color:var(--orange)">0.78</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INTERMEDIO ===== -->
+<div class="lp" id="panel-inter">
+  <div class="banner" style="background:rgba(251,146,60,.05);border:1px solid rgba(251,146,60,.15)">
+    <div class="banner-icon">&#9881;&#65039;</div>
+    <div>
+      <h2 style="color:var(--orange)">Nivel Intermedio &mdash; Overfitting y regularizacion</h2>
+      <p class="prose">Un arbol sin restricciones <strong style="color:var(--text)">memoriza el training set</strong> con 100% de accuracy pero falla en nuevos clientes. La curva de validacion muestra exactamente en que profundidad el modelo empieza a sobreajustar. Los hiperparametros de poda lo controlan.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">Curva de validacion train vs test</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">min_samples_split</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">min_samples_leaf</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">max_leaf_nodes</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Curva de validacion &mdash; accuracy train vs test segun profundidad</div>
+    <div class="g2">
+      <div>
+        <div class="chart-wrap"><canvas id="i-val-curve"></canvas></div>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:11px;font-family:var(--font-mono)">
+          <span style="color:var(--indigo)">&#9644; Train Accuracy</span>
+          <span style="color:var(--orange)">&#9644; Test Accuracy</span>
+        </div>
+      </div>
+      <div>
+        <p class="prose" style="margin-bottom:14px">Lee la curva en 3 zonas:</p>
+        <div style="display:grid;gap:10px">
+          <div class="card-sm" style="border-left:3px solid var(--blue)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:5px">ZONA UNDERFITTING (depth 1-2)</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Train y test ambos bajos. El modelo hace muy pocas preguntas y no captura la complejidad del churn. Sesgo alto.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--green)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-bottom:5px">ZONA OPTIMA (depth 3-4)</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Test accuracy en su maximo (80%). Gap train-test pequeno (4-7%). El modelo generaliza bien. <strong style="color:var(--text)">Aqui quieres estar.</strong></div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--red)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:5px">ZONA OVERFITTING (depth 5+)</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Train sube hacia 100% pero test baja. El arbol memoriza ruido del training set. Gap enorme. Varianza alta.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(251,146,60,.12);color:var(--orange)">min_samples_split</div>
+        <div class="mex-title">Minimo de muestras para hacer un split</div>
+        <div class="mex-value" style="color:var(--orange)">default: 2</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--orange)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--orange)"><div class="flbl">QUE HACE</div>Un nodo solo se divide si tiene al menos min_samples_split muestras</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Con el default (2), el arbol puede crear hojas con un solo cliente &mdash; memorizacion pura. Subiendo a 10 o 20 obligas al arbol a generalizar: solo hace una pregunta si tiene suficientes datos para confiar en ella.<br><br>Valor tipico: 5&ndash;20 para datasets pequenos (n&lt;500), 50&ndash;100 para grandes.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Ejemplo con nuestros datos</strong><br><br>Con min_samples_split=2 (default): el arbol puede separar 3 clientes en dos grupos de 1 y 2. Esos grupos son estadisticamente insignificantes.<br><br>Con min_samples_split=10: solo hace el split si hay al menos 10 clientes en el nodo. Las reglas son mas robustas y se generalizan mejor a nuevos clientes.<br><br>Resultado en test: accuracy sube de 79% a 81%.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(167,139,250,.12);color:var(--purple)">min_samples_leaf</div>
+        <div class="mex-title">Minimo de muestras en cada hoja final</div>
+        <div class="mex-value" style="color:var(--purple)">default: 1</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:10%;background:var(--purple)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--purple)"><div class="flbl">QUE HACE</div>Cada hoja del arbol debe tener al menos min_samples_leaf muestras</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Es el complemento de min_samples_split. Garantiza que las predicciones finales se basen en al menos N observaciones.<br><br>Una hoja con 1 solo cliente tiene 0% o 100% de churn &mdash; muy sensible al ruido. Con min_samples_leaf=5, la hoja representa al menos 5 clientes similares.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">min_samples_leaf vs min_samples_split</strong><br><br>Son complementarios:<br><br>min_samples_split controla <em>cuando se puede dividir</em> un nodo.<br>min_samples_leaf controla <em>como deben quedar</em> las hojas finales.<br><br>En la practica: empieza con min_samples_leaf = max(5, n&times;0.01) &mdash; al menos 1% de los datos en cada hoja. Para 200 clientes: min_samples_leaf = max(5, 2) = 5.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(74,240,176,.12);color:var(--green)">PODA (PRUNING)</div>
+        <div class="mex-title">ccp_alpha &mdash; Cost-Complexity Pruning</div>
+        <div class="mex-value" style="color:var(--green)">alpha = 0</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--green)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--green)"><div class="flbl">FORMULA</div>Penalidad = impureza + alpha &times; n_hojas</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">La poda post-entrenamiento elimina ramas que no mejoran suficientemente el modelo. ccp_alpha controla cuanto pesas la complejidad vs la impureza.<br><br>alpha=0 &rarr; sin poda (default).<br>alpha pequeno &rarr; elimina hojas inutiles.<br>alpha grande &rarr; arbol muy simple.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Como encontrar el alpha optimo</strong><br><br>sklearn tiene un metodo: clf.cost_complexity_pruning_path(X_train, y_train) devuelve los alphas y las impurezas correspondientes.<br><br>Luego entrenas un arbol por cada alpha y mides accuracy en validacion. El alpha optimo es el que maximiza el accuracy de test sin sacrificar demasiado el de train.<br><br>Alternativa mas simple: usar max_depth=3&ndash;4 con min_samples_leaf=5 ya controla el overfitting para la mayoria de datasets.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparador de hiperparametros -->
+  <div class="card">
+    <div class="sec" style="margin-bottom:14px">Comparador de configuraciones &mdash; impacto en accuracy y overfitting</div>
+    <div style="overflow-x:auto">
+      <div class="htrow" style="border-bottom:2px solid var(--border2)">
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">DEPTH</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">MIN_SPLIT</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">CRITERIO</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">TEST ACC</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">TEST F1</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">OVERFIT</span>
+      </div>
+      <div id="hyper-table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AVANZADO ===== -->
+<div class="lp" id="panel-adv">
+  <div class="banner" style="background:rgba(74,240,176,.05);border:1px solid rgba(74,240,176,.15)">
+    <div class="banner-icon">&#128300;</div>
+    <div>
+      <h2 style="color:var(--green)">Nivel Avanzado &mdash; Feature importance y extension a Random Forest</h2>
+      <p class="prose">La importancia de features mide cuanto contribuye cada variable a reducir la impureza en todo el arbol. Es la primera respuesta a <strong style="color:var(--text)">"que variables importan mas para el churn?"</strong>. Random Forest la extiende promediando sobre cientos de arboles.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">Feature importance (Gini)</span>
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">Curva de validacion completa</span>
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">Comparador depth optimo</span>
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">De DT a Random Forest</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="sec">Feature importance &mdash; contribucion a reduccion de Gini</div>
+      <div class="chart-wrap"><canvas id="adv-fi-chart"></canvas></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.65">La importancia se calcula como la suma ponderada de las reducciones de Gini en todos los nodos donde aparece la feature, normalizada a suma=1.</div>
+    </div>
+    <div class="card">
+      <div class="sec">Curva de validacion completa (Accuracy + F1)</div>
+      <div class="chart-wrap"><canvas id="adv-val-chart"></canvas></div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;font-size:11px;font-family:var(--font-mono)">
+        <span style="color:var(--indigo)">&#9644; Train Acc</span>
+        <span style="color:var(--orange)">&#9644; Test Acc</span>
+        <span style="color:var(--blue)">&#9135; Test F1</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="sec" style="margin-bottom:14px">De Decision Tree a Random Forest &mdash; por que el ensemble gana</div>
+    <div class="g2">
+      <div>
+        <div style="display:grid;gap:10px">
+          <div class="card-sm" style="border-left:3px solid var(--orange)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--orange);margin-bottom:5px">PROBLEMA DEL ARBOL UNICO</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Alta varianza: si cambias 10 clientes del training set, el arbol puede cambiar completamente. Un solo arbol profundo es muy sensible al ruido de los datos.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--green)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-bottom:5px">SOLUCION: RANDOM FOREST</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Entrena 100-500 arboles, cada uno con una muestra aleatoria de datos (bagging) y features aleatorias. El voto mayoritario promedia los errores individuales &rarr; varianza mucho menor.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--blue)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:5px">FEATURE IMPORTANCE EN RF</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">La importancia en Random Forest es mas estable que en un arbol solo porque promedia sobre cientos de arboles distintos. Es la base del analisis de variables en XGBoost y LightGBM.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec" style="margin-bottom:14px">Comparacion DT vs RF (simulada)</div>
+        <div id="dt-rf-table"></div>
+        <div style="margin-top:14px;background:var(--bg3);border-radius:var(--r);padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.8" id="adv-verdict"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function(){
+
+var DEPTH_METRICS = {
+  1:{train:0.72,test:0.70,f1t:0.55,tp:8,tn:36,fp:6,fn:10},
+  2:{train:0.78,test:0.75,f1t:0.62,tp:12,tn:36,fp:6,fn:6},
+  3:{train:0.83,test:0.80,f1t:0.71,tp:14,tn:34,fp:8,fn:4},
+  4:{train:0.87,test:0.80,f1t:0.71,tp:15,tn:33,fp:9,fn:3},
+  5:{train:0.91,test:0.79,f1t:0.69,tp:16,tn:31,fp:11,fn:2},
+  6:{train:0.95,test:0.76,f1t:0.65,tp:17,tn:29,fp:13,fn:1},
+  7:{train:0.98,test:0.73,f1t:0.61,tp:17,tn:27,fp:15,fn:1},
+  8:{train:1.00,test:0.70,f1t:0.57,tp:18,tn:24,fp:18,fn:0}
+};
+var FEAT_NAMES = ['Actividad','Edad','Saldo','Antiguedad','N_Productos'];
+var FEAT_IMP   = [0.28,0.22,0.20,0.18,0.12];
+var HYPER = [
+  {d:2,ms:2, cr:'gini',   ta:0.75,tf:0.62,ov:0.03},
+  {d:3,ms:2, cr:'gini',   ta:0.80,tf:0.71,ov:0.04},
+  {d:3,ms:5, cr:'gini',   ta:0.81,tf:0.72,ov:0.02},
+  {d:3,ms:10,cr:'gini',   ta:0.79,tf:0.69,ov:0.01},
+  {d:4,ms:5, cr:'gini',   ta:0.80,tf:0.71,ov:0.07},
+  {d:4,ms:10,cr:'gini',   ta:0.80,tf:0.70,ov:0.05},
+  {d:3,ms:5, cr:'entropy',ta:0.80,tf:0.71,ov:0.03},
+  {d:4,ms:5, cr:'entropy',ta:0.79,tf:0.70,ov:0.06}
+];
+
+// ===== LEVEL SWITCH =====
+window.switchLevel=function(lv){
+  var c={basic:'var(--indigo)',inter:'var(--orange)',adv:'var(--green)'};
+  var bg={basic:'rgba(129,140,248,.15)',inter:'rgba(251,146,60,.15)',adv:'rgba(74,240,176,.15)'};
+  var lb={basic:'BASICO',inter:'INTERMEDIO',adv:'AVANZADO'};
+  ['basic','inter','adv'].forEach(function(l){
+    document.getElementById('btn-'+l).style.borderBottom='3px solid transparent';
+    document.getElementById('icon-'+l).style.background='';
+    document.getElementById('name-'+l).style.color='var(--text3)';
+    document.getElementById('panel-'+l).classList.remove('active');
+  });
+  document.getElementById('btn-'+lv).style.borderBottom='3px solid '+c[lv];
+  document.getElementById('icon-'+lv).style.background=bg[lv];
+  document.getElementById('name-'+lv).style.color=c[lv];
+  document.getElementById('panel-'+lv).classList.add('active');
+  var badge=document.getElementById('hdrBadge');
+  badge.textContent=lb[lv]; badge.style.background=bg[lv]; badge.style.color=c[lv];
+  if(lv==='inter'&&!done.inter){initInter();done.inter=true;}
+  if(lv==='adv'&&!done.adv){initAdv();done.adv=true;}
+};
+window.toggleMex=function(el){el.classList.toggle('open');};
+var done={basic:true,inter:false,adv:false};
+
+// ===== BASICO =====
+var giniChart=null;
+function buildGiniCurve(){
+  var el=document.getElementById('b-gini-curve');
+  if(!el) return;
+  var ctx=el.getContext('2d');
+  var ps=[];for(var i=0;i<=100;i++) ps.push(i/100);
+  var giniVals=ps.map(function(p){return 2*p*(1-p);});
+  var entVals=ps.map(function(p){
+    if(p===0||p===1) return 0;
+    return -(p*Math.log2(p)+(1-p)*Math.log2(1-p))/2;
+  });
+  new Chart(ctx,{type:'line',data:{
+    labels:ps.map(function(p){return p.toFixed(1);}),
+    datasets:[
+      {label:'Gini',data:giniVals,borderColor:'rgba(129,140,248,.8)',borderWidth:1.5,pointRadius:0,fill:false,tension:.3},
+      {label:'Entropia/2',data:entVals,borderColor:'rgba(96,165,250,.6)',borderWidth:1.5,pointRadius:0,fill:false,tension:.3,borderDash:[4,3]}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{labels:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},boxWidth:10}}},
+    scales:{
+      x:{ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:6},grid:{color:'rgba(255,255,255,.03)'}},
+      y:{ticks:{color:'#4d566b',font:{size:8}},grid:{color:'rgba(255,255,255,.03)'},min:0,max:0.55}
+    }
+  }});
+}
+
+function updateSim(d){
+  var m=DEPTH_METRICS[d];
+  document.getElementById('sv-depth').textContent=d;
+  document.getElementById('sv-acc').textContent=(m.test*100).toFixed(1)+'%';
+  document.getElementById('sv-f1').textContent=m.f1t.toFixed(2);
+  var gap=((m.train-m.test)*100).toFixed(1);
+  var gapEl=document.getElementById('sv-gap');
+  gapEl.textContent=gap+'%';
+  gapEl.style.color=parseFloat(gap)<5?'var(--green)':parseFloat(gap)<12?'var(--orange)':'var(--red)';
+  document.getElementById('cm-tn').textContent=m.tn;
+  document.getElementById('cm-fp').textContent=m.fp;
+  document.getElementById('cm-fn').textContent=m.fn;
+  document.getElementById('cm-tp').textContent=m.tp;
+  var prec=m.tp/(m.tp+m.fp)||0;
+  var rec=m.tp/(m.tp+m.fn)||0;
+  document.getElementById('cm-prec').textContent=prec.toFixed(2);
+  document.getElementById('cm-recall').textContent=rec.toFixed(2);
+  var interp='';
+  if(d<=2) interp='Underfitting: el modelo hace muy pocas preguntas. Accuracy y F1 bajos en train y test.';
+  else if(d<=4) interp='Zona optima: buen balance entre capacidad y generalizacion. Gap train-test pequeno ('+gap+'%).';
+  else if(d<=6) interp='Overfitting leve: train sube pero test empieza a bajar. Considera max_depth=3 con min_samples_leaf=5.';
+  else interp='Overfitting severo: el arbol memoriza el training set. Gap '+gap+'%. El modelo falla en nuevos clientes.';
+  document.getElementById('depth-interp').textContent=interp;
+}
+document.getElementById('sl-depth').addEventListener('input',function(){updateSim(parseInt(this.value));});
+
+// ===== INTERMEDIO =====
+function initInter(){
+  buildValCurve();
+  buildHyperTable();
+}
+function buildValCurve(){
+  var depths=[1,2,3,4,5,6,7,8];
+  var trainVals=depths.map(function(d){return DEPTH_METRICS[d].train*100;});
+  var testVals=depths.map(function(d){return DEPTH_METRICS[d].test*100;});
+  var ctx=document.getElementById('i-val-curve').getContext('2d');
+  new Chart(ctx,{type:'line',data:{
+    labels:depths.map(function(d){return 'depth='+d;}),
+    datasets:[
+      {label:'Train',data:trainVals,borderColor:'rgba(129,140,248,.8)',borderWidth:2,pointRadius:3,fill:false,tension:.3},
+      {label:'Test',data:testVals,borderColor:'rgba(251,146,60,.9)',borderWidth:2,pointRadius:3,fill:false,tension:.3}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y.toFixed(1)+'%';}}}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'Accuracy (%)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:65,max:105}
+    }
+  }});
+}
+function buildHyperTable(){
+  var best=HYPER.reduce(function(a,b){return b.ta>a.ta?b:a;});
+  var html=HYPER.map(function(r){
+    var isBest=(r===best);
+    var ovColor=r.ov<0.03?'var(--green)':r.ov<0.06?'var(--orange)':'var(--red)';
+    return '<div class="htrow" style="'+(isBest?'background:rgba(74,240,176,.04)':'')+'">'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--text)">'+(isBest?'&#9670; ':'')+'d='+r.d+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--text2)">ms='+r.ms+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--text2)">'+r.cr+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:'+(isBest?'var(--green)':'var(--text)')+'">'+(r.ta*100).toFixed(0)+'%</span>'
+      +'<span style="font-family:var(--font-mono);font-size:13px;color:var(--blue)">'+r.tf.toFixed(2)+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:'+ovColor+'">'+(r.ov*100).toFixed(0)+'%</span>'
+      +'</div>';
+  }).join('');
+  document.getElementById('hyper-table').innerHTML=html;
+}
+
+// ===== AVANZADO =====
+function initAdv(){
+  buildFIChart();
+  buildAdvValCurve();
+  buildDTRFTable();
+}
+function buildFIChart(){
+  var ctx=document.getElementById('adv-fi-chart').getContext('2d');
+  var sorted=FEAT_NAMES.map(function(n,i){return {n:n,v:FEAT_IMP[i]};}).sort(function(a,b){return b.v-a.v;});
+  var maxFI=Math.max.apply(null,sorted.map(function(s){return s.v;}));
+  new Chart(ctx,{type:'bar',data:{
+    labels:sorted.map(function(s){return s.n;}),
+    datasets:[{
+      data:sorted.map(function(s){return s.v;}),
+      backgroundColor:sorted.map(function(s){
+        var t=s.v/maxFI;
+        return 'rgba(129,140,248,'+(.3+t*.5)+')';
+      }),
+      borderRadius:5
+    }]
+  },options:{
+    indexAxis:'y',
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Importancia: '+(c.parsed.x*100).toFixed(0)+'%';}}}},
+    scales:{
+      x:{title:{display:true,text:'Importancia relativa',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.35},
+      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10}}}
+    }
+  }});
+}
+function buildAdvValCurve(){
+  var depths=[1,2,3,4,5,6,7,8];
+  var trainAcc=depths.map(function(d){return DEPTH_METRICS[d].train*100;});
+  var testAcc=depths.map(function(d){return DEPTH_METRICS[d].test*100;});
+  var testF1=depths.map(function(d){return DEPTH_METRICS[d].f1t*100;});
+  var ctx=document.getElementById('adv-val-chart').getContext('2d');
+  new Chart(ctx,{type:'line',data:{
+    labels:depths.map(function(d){return 'd='+d;}),
+    datasets:[
+      {label:'Train Acc',data:trainAcc,borderColor:'rgba(129,140,248,.7)',borderWidth:1.5,pointRadius:2,fill:false,tension:.3},
+      {label:'Test Acc',data:testAcc,borderColor:'rgba(251,146,60,.9)',borderWidth:2,pointRadius:3,fill:false,tension:.3},
+      {label:'Test F1',data:testF1,borderColor:'rgba(96,165,250,.8)',borderWidth:1.5,pointRadius:2,fill:false,tension:.3,borderDash:[4,3]}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'Score (%)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:55,max:105}
+    }
+  }});
+}
+function buildDTRFTable(){
+  var rows=[
+    {m:'Accuracy test','DT':'80.0%','RF':'86.5%',w:'rf'},
+    {m:'F1 Score','DT':'0.71','RF':'0.79',w:'rf'},
+    {m:'Varianza',DT:'Alta',RF:'Baja',w:'rf'},
+    {m:'Interpretable','DT':'Si','RF':'Parcial',w:'dt'},
+    {m:'Velocidad train','DT':'Muy rapido','RF':'Mas lento',w:'dt'},
+    {m:'Feature importance','DT':'Inestable','RF':'Estable',w:'rf'}
+  ];
+  var hdr='<div style="display:grid;grid-template-columns:140px 1fr 1fr 70px;gap:8px;padding:0 0 8px;border-bottom:2px solid var(--border2);font-family:var(--font-mono);font-size:10px;color:var(--text3)">'
+    +'<span>METRICA</span><span style="color:var(--indigo);text-align:center">DECISION TREE</span><span style="color:var(--green);text-align:center">RANDOM FOREST</span><span style="text-align:center">MEJOR</span></div>';
+  var body=rows.map(function(r){
+    var wb=r.w==='rf'
+      ?'<span style="font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(74,240,176,.12);color:var(--green);border:1px solid rgba(74,240,176,.25)">RF</span>'
+      :'<span style="font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(129,140,248,.12);color:var(--indigo);border:1px solid rgba(129,140,248,.25)">DT</span>';
+    return '<div style="display:grid;grid-template-columns:140px 1fr 1fr 70px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">'+r.m+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--indigo);text-align:center">'+r['DT']+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--green);text-align:center">'+r['RF']+'</span>'
+      +'<span style="text-align:center">'+wb+'</span></div>';
+  }).join('');
+  document.getElementById('dt-rf-table').innerHTML=hdr+body;
+  document.getElementById('adv-verdict').innerHTML=
+    'Un Decision Tree con depth=3 y min_samples_leaf=5 da <strong style="color:var(--indigo)">80% accuracy</strong> en test y es completamente interpretable: puedes mostrarle al banco exactamente que reglas generan cada prediccion de churn.<br><br>'
+    +'Random Forest mejora a <strong style="color:var(--green)">86.5%</strong> pero pierde interpretabilidad directa. La eleccion depende del caso: si el banco necesita explicar cada decision al cliente (regulacion), usa Decision Tree. Si solo necesita maximizar precision de campanas de retencion, usa Random Forest.<br><br>'
+    +'<strong style="color:var(--text)">Siguiente paso natural:</strong> Gradient Boosting (XGBoost, LightGBM) que construye arboles secuencialmente corrigiendo errores del anterior &mdash; suele superar a Random Forest en la mayoria de datasets tabulares.';
+}
+
+// ===== INIT =====
+document.getElementById('btn-basic').style.borderBottom='3px solid var(--indigo)';
+document.getElementById('icon-basic').style.background='rgba(129,140,248,.15)';
+document.getElementById('name-basic').style.color='var(--indigo)';
+updateSim(3);
+setTimeout(function(){buildGiniCurve();},100);
+
+})();
+</script>
+</body>
+</html>

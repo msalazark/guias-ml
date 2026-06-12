@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regression Metrics Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:18px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em}
+.hdr-title{font-family:var(--font-mono);font-size:14px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.level-bar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg2)}
+.level-btn{display:flex;align-items:center;gap:10px;padding:16px 28px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;flex:1;justify-content:center}
+.level-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .2s;flex-shrink:0}
+.level-info{display:flex;flex-direction:column;gap:2px}
+.level-name{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text3);transition:color .2s;letter-spacing:.03em}
+.level-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.04em}
+.level-sep{width:1px;background:var(--border);flex-shrink:0}
+.main{max-width:1060px;margin:0 auto;padding:28px 32px}
+.level-panel{display:none}.level-panel.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+.intro-banner{border-radius:var(--rl);padding:22px 26px;margin-bottom:20px;display:flex;gap:20px;align-items:flex-start}
+.intro-banner-icon{font-size:36px;flex-shrink:0;margin-top:2px}
+.intro-banner h2{font-family:var(--font-mono);font-size:18px;font-weight:600;margin-bottom:6px}
+.intro-banner p{font-size:13px;line-height:1.7}
+.intro-chips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:4px 10px;border-radius:4px;font-weight:500}
+.mex-grid{display:grid;gap:14px;margin-bottom:20px}
+.mex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;cursor:pointer;transition:border-color .15s}
+.mex:hover{border-color:var(--border2)}
+.mex-top{display:flex;align-items:center;gap:14px}
+.mex-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:5px 12px;border-radius:5px;white-space:nowrap}
+.mex-title{font-size:14px;font-weight:500;color:var(--text);flex:1}
+.mex-value{font-family:var(--font-mono);font-size:22px;font-weight:600;min-width:100px;text-align:right}
+.mex-toggle{font-size:18px;color:var(--text3);transition:transform .2s;flex-shrink:0;margin-left:8px}
+.mex.open .mex-toggle{transform:rotate(180deg)}
+.mex-body{display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.mex.open .mex-body{display:block}
+.mex-body-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.formula-box{background:var(--bg3);border-radius:var(--r);padding:10px 14px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border)}
+.formula-label{font-size:10px;color:var(--text3);margin-bottom:4px;letter-spacing:.06em}
+.interp-box{background:var(--bg3);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--text2);line-height:1.65}
+.bar-track{height:6px;background:var(--border);border-radius:3px;margin-top:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s}
+.sim-wrap{display:grid;grid-template-columns:280px 1fr;gap:18px;margin-bottom:18px}
+.sl-row{margin-bottom:12px}
+.sl-lbl{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:5px}
+.sl-lbl span:first-child{color:var(--text2)}.sl-lbl span:last-child{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;border:2px solid var(--bg);background:var(--green)}
+input.blue::-webkit-slider-thumb{background:var(--blue)}
+input.purple::-webkit-slider-thumb{background:var(--purple)}
+.chart-wrap{position:relative;height:260px}
+.chart-wrap-sm{position:relative;height:200px}
+.chart-wrap-xs{position:relative;height:150px}
+.check-row{display:flex;gap:10px;margin-bottom:10px}
+.check-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.check-text{font-size:12px;color:var(--text2);line-height:1.6}
+.cmp-row{display:grid;grid-template-columns:110px 1fr 1fr 80px;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.cmp-row:last-child{border-bottom:none}
+.cmp-lbl{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+.cmp-a{font-family:var(--font-mono);font-size:13px;color:var(--blue);text-align:center}
+.cmp-b{font-family:var(--font-mono);font-size:13px;color:var(--purple);text-align:center}
+.cmp-w{font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;text-align:center;display:inline-block}
+.w-a{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+.w-b{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+.w-t{background:var(--bg3);color:var(--text3);border:1px solid var(--border2)}
+.btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:11px;padding:7px 14px;border-radius:4px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.inp{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-family:var(--font-mono);font-size:13px;padding:6px 10px;outline:none}
+label.lbl{font-size:10px;font-family:var(--font-mono);color:var(--text3);display:block;margin-bottom:3px}
+.tag{display:inline-block;font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;font-weight:600;margin:0 2px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-badge" id="hdrBadge" style="background:rgba(74,240,176,.15);color:var(--green)">BASICO</span>
+  <span class="hdr-title">Regression Metrics Lab</span>
+  <span class="hdr-sub">Prediccion de ventas e-commerce</span>
+</div>
+
+<div class="level-bar">
+  <div class="level-btn" id="btn-basic" onclick="switchLevel('basic')">
+    <div class="level-icon" id="icon-basic" style="background:rgba(74,240,176,.15)">&#127807;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-basic" style="color:var(--green)">Basico</div>
+      <div class="level-sub">MAE &middot; RMSE &middot; R&sup2;</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-inter" onclick="switchLevel('inter')">
+    <div class="level-icon" id="icon-inter">&#9881;&#65039;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-inter">Intermedio</div>
+      <div class="level-sub">MSE &middot; MAPE &middot; SMAPE &middot; R&sup2; adj</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-adv" onclick="switchLevel('adv')">
+    <div class="level-icon" id="icon-adv">&#128300;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-adv">Avanzado</div>
+      <div class="level-sub">AIC &middot; BIC &middot; Residuales</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ===== BASICO ===== -->
+<div class="level-panel active" id="panel-basic">
+  <div class="intro-banner" style="background:rgba(74,240,176,.05);border:1px solid rgba(74,240,176,.15)">
+    <div class="intro-banner-icon">&#127807;</div>
+    <div>
+      <h2 style="color:var(--green)">Nivel Basico &mdash; Las 3 metricas esenciales</h2>
+      <p class="prose">Tu modelo predice el <strong style="color:var(--text)">revenue diario en S/.</strong> de 20 tiendas e-commerce. Para saber si funciona bien necesitas responder: &iquest;cuanto me equivoco en soles? &iquest;me afectan los errores grandes? &iquest;cuanto explica el modelo?</p>
+      <div class="intro-chips">
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">MAE &mdash; error promedio en S/.</span>
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">RMSE &mdash; penaliza errores grandes</span>
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">R&sup2; &mdash; poder explicativo</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mex-grid">
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(74,240,176,.12);color:var(--green)">MAE</div>
+        <div class="mex-title">Error Absoluto Medio</div>
+        <div class="mex-value" style="color:var(--green)" id="b-mae-val">S/. 412</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="b-mae-bar" style="width:41%;background:var(--green)"></div></div>
+      <div class="mex-body">
+        <div class="mex-body-grid">
+          <div>
+            <div class="formula-box" style="color:var(--green)"><div class="formula-label">FORMULA</div>MAE = mean( |y &minus; &ycirc;| )</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Promedia los errores absolutos. Si el modelo predijo S/. 1,390 para una tienda que vendio S/. 1,200, el error es |1200&minus;1390| = <strong style="color:var(--text)">S/. 190</strong>. Suma esos errores de todas las tiendas y saca la media.</div>
+          </div>
+          <div>
+            <div class="interp-box"><strong style="color:var(--text)">Como interpreto S/. 412?</strong><br><br>En promedio el modelo se equivoca <strong style="color:var(--green)">S/. 412</strong> por tienda por dia. Es el numero que le muestras al negocio: directo, en la misma unidad del revenue.<br><br><strong style="color:var(--text)">Es bueno?</strong> Si las tiendas venden ~S/. 4,000/dia, un MAE de S/. 412 es ~10% &mdash; aceptable para empezar.</div>
+            <div style="margin-top:10px;background:rgba(74,240,176,.05);border:1px solid rgba(74,240,176,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; <strong style="color:var(--text)">Cuando priorizarlo:</strong> cuando todos los errores (grandes y pequenos) importan igual. Util en planificacion de stock.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(251,146,60,.12);color:var(--orange)">RMSE</div>
+        <div class="mex-title">Raiz del Error Cuadratico Medio</div>
+        <div class="mex-value" style="color:var(--orange)" id="b-rmse-val">S/. 536</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="b-rmse-bar" style="width:54%;background:var(--orange)"></div></div>
+      <div class="mex-body">
+        <div class="mex-body-grid">
+          <div>
+            <div class="formula-box" style="color:var(--orange)"><div class="formula-label">FORMULA</div>RMSE = &radic;mean( (y &minus; &ycirc;)&sup2; )</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Eleva cada error al cuadrado antes de promediar. <strong style="color:var(--text)">Penaliza mucho mas los errores grandes.</strong> Un error de S/. 2,000 contribuye 4x mas que uno de S/. 1,000.</div>
+            <div style="margin-top:10px;background:rgba(251,146,60,.07);border:1px solid rgba(251,146,60,.15);border-radius:var(--r);padding:10px 12px">
+              <div style="font-size:11px;font-family:var(--font-mono);color:var(--orange);margin-bottom:6px">RMSE VS MAE &mdash; SENAL CLAVE</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6">RMSE (S/.536) &gt; MAE (S/.412) en S/.124. Esa diferencia indica <strong style="color:var(--text)">tiendas con errores muy grandes</strong> que jalan el RMSE hacia arriba.</div>
+            </div>
+          </div>
+          <div>
+            <div class="interp-box"><strong style="color:var(--text)">Como interpreto S/. 536?</strong><br><br>El "error tipico" ponderando mas los errores grandes. Misma unidad que el MAE, se comunica igual al negocio.<br><br>Si RMSE &asymp; MAE &rarr; errores homogeneos.<br>Si RMSE &raquo; MAE &rarr; hay predicciones muy malas en algunas tiendas.</div>
+            <div style="margin-top:10px;background:rgba(251,146,60,.05);border:1px solid rgba(251,146,60,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; <strong style="color:var(--text)">Cuando priorizarlo:</strong> cuando los errores grandes tienen consecuencias serias (rotura de stock, sobrecompra de inventario).</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">R&sup2;</div>
+        <div class="mex-title">Coeficiente de Determinacion</div>
+        <div class="mex-value" style="color:var(--blue)" id="b-r2-val">0.78</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="b-r2-bar" style="width:78%;background:var(--blue)"></div></div>
+      <div class="mex-body">
+        <div class="mex-body-grid">
+          <div>
+            <div class="formula-box" style="color:var(--blue)"><div class="formula-label">FORMULA</div>R&sup2; = 1 &minus; SS_res / SS_tot</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Que proporcion de la variacion del revenue explica el modelo. R&sup2;=1 es prediccion perfecta. R&sup2;=0 es tan bueno como predecir la media siempre.</div>
+            <div style="display:grid;gap:5px;margin-top:10px">
+              <div style="border-left:3px solid var(--red);padding:6px 10px;background:rgba(248,113,113,.07);border-radius:0 4px 4px 0;font-size:11px;color:var(--text2)"><span style="font-family:var(--font-mono);color:var(--red)">R&sup2; &lt; 0.3</span> &mdash; Modelo muy debil</div>
+              <div style="border-left:3px solid var(--orange);padding:6px 10px;background:rgba(251,146,60,.07);border-radius:0 4px 4px 0;font-size:11px;color:var(--text2)"><span style="font-family:var(--font-mono);color:var(--orange)">R&sup2; 0.3&ndash;0.6</span> &mdash; Aceptable baseline</div>
+              <div style="border-left:3px solid var(--green);padding:6px 10px;background:rgba(74,240,176,.07);border-radius:0 4px 4px 0;font-size:11px;color:var(--text2)"><span style="font-family:var(--font-mono);color:var(--green)">R&sup2; 0.6&ndash;0.85</span> &mdash; Bueno &larr; nuestro caso</div>
+              <div style="border-left:3px solid var(--blue);padding:6px 10px;background:rgba(96,165,250,.07);border-radius:0 4px 4px 0;font-size:11px;color:var(--text2)"><span style="font-family:var(--font-mono);color:var(--blue)">R&sup2; &gt; 0.85</span> &mdash; Excelente (verifica leakage)</div>
+            </div>
+          </div>
+          <div>
+            <div class="interp-box"><strong style="color:var(--text)">Como interpreto R&sup2; = 0.78?</strong><br><br>El modelo explica el <strong style="color:var(--blue)">78%</strong> de la variacion en ventas. El 22% restante son factores no capturados: promociones, eventos, estacionalidad.<br><br><strong style="color:var(--text)">Limitacion critica:</strong> R&sup2; siempre sube al agregar variables, aunque sean ruido puro. Por eso en Intermedio veras R&sup2; ajustado.</div>
+            <div style="margin-top:10px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#9888;&#65039; <strong style="color:var(--text)">Trampa comun:</strong> R&sup2; alto en train no garantiza buen modelo. Siempre evalua en datos de test.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="sec">Simulador &mdash; ajusta el error y ve como cambian las 3 metricas en tiempo real</div>
+    <div class="sim-wrap">
+      <div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Ruido base (MAE aprox.)</span><span style="color:var(--green)" id="bv-noise">400</span></div>
+          <input type="range" id="b-sl-noise" min="50" max="2000" value="400" step="50">
+        </div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Outliers (tiendas atipicas)</span><span style="color:var(--green)" id="bv-out">2</span></div>
+          <input type="range" id="b-sl-out" min="0" max="8" value="2" step="1">
+        </div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Sesgo del modelo</span><span style="color:var(--green)" id="bv-bias">0</span></div>
+          <input type="range" id="b-sl-bias" min="-800" max="800" value="0" step="50">
+        </div>
+        <div class="divider"></div>
+        <div style="background:var(--bg3);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.7">&#128065; <strong style="color:var(--text)">Observa:</strong> cuando subes los outliers, el RMSE sube mucho mas que el MAE. Esa diferencia te dice que hay tiendas con predicciones muy malas.</div>
+        <div style="margin-top:12px;display:grid;gap:8px">
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">MAE</span><span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--green)" id="b-mae-big">S/. 412</span></div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">RMSE</span><span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--orange)" id="b-rmse-big">S/. 536</span></div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">R&sup2;</span><span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--blue)" id="b-r2-big">0.780</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="chart-wrap"><canvas id="b-scatter"></canvas></div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-top:6px">Real vs Predicho &middot; diagonal = prediccion perfecta &middot; puntos rojos = outliers</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INTERMEDIO ===== -->
+<div class="level-panel" id="panel-inter">
+  <div class="intro-banner" style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15)">
+    <div class="intro-banner-icon">&#9881;&#65039;</div>
+    <div>
+      <h2 style="color:var(--blue)">Nivel Intermedio &mdash; Error porcentual y ajuste fino</h2>
+      <p class="prose">Ya sabes cuantos soles te equivocas. Ahora: &iquest;ese error es proporcional al tamano de la tienda? &iquest;Como corrijo la limitacion del R&sup2;? &iquest;Cuando el MAPE falla?</p>
+      <div class="intro-chips">
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">MSE &mdash; base matematica</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">MAPE &mdash; error %</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">SMAPE &mdash; version robusta</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">R&sup2; ajustado &mdash; penaliza complejidad</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mex-grid">
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">MSE</div>
+        <div class="mex-title">Error Cuadratico Medio</div>
+        <div class="mex-value" style="color:var(--blue)">287,440</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:57%;background:var(--blue)"></div></div>
+      <div class="mex-body">
+        <div class="mex-body-grid">
+          <div>
+            <div class="formula-box" style="color:var(--blue)"><div class="formula-label">FORMULA</div>MSE = mean( (y &minus; &ycirc;)&sup2; )</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Promedio de los errores al cuadrado. Es la base del RMSE (RMSE = &radic;MSE). Su unidad es S/.&sup2; &mdash; dificil de interpretar directamente &mdash; pero es esencial para la optimizacion matematica de modelos.</div>
+          </div>
+          <div>
+            <div class="interp-box"><strong style="color:var(--text)">Por que existe si RMSE es mas facil?</strong><br><br>Los algoritmos de ML minimizan el MSE internamente porque es diferenciable. Al reportar resultados al negocio usas RMSE, pero al entrenar el modelo usas MSE.<br><br>MSE = 287,440 &rarr; RMSE = &radic;287,440 = S/.536</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(251,146,60,.12);color:var(--orange)">MAPE</div>
+        <div class="mex-title">Error Porcentual Absoluto Medio</div>
+        <div class="mex-value" style="color:var(--orange)" id="i-mape-val">14.8%</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="i-mape-bar" style="width:30%;background:var(--orange)"></div></div>
+      <div class="mex-body">
+        <div class="mex-body-grid">
+          <div>
+            <div class="formula-box" style="color:var(--orange)"><div class="formula-label">FORMULA</div>MAPE = mean(|y&minus;&ycirc;| / |y|) &times; 100</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Expresa el error como porcentaje del valor real. Un error de S/.500 en una tienda de S/.1,000 (50%) es mucho peor que el mismo error en una de S/.10,000 (5%).</div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">MAPE &lt; 10%</span><span style="color:var(--green)">Excelente</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">10% &ndash; 20%</span><span style="color:var(--blue)">Bueno &larr; aqui estamos</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">20% &ndash; 50%</span><span style="color:var(--orange)">Aceptable</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">&gt; 50%</span><span style="color:var(--red)">Revisar modelo</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="interp-box"><strong style="color:var(--text)">Limitacion critica del MAPE</strong><br><br>Si una tienda vendio S/.0 un dia (cerrada, feriado), el MAPE explota a infinito porque divides entre cero.<br><br>Ademas <strong style="color:var(--text)">no es simetrico</strong>: un error de +100% (predijiste el doble) pesa igual que &minus;50% aunque la diferencia absoluta sea distinta. Por eso existe el SMAPE.</div>
+            <div style="margin-top:10px;background:rgba(251,146,60,.05);border:1px solid rgba(251,146,60,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; Usa MAPE cuando ninguna tienda tiene ventas cercanas a cero y quieres comunicar el error en porcentaje.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(167,139,250,.12);color:var(--purple)">SMAPE</div>
+        <div class="mex-title">Error Porcentual Absoluto Simetrico</div>
+        <div class="mex-value" style="color:var(--purple)" id="i-smape-val">13.9%</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="i-smape-bar" style="width:28%;background:var(--purple)"></div></div>
+      <div class="mex-body">
+        <div class="mex-body-grid">
+          <div>
+            <div class="formula-box" style="color:var(--purple)"><div class="formula-label">FORMULA</div>SMAPE = mean( 2|y&minus;&ycirc;| / (|y|+|&ycirc;|) ) &times; 100</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Divide entre la suma del valor real y el predicho, no solo entre el real. Eso lo hace <strong style="color:var(--text)">simetrico</strong> y mas estable cuando y &asymp; 0.</div>
+          </div>
+          <div>
+            <div class="interp-box"><strong style="color:var(--text)">SMAPE (13.9%) vs MAPE (14.8%)</strong><br><br>Cuando SMAPE &lt; MAPE, el modelo tiende a sobreestimar en algunas tiendas.<br><br>En forecasting de demanda (Amazon, Walmart, Falabella) se usa SMAPE como metrica estandar. Para e-commerce con tiendas que tienen dias de ventas bajas, es mas confiable que el MAPE.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">R&sup2; adj</div>
+        <div class="mex-title">R&sup2; Ajustado &mdash; penaliza variables inutiles</div>
+        <div class="mex-value" style="color:var(--blue)">0.74</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:74%;background:var(--blue)"></div></div>
+      <div class="mex-body">
+        <div class="mex-body-grid">
+          <div>
+            <div class="formula-box" style="color:var(--blue)"><div class="formula-label">FORMULA</div>R&sup2;adj = 1 &minus; (1&minus;R&sup2;)(n&minus;1)/(n&minus;k&minus;1)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">k</strong> = numero de features, <strong style="color:var(--text)">n</strong> = observaciones. Si agregas una variable inutil, R&sup2; sube ligeramente pero R&sup2; adj <em>baja</em> porque penaliza el k adicional.</div>
+            <div style="margin-top:12px;background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:12px">
+              <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:8px">EJEMPLO &mdash; NUESTRO MODELO</div>
+              <div style="display:grid;gap:6px;font-size:12px">
+                <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">R&sup2; (3 features)</span><span style="color:var(--text)">0.78</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">R&sup2; adj (3 features)</span><span style="color:var(--blue)">0.74</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">Diferencia</span><span style="color:var(--orange)">&minus;0.04 (normal)</span></div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="interp-box"><strong style="color:var(--text)">Cuando me preocupo?</strong><br><br>R&sup2;=0.85 y R&sup2;adj=0.62 &rarr; diferencia de 0.23 indica overfitting o variables irrelevantes.<br><br><strong style="color:var(--text)">Regla practica:</strong><br>&bull; Diferencia &lt; 0.05 &rarr; normal<br>&bull; Diferencia 0.05&ndash;0.10 &rarr; revisar features<br>&bull; Diferencia &gt; 0.10 &rarr; overfitting probable</div>
+            <div style="margin-top:10px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; Siempre reporta R&sup2; ajustado cuando comparas modelos con distinto numero de features.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="sec">Por que el MAPE importa mas que el MAE en tiendas de distinto tamano</div>
+    <div class="g2">
+      <div>
+        <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12px">
+          <thead><tr>
+            <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3)">TIENDA</th>
+            <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3)">REAL</th>
+            <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3)">MAE</th>
+            <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3)">MAPE</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border)">Micro</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">S/.800</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">S/.400</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);color:var(--red)">50.0%</td></tr>
+            <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border)">Mediana</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">S/.4,000</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">S/.400</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);color:var(--orange)">10.0%</td></tr>
+            <tr><td style="padding:7px 8px">Grande</td><td style="text-align:right;padding:7px 8px">S/.10,000</td><td style="text-align:right;padding:7px 8px">S/.400</td><td style="text-align:right;padding:7px 8px;color:var(--green)">4.0%</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top:12px;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.7">El MAE es <strong style="color:var(--text)">identico (S/.400)</strong> en los tres casos. Pero el MAPE revela que la tienda micro tiene un error <strong style="color:var(--red)">catastrofico</strong> mientras que la grande esta bien calibrada.</div>
+      </div>
+      <div>
+        <div class="chart-wrap-sm"><canvas id="i-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AVANZADO ===== -->
+<div class="level-panel" id="panel-adv">
+  <div class="intro-banner" style="background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.15)">
+    <div class="intro-banner-icon">&#128300;</div>
+    <div>
+      <h2 style="color:var(--purple)">Nivel Avanzado &mdash; Seleccion de modelo y diagnostico</h2>
+      <p class="prose">Ya puedes medir el error. Ahora el reto es elegir entre modelos que compiten y diagnosticar si el modelo cumple los supuestos estadisticos.</p>
+      <div class="intro-chips">
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">AIC &mdash; info penalizada</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">BIC &mdash; penaliza mas complejidad</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Residuales &mdash; diagnostico visual</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Homocedasticidad &middot; Normalidad</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(167,139,250,.12);color:var(--purple)">AIC</div>
+        <div class="mex-title">Criterio de Informacion de Akaike</div>
+        <div class="mex-value" style="color:var(--purple)" id="adv-aic-a">312.4</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--purple)"></div></div>
+      <div class="mex-body">
+        <div class="mex-body-grid">
+          <div>
+            <div class="formula-box" style="color:var(--purple)"><div class="formula-label">FORMULA</div>AIC = 2k &minus; 2&middot;ln(L&#770;)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">k</strong> = numero de parametros. <strong style="color:var(--text)">L&#770;</strong> = log-verosimilitud maxima. El AIC premia el ajuste (mayor L&#770; = menor AIC) y penaliza la complejidad (mayor k = mayor AIC). <strong style="color:var(--text)">Menor AIC = mejor modelo.</strong></div>
+          </div>
+          <div>
+            <div class="interp-box"><strong style="color:var(--text)">Cuando usar AIC vs BIC?</strong><br><br>AIC prefiere modelos mas complejos (mejor poder predictivo). BIC penaliza mas agresivamente y prefiere modelos simples (mejor interpretabilidad).<br><br><strong style="color:var(--text)">No tienen interpretacion absoluta.</strong> Solo se usan para comparar modelos en los mismos datos. Una diferencia &Delta;AIC &gt; 10 es decisiva.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(167,139,250,.12);color:var(--purple)">BIC</div>
+        <div class="mex-title">Criterio de Informacion Bayesiano</div>
+        <div class="mex-value" style="color:var(--purple)" id="adv-bic-a">328.7</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--purple)"></div></div>
+      <div class="mex-body">
+        <div class="mex-body-grid">
+          <div>
+            <div class="formula-box" style="color:var(--purple)"><div class="formula-label">FORMULA</div>BIC = k&middot;ln(n) &minus; 2&middot;ln(L&#770;)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">La diferencia con AIC: la penalizacion es <strong style="color:var(--text)">k&middot;ln(n)</strong> en vez de 2k. Con n=20, ln(20)&asymp;3, por lo que el BIC penaliza cada parametro ~1.5x mas que el AIC. Con n grande, el BIC es mucho mas conservador.</div>
+          </div>
+          <div>
+            <div class="interp-box"><strong style="color:var(--text)">Interpretacion de &Delta;BIC</strong><br><br><span style="font-family:var(--font-mono);color:var(--green)">&Delta;BIC 0&ndash;2</span> &rarr; diferencia no significativa<br><span style="font-family:var(--font-mono);color:var(--orange)">&Delta;BIC 2&ndash;6</span> &rarr; evidencia moderada<br><span style="font-family:var(--font-mono);color:var(--red)">&Delta;BIC &gt; 10</span> &rarr; evidencia muy fuerte<br><br>AIC y BIC pueden contradecirse: uno favorece el modelo complejo, el otro el simple.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:20px">
+    <div class="sec" style="margin-bottom:16px">Comparador de modelos &mdash; ingresa tus metricas</div>
+    <div class="g2" style="margin-bottom:14px">
+      <div>
+        <div style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--blue);margin-bottom:10px">&#9724; Modelo A</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label class="lbl">Log-likelihood</label><input class="inp" type="number" id="a-ll" value="-152.2" step="0.1"></div>
+          <div><label class="lbl">Parametros (k)</label><input class="inp" type="number" id="a-k" value="3" step="1"></div>
+          <div><label class="lbl">RMSE</label><input class="inp" type="number" id="a-rmse2" value="536"></div>
+          <div><label class="lbl">R&sup2; ajustado</label><input class="inp" type="number" id="a-r2a" value="0.74" step="0.01"></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--purple);margin-bottom:10px">&#9724; Modelo B</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label class="lbl">Log-likelihood</label><input class="inp" type="number" id="b-ll" value="-148.6" step="0.1"></div>
+          <div><label class="lbl">Parametros (k)</label><input class="inp" type="number" id="b-k" value="8" step="1"></div>
+          <div><label class="lbl">RMSE</label><input class="inp" type="number" id="b-rmse2" value="447"></div>
+          <div><label class="lbl">R&sup2; ajustado</label><input class="inp" type="number" id="b-r2a" value="0.79" step="0.01"></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn" onclick="runComparison()" style="border-color:rgba(167,139,250,.3);color:var(--purple);margin-bottom:14px">&#8635; Comparar modelos</button>
+    <div id="cmp-table"></div>
+    <div id="cmp-verdict" style="margin-top:14px;background:var(--bg3);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.7;display:none"></div>
+  </div>
+
+  <div class="card">
+    <div class="sec">Diagnostico de residuales</div>
+    <div class="g2" style="margin-bottom:16px">
+      <div>
+        <div style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.7">El <strong style="color:var(--text)">residual</strong> es: <span style="font-family:var(--font-mono);color:var(--purple)">e = y &minus; &ycirc;</span>. Un buen modelo tiene residuales con comportamiento de ruido blanco.</div>
+        <div class="check-row"><div class="check-icon">&#9989;</div><div class="check-text"><strong style="color:var(--text)">Media &asymp; 0:</strong> sin sesgo sistematico. El modelo no sobreestima ni subestima consistentemente.</div></div>
+        <div class="check-row"><div class="check-icon">&#9989;</div><div class="check-text"><strong style="color:var(--text)">Distribucion normal:</strong> los errores se distribuyen simetricamente alrededor de cero.</div></div>
+        <div class="check-row"><div class="check-icon">&#9989;</div><div class="check-text"><strong style="color:var(--text)">Homocedasticidad:</strong> varianza constante para todos los niveles de prediccion.</div></div>
+        <div class="check-row"><div class="check-icon">&#9888;&#65039;</div><div class="check-text"><strong style="color:var(--text)">Sin patron:</strong> si ves una curva o abanico, hay no-linealidad o variable omitida.</div></div>
+      </div>
+      <div>
+        <div class="g2" style="gap:10px">
+          <div>
+            <div style="font-size:10px;font-family:var(--font-mono);color:var(--green);margin-bottom:6px">BUENO &mdash; nube aleatoria</div>
+            <div class="chart-wrap-xs"><canvas id="res-good"></canvas></div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-family:var(--font-mono);color:var(--red);margin-bottom:6px">MALO &mdash; patron abanico</div>
+            <div class="chart-wrap-xs"><canvas id="res-bad"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="g2">
+      <div>
+        <div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;letter-spacing:.06em">RESIDUALES DEL MODELO REAL</div>
+        <div class="chart-wrap-sm"><canvas id="res-real"></canvas></div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;letter-spacing:.06em">Q-Q PLOT &mdash; NORMALIDAD</div>
+        <div class="chart-wrap-sm"><canvas id="res-qq"></canvas></div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--font-mono)">Puntos sobre la diagonal = distribucion normal de errores</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function() {
+  // ---- RNG ----
+  var seed = 42;
+  function rng() { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967295; }
+  function randn() { var u=0,v=0; while(!u)u=rng(); while(!v)v=rng(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+  var REALS = [1200,8500,2300,1010,4800,3600,7200,950,5500,2100,6300,1800,4100,9200,3300,2700,5800,1500,7800,3900];
+
+  function genPreds(reals, noise, outliers, bias) {
+    seed = 42;
+    return reals.map(function(r, i) {
+      var e = randn()*noise + bias;
+      if (i < outliers) e += randn()*noise*3*(rng()>.5?1:-1);
+      return Math.max(100, Math.round(r+e));
+    });
+  }
+
+  function calcMetrics(reals, preds) {
+    var n = reals.length;
+    var errs = reals.map(function(r,i){ return preds[i]-r; });
+    var abs = errs.map(Math.abs);
+    var mae = abs.reduce(function(a,b){return a+b;},0)/n;
+    var mse = errs.map(function(e){return e*e;}).reduce(function(a,b){return a+b;},0)/n;
+    var rmse = Math.sqrt(mse);
+    var mape = reals.map(function(r,i){return Math.abs(errs[i])/Math.abs(r);}).reduce(function(a,b){return a+b;},0)/n*100;
+    var smape = reals.map(function(r,i){return 2*Math.abs(errs[i])/(Math.abs(r)+Math.abs(preds[i]));}).reduce(function(a,b){return a+b;},0)/n*100;
+    var meanR = reals.reduce(function(a,b){return a+b;},0)/n;
+    var ssTot = reals.map(function(r){return (r-meanR)*(r-meanR);}).reduce(function(a,b){return a+b;},0);
+    var ssRes = errs.map(function(e){return e*e;}).reduce(function(a,b){return a+b;},0);
+    var r2 = 1 - ssRes/ssTot;
+    var k=3, r2adj = 1-(1-r2)*(n-1)/(n-k-1);
+    var std = Math.sqrt(errs.map(function(e){return e*e;}).reduce(function(a,b){return a+b;},0)/n);
+    return {mae:mae, mse:mse, rmse:rmse, mape:mape, smape:smape, r2:r2, r2adj:r2adj, errs:errs, std:std};
+  }
+
+  function erfInv(x) {
+    var a=0.147, ln=Math.log(1-x*x), t=2/(Math.PI*a)+ln/2;
+    return Math.sign(x)*Math.sqrt(Math.sqrt(t*t-ln/a)-t);
+  }
+
+  // ---- LEVEL SWITCH ----
+  window.switchLevel = function(lv) {
+    var levels = ['basic','inter','adv'];
+    levels.forEach(function(l) {
+      var btn = document.getElementById('btn-'+l);
+      var icon = document.getElementById('icon-'+l);
+      var name = document.getElementById('name-'+l);
+      btn.style.borderBottom = '3px solid transparent';
+      icon.style.background = '';
+      name.style.color = 'var(--text3)';
+      document.getElementById('panel-'+l).classList.remove('active');
+    });
+    var colors = {basic:'var(--green)',inter:'var(--blue)',adv:'var(--purple)'};
+    var bgs = {basic:'rgba(74,240,176,.15)',inter:'rgba(96,165,250,.15)',adv:'rgba(167,139,250,.15)'};
+    var labels = {basic:'BASICO',inter:'INTERMEDIO',adv:'AVANZADO'};
+    var btn = document.getElementById('btn-'+lv);
+    var icon = document.getElementById('icon-'+lv);
+    var name = document.getElementById('name-'+lv);
+    btn.style.borderBottom = '3px solid '+colors[lv];
+    icon.style.background = bgs[lv];
+    name.style.color = colors[lv];
+    document.getElementById('panel-'+lv).classList.add('active');
+    var badge = document.getElementById('hdrBadge');
+    badge.textContent = labels[lv];
+    badge.style.background = bgs[lv];
+    badge.style.color = colors[lv];
+    if (lv==='inter' && !initDone.inter) { initInter(); initDone.inter=true; }
+    if (lv==='adv' && !initDone.adv) { initAdv(); initDone.adv=true; }
+  };
+
+  // ---- MEX TOGGLE ----
+  window.toggleMex = function(el) { el.classList.toggle('open'); };
+
+  // ---- INIT FLAGS ----
+  var initDone = {basic:true, inter:false, adv:false};
+
+  // ---- BASICO ----
+  var bChart = null;
+  function buildScatter(reals, preds, rmse) {
+    var data = reals.map(function(r,i){return {x:r,y:preds[i]};});
+    var mn = Math.min.apply(null,reals.concat(preds));
+    var mx = Math.max.apply(null,reals.concat(preds));
+    var colors = data.map(function(d){return Math.abs(d.y-d.x)>rmse*2?'rgba(248,113,113,.8)':'rgba(74,240,176,.55)';});
+    if (!bChart) {
+      var ctx = document.getElementById('b-scatter').getContext('2d');
+      bChart = new Chart(ctx, {
+        type:'scatter',
+        data:{datasets:[
+          {data:[{x:mn,y:mn},{x:mx,y:mx}],type:'line',borderColor:'rgba(255,255,255,.12)',borderDash:[5,5],borderWidth:1,pointRadius:0,fill:false},
+          {data:data,backgroundColor:colors,pointRadius:5}
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,animation:false,
+          plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Real: S/.'+c.parsed.x+' Pred: S/.'+c.parsed.y;}}}},
+          scales:{
+            x:{title:{display:true,text:'Real (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
+            y:{title:{display:true,text:'Predicho (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+          }
+        }
+      });
+    } else {
+      bChart.data.datasets[0].data = [{x:mn,y:mn},{x:mx,y:mx}];
+      bChart.data.datasets[1].data = data;
+      bChart.data.datasets[1].backgroundColor = colors;
+      bChart.update('none');
+    }
+  }
+
+  function updateBasic() {
+    var noise = parseInt(document.getElementById('b-sl-noise').value);
+    var out   = parseInt(document.getElementById('b-sl-out').value);
+    var bias  = parseInt(document.getElementById('b-sl-bias').value);
+    document.getElementById('bv-noise').textContent = noise;
+    document.getElementById('bv-out').textContent = out;
+    document.getElementById('bv-bias').textContent = bias > 0 ? '+'+bias : bias;
+    var preds = genPreds(REALS, noise, out, bias);
+    var m = calcMetrics(REALS, preds);
+    var mae_s  = 'S/. '+m.mae.toFixed(0);
+    var rmse_s = 'S/. '+m.rmse.toFixed(0);
+    var r2_s   = m.r2.toFixed(3);
+    document.getElementById('b-mae-val').textContent  = mae_s;
+    document.getElementById('b-rmse-val').textContent = rmse_s;
+    document.getElementById('b-r2-val').textContent   = r2_s;
+    document.getElementById('b-mae-big').textContent  = mae_s;
+    document.getElementById('b-rmse-big').textContent = rmse_s;
+    document.getElementById('b-r2-big').textContent   = r2_s;
+    document.getElementById('b-mae-bar').style.width  = Math.min(100,m.mae/2000*100).toFixed(1)+'%';
+    document.getElementById('b-rmse-bar').style.width = Math.min(100,m.rmse/2500*100).toFixed(1)+'%';
+    document.getElementById('b-r2-bar').style.width   = Math.max(0,m.r2*100).toFixed(1)+'%';
+    buildScatter(REALS, preds, m.rmse);
+  }
+
+  ['b-sl-noise','b-sl-out','b-sl-bias'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', updateBasic);
+  });
+
+  // ---- INTERMEDIO ----
+  function initInter() {
+    var ctx = document.getElementById('i-chart').getContext('2d');
+    new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels:['Micro (S/.800)','Mediana (S/.4K)','Grande (S/.10K)'],
+        datasets:[
+          {label:'MAE (S/.)',data:[400,400,400],backgroundColor:'rgba(96,165,250,.6)',borderRadius:4},
+          {label:'MAPE (%)',data:[50,10,4],backgroundColor:'rgba(251,146,60,.6)',borderRadius:4}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,animation:false,
+        plugins:{legend:{display:true,labels:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10},boxWidth:10}}},
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
+          y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+        }
+      }
+    });
+  }
+
+  // ---- AVANZADO ----
+  function initAdv() {
+    buildResCharts();
+    runComparison();
+  }
+
+  function makeScatterChart(id, xArr, yArr, refBand, dotColor) {
+    var ctx = document.getElementById(id).getContext('2d');
+    var xMin = Math.min.apply(null,xArr), xMax = Math.max.apply(null,xArr);
+    var ds = [
+      {data:[{x:xMin,y:0},{x:xMax,y:0}],type:'line',borderColor:'rgba(255,255,255,.12)',borderDash:[4,4],borderWidth:1,pointRadius:0,fill:false}
+    ];
+    if (refBand) {
+      ds.push({data:[{x:xMin,y:refBand},{x:xMax,y:refBand}],type:'line',borderColor:'rgba(74,240,176,.2)',borderDash:[3,3],borderWidth:1,pointRadius:0,fill:false});
+      ds.push({data:[{x:xMin,y:-refBand},{x:xMax,y:-refBand}],type:'line',borderColor:'rgba(74,240,176,.2)',borderDash:[3,3],borderWidth:1,pointRadius:0,fill:false});
+    }
+    var ptColors = xArr.map(function(_,i){ return refBand && Math.abs(yArr[i])>refBand ? 'rgba(248,113,113,.8)' : dotColor; });
+    ds.push({data:xArr.map(function(x,i){return {x:x,y:yArr[i]};}),backgroundColor:ptColors,pointRadius:4});
+    new Chart(ctx, {
+      type:'scatter', data:{datasets:ds},
+      options:{responsive:true,maintainAspectRatio:false,animation:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
+          y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+        }
+      }
+    });
+  }
+
+  function buildResCharts() {
+    seed = 42;
+    var preds = genPreds(REALS, 400, 2, 0);
+    var m = calcMetrics(REALS, preds);
+    var errs = m.errs;
+
+    // good
+    seed = 99;
+    var xG = REALS.map(function(_,i){return 1000+i*450;});
+    var yG = xG.map(function(){return randn()*350;});
+    makeScatterChart('res-good', xG, yG, null, 'rgba(74,240,176,.6)');
+
+    // bad (heteroscedastic)
+    seed = 77;
+    var xB = REALS.map(function(_,i){return 800+i*450;});
+    var yB = xB.map(function(_,i){return randn()*(50+i*60);});
+    makeScatterChart('res-bad', xB, yB, null, 'rgba(248,113,113,.6)');
+
+    // real
+    makeScatterChart('res-real', preds, errs, m.std*2, 'rgba(167,139,250,.7)');
+
+    // QQ
+    var sorted = errs.slice().sort(function(a,b){return a-b;});
+    var n = sorted.length;
+    var meanE = errs.reduce(function(a,b){return a+b;},0)/n;
+    var theoretical = sorted.map(function(_,i){
+      var p = (i+.5)/n;
+      return meanE + m.std * Math.sqrt(2) * erfInv(2*p-1);
+    });
+    var mn = Math.min.apply(null,theoretical), mx = Math.max.apply(null,theoretical);
+    var ctx = document.getElementById('res-qq').getContext('2d');
+    new Chart(ctx, {
+      type:'scatter',
+      data:{datasets:[
+        {data:[{x:mn,y:mn},{x:mx,y:mx}],type:'line',borderColor:'rgba(251,146,60,.5)',borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false},
+        {data:sorted.map(function(v,i){return {x:theoretical[i],y:v};}),backgroundColor:'rgba(167,139,250,.7)',pointRadius:4}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,animation:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{title:{display:true,text:'Cuantiles teoricos',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
+          y:{title:{display:true,text:'Cuantiles residuales',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+        }
+      }
+    });
+  }
+
+  // ---- COMPARACION AIC/BIC ----
+  window.runComparison = function() {
+    var g = function(id){ return parseFloat(document.getElementById(id).value)||0; };
+    var aLL=g('a-ll'), aK=g('a-k'), bLL=g('b-ll'), bK=g('b-k'), n=20;
+    var aAIC=2*aK-2*aLL, aBIC=aK*Math.log(n)-2*aLL;
+    var bAIC=2*bK-2*bLL, bBIC=bK*Math.log(n)-2*bLL;
+    var aRMSE=g('a-rmse2'), bRMSE=g('b-rmse2');
+    var aR2A=g('a-r2a'), bR2A=g('b-r2a');
+    var rows = [
+      {label:'RMSE',va:aRMSE.toFixed(0),vb:bRMSE.toFixed(0),w:aRMSE<bRMSE?'a':bRMSE<aRMSE?'b':'t'},
+      {label:'R\u00b2 adj',va:aR2A.toFixed(3),vb:bR2A.toFixed(3),w:aR2A>bR2A?'a':bR2A>aR2A?'b':'t'},
+      {label:'AIC',va:aAIC.toFixed(1),vb:bAIC.toFixed(1),w:aAIC<bAIC?'a':bAIC<aAIC?'b':'t'},
+      {label:'BIC',va:aBIC.toFixed(1),vb:bBIC.toFixed(1),w:aBIC<bBIC?'a':bBIC<aBIC?'b':'t'},
+      {label:'Parametros',va:String(aK),vb:String(bK),w:'t'}
+    ];
+    var wbadge = function(w){ return w==='a'?'<span class="cmp-w w-a">A</span>':w==='b'?'<span class="cmp-w w-b">B</span>':'<span class="cmp-w w-t">-</span>'; };
+    var hdr = '<div class="cmp-row"><span class="cmp-lbl">METRICA</span><span class="cmp-a">MOD A</span><span class="cmp-b">MOD B</span><span style="text-align:center;font-family:var(--font-mono);font-size:10px;color:var(--text3)">MEJOR</span></div>';
+    var body = rows.map(function(r){ return '<div class="cmp-row"><span class="cmp-lbl">'+r.label+'</span><span class="cmp-a">'+r.va+'</span><span class="cmp-b">'+r.vb+'</span>'+wbadge(r.w)+'</div>'; }).join('');
+    document.getElementById('cmp-table').innerHTML = hdr+body;
+    var dAIC=bAIC-aAIC, dBIC=bBIC-aBIC;
+    var v='';
+    if(dAIC>0&&dBIC>0) v='<strong style="color:var(--blue)">Modelo A preferido</strong> por AIC (\u0394='+dAIC.toFixed(1)+') y BIC (\u0394='+dBIC.toFixed(1)+'). El Modelo B agrega '+(bK-aK)+' parametros que no justifican la mejora en ajuste.';
+    else if(dAIC<0&&dBIC<0) v='<strong style="color:var(--purple)">Modelo B preferido</strong> por AIC (\u0394='+Math.abs(dAIC).toFixed(1)+') y BIC (\u0394='+Math.abs(dBIC).toFixed(1)+'). La complejidad adicional esta justificada.';
+    else if(dAIC<0&&dBIC>0) v='<strong style="color:var(--yellow)">AIC y BIC se contradicen.</strong> AIC prefiere Modelo B (mejor ajuste), BIC prefiere Modelo A (mas simple). Con n='+n+' pequeno, considera BIC mas conservador.';
+    else v='Modelos similares. La diferencia de AIC ('+Math.abs(dAIC).toFixed(1)+') no es decisiva (umbral: 10).';
+    if(Math.abs(aR2A-bR2A)>0.08) v+=' \u26a0\ufe0f La diferencia de R\u00b2 ajustado es >0.08, revisa posible overfitting.';
+    var vd = document.getElementById('cmp-verdict');
+    vd.innerHTML = v; vd.style.display='block';
+  };
+
+  // ---- INIT ----
+  setTimeout(updateBasic, 80);
+
+  // set initial active style for basic button
+  document.getElementById('btn-basic').style.borderBottom = '3px solid var(--green)';
+
+})();
+</script>
+</body>
+</html>

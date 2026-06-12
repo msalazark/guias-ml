@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clustering Metrics Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--teal:#2dd4bf;
+  --c0:#60a5fa;--c1:#4af0b0;--c2:#fb923c;--c3:#f87171;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em}
+.hdr-title{font-family:var(--font-mono);font-size:14px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.level-bar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg2)}
+.level-btn{display:flex;align-items:center;gap:10px;padding:15px 28px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;flex:1;justify-content:center}
+.level-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s;flex-shrink:0}
+.level-info{display:flex;flex-direction:column;gap:2px}
+.level-name{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text3);transition:color .2s;letter-spacing:.03em}
+.level-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.level-sep{width:1px;background:var(--border);flex-shrink:0}
+.main{max-width:1060px;margin:0 auto;padding:26px 32px}
+.lp{display:none}.lp.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+.banner{border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;display:flex;gap:18px;align-items:flex-start}
+.banner-icon{font-size:34px;flex-shrink:0;margin-top:2px}
+.banner h2{font-family:var(--font-mono);font-size:17px;font-weight:600;margin-bottom:6px}
+.banner p{font-size:13px;line-height:1.7}
+.chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:3px 9px;border-radius:4px;font-weight:500}
+.mex-grid{display:grid;gap:12px;margin-bottom:18px}
+.mex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;cursor:pointer;transition:border-color .15s}
+.mex:hover{border-color:var(--border2)}
+.mex-top{display:flex;align-items:center;gap:12px}
+.mex-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 11px;border-radius:5px;white-space:nowrap}
+.mex-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.mex-value{font-family:var(--font-mono);font-size:20px;font-weight:600;min-width:90px;text-align:right}
+.mex-toggle{font-size:16px;color:var(--text3);transition:transform .2s;margin-left:6px}
+.mex.open .mex-toggle{transform:rotate(180deg)}
+.mex-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.mex.open .mex-body{display:block}
+.mbg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fbox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border)}
+.flbl{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:.06em}
+.ibox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.65}
+.bar-track{height:5px;background:var(--border);border-radius:3px;margin-top:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.chart-wrap{position:relative;height:280px}
+.chart-sm{position:relative;height:210px}
+.chart-xs{position:relative;height:160px}
+.sl-row{margin-bottom:11px}
+.sl-lbl{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:4px}
+.sl-lbl span:first-child{color:var(--text2)}.sl-lbl span:last-child{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid var(--bg);background:var(--teal)}
+.cluster-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.cluster-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+.seg-card{border-radius:var(--r);padding:14px 16px;border:1px solid var(--border)}
+.seg-name{font-family:var(--font-mono);font-size:12px;font-weight:600;margin-bottom:6px}
+.seg-stat{font-size:11px;color:var(--text2);margin-bottom:3px}
+.rfm-axis{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:11px;font-family:var(--font-mono);margin-top:8px}
+.rfm-lbl{color:var(--text3)}
+.rfm-bar-row{height:6px;background:var(--border);border-radius:3px;overflow:hidden;display:flex;align-items:center}
+.rfm-fill{height:100%;border-radius:3px}
+.k-btn{padding:6px 14px;font-family:var(--font-mono);font-size:11px;color:var(--text3);cursor:pointer;border:1px solid var(--border);background:transparent;transition:all .15s;border-radius:4px;margin-right:6px;margin-bottom:6px}
+.k-btn:hover{border-color:var(--teal);color:var(--teal)}
+.k-btn.active{background:rgba(45,212,191,.12);color:var(--teal);border-color:rgba(45,212,191,.3)}
+.cmp-row{display:grid;grid-template-columns:130px 1fr 1fr 1fr 80px;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.cmp-row:last-child{border-bottom:none}
+.wbadge{font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;text-align:center;display:inline-block}
+.btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:11px;padding:6px 13px;border-radius:4px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.btn:hover{border-color:var(--teal);color:var(--teal)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-badge" id="hdrBadge" style="background:rgba(45,212,191,.15);color:var(--teal)">BASICO</span>
+  <span class="hdr-title">Clustering Metrics Lab</span>
+  <span class="hdr-sub">Segmentacion RFM &mdash; 120 clientes e-commerce</span>
+</div>
+
+<div class="level-bar">
+  <div class="level-btn" id="btn-basic" onclick="switchLevel('basic')">
+    <div class="level-icon" id="icon-basic">&#127807;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-basic">Basico</div>
+      <div class="level-sub">Inertia &middot; WCSS &middot; Elbow method</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-inter" onclick="switchLevel('inter')">
+    <div class="level-icon" id="icon-inter">&#9881;&#65039;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-inter">Intermedio</div>
+      <div class="level-sub">Silhouette Score &middot; K optimo</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-adv" onclick="switchLevel('adv')">
+    <div class="level-icon" id="icon-adv">&#128300;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-adv">Avanzado</div>
+      <div class="level-sub">Davies-Bouldin &middot; Calinski-Harabasz &middot; RFM 2D</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ===== BASICO ===== -->
+<div class="lp active" id="panel-basic">
+  <div class="banner" style="background:rgba(45,212,191,.05);border:1px solid rgba(45,212,191,.15)">
+    <div class="banner-icon">&#127807;</div>
+    <div>
+      <h2 style="color:var(--teal)">Nivel Basico &mdash; Inertia y el metodo del codo</h2>
+      <p class="prose">Tienes 120 clientes de un e-commerce peruano. Quieres agruparlos segun su comportamiento de compra RFM: <strong style="color:var(--text)">Recency</strong> (dias desde ultima compra), <strong style="color:var(--text)">Frequency</strong> (compras en 90 dias) y <strong style="color:var(--text)">Monetary</strong> (gasto total S/.). La primera pregunta es: &iquest;cuantos grupos hay naturalmente en los datos?</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(45,212,191,.12);color:var(--teal)">Inertia &mdash; compacidad interna</span>
+        <span class="chip" style="background:rgba(45,212,191,.12);color:var(--teal)">WCSS &mdash; varianza intra-cluster</span>
+        <span class="chip" style="background:rgba(45,212,191,.12);color:var(--teal)">Elbow method &mdash; k optimo visual</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contexto RFM -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">El caso &mdash; datos RFM de 120 clientes</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:14px">Antes de elegir k, observa los datos. Cada cliente tiene 3 dimensiones. El objetivo es encontrar grupos con <strong style="color:var(--text)">comportamiento similar internamente</strong> y <strong style="color:var(--text)">diferente entre grupos</strong>.</p>
+        <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12px;margin-bottom:12px">
+          <thead><tr>
+            <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3)">VARIABLE</th>
+            <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3)">MIN</th>
+            <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3)">MEDIA</th>
+            <th style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3)">MAX</th>
+            <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-size:10px;color:var(--text3)">INTERPRETA</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border)">Recency (dias)</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);color:var(--green)">1</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">42</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);color:var(--red)">115</td><td style="padding:7px 8px;border-bottom:1px solid var(--border);color:var(--text3)">Menor = mejor</td></tr>
+            <tr><td style="padding:7px 8px;border-bottom:1px solid var(--border)">Frequency (compras)</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);color:var(--red)">1</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border)">9</td><td style="text-align:right;padding:7px 8px;border-bottom:1px solid var(--border);color:var(--green)">24</td><td style="padding:7px 8px;border-bottom:1px solid var(--border);color:var(--text3)">Mayor = mejor</td></tr>
+            <tr><td style="padding:7px 8px">Monetary (S/.)</td><td style="text-align:right;padding:7px 8px;color:var(--red)">30</td><td style="text-align:right;padding:7px 8px">440</td><td style="text-align:right;padding:7px 8px;color:var(--green)">1,210</td><td style="padding:7px 8px;color:var(--text3)">Mayor = mejor</td></tr>
+          </tbody>
+        </table>
+        <div class="card-sm" style="border-left:3px solid var(--yellow)">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--yellow);margin-bottom:5px">NORMALIZAR ANTES DE CLUSTERING</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">Recency va de 1-115, Monetary de 30-1210. Si no normalizas, Monetary dominara el calculo de distancias porque tiene mayor escala. Siempre aplica StandardScaler o MinMaxScaler antes de K-Means.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:10px;letter-spacing:.06em">SCATTER RFM &mdash; RECENCY vs MONETARY</div>
+        <div class="chart-sm"><canvas id="b-rfm-scatter"></canvas></div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-top:5px">Cada punto = 1 cliente &middot; color = cluster real (k=4)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEX Inertia -->
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(45,212,191,.12);color:var(--teal)">INERTIA / WCSS</div>
+        <div class="mex-title">Compacidad interna de los clusters</div>
+        <div class="mex-value" style="color:var(--teal)">2.5 (k=4)</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:62%;background:var(--teal)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--teal)"><div class="flbl">FORMULA</div>WCSS = &sum;&#8336; &sum;&#8342;&isin;C&#8336; ||x&#8342; &minus; &mu;&#8336;||&sup2;</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Suma de las distancias al cuadrado de cada punto a su centroide. Mide que tan <strong style="color:var(--text)">compacto</strong> es cada cluster. WCSS siempre baja al aumentar k &mdash; con k=n cada punto es su propio cluster y WCSS=0.</div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">k=2</span><span style="color:var(--text)">7.7</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">k=3</span><span style="color:var(--text)">4.8</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px;border:1px solid rgba(45,212,191,.2)"><span style="color:var(--teal)">k=4 &larr; codo</span><span style="color:var(--teal)">2.5</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">k=5</span><span style="color:var(--text)">2.3</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">k=6</span><span style="color:var(--text)">2.1</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Por que WCSS no se puede usar solo</strong><br><br>Siempre baja con mas k. Pasar de k=4 a k=5 baja de 2.5 a 2.3 &mdash; solo 0.2. Pasar de k=3 a k=4 bajaba 2.3. La mejora marginal se desacelera.<br><br>El <strong style="color:var(--teal)">Elbow method</strong> busca el "codo" donde la bajada deja de ser significativa. Es visual e impreciso &mdash; por eso necesitas el Silhouette Score para confirmacion cuantitativa.</div>
+            <div style="margin-top:10px;background:rgba(45,212,191,.05);border:1px solid rgba(45,212,191,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; WCSS depende de la escala de los datos. Normaliza siempre antes de comparar WCSS entre distintos datasets o variables.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(251,196,60,.12);color:var(--yellow)">ELBOW METHOD</div>
+        <div class="mex-title">Metodo del codo &mdash; encontrar k visualmente</div>
+        <div class="mex-value" style="color:var(--yellow)">k = 4</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--yellow)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--yellow)"><div class="flbl">PROCEDIMIENTO</div>1. Calcula WCSS para k=1..10<br>2. Grafica WCSS vs k<br>3. Busca el punto donde la curva "dobla"<br>4. Ese k es el candidato optimo</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">La curva siempre decrece pero la tasa de mejora disminuye. El "codo" es donde agregar un cluster mas da muy poca mejora adicional de compacidad. En nuestros datos RFM, el codo es claro en <strong style="color:var(--yellow)">k=4</strong>.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Limitaciones del metodo del codo</strong><br><br>1. Es <strong style="color:var(--text)">subjetivo</strong>: dos personas pueden ver el codo en k distinto.<br>2. En datos reales con mucho ruido, la curva puede ser suave sin codo claro.<br>3. No considera la separacion entre clusters, solo la compacidad.<br><br>Por eso se combina con Silhouette Score (nivel Intermedio) y con conocimiento del negocio: &iquest;tiene sentido tener 4 segmentos para tu estrategia?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Curva Elbow interactiva -->
+  <div class="card">
+    <div class="sec">Curva Elbow &mdash; WCSS vs numero de clusters k</div>
+    <div class="g2">
+      <div>
+        <div class="chart-sm"><canvas id="b-elbow-chart"></canvas></div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-top:5px">Punto verde = codo sugerido (k=4)</div>
+      </div>
+      <div>
+        <p class="prose" style="margin-bottom:14px">Haz clic en un k para ver como quedan los segmentos de clientes:</p>
+        <div style="display:flex;flex-wrap:wrap;margin-bottom:12px">
+          <button class="k-btn" onclick="selectK(2)">k = 2</button>
+          <button class="k-btn" onclick="selectK(3)">k = 3</button>
+          <button class="k-btn active" onclick="selectK(4)">k = 4</button>
+          <button class="k-btn" onclick="selectK(5)">k = 5</button>
+          <button class="k-btn" onclick="selectK(6)">k = 6</button>
+        </div>
+        <div id="k-desc" style="background:var(--bg3);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.7"></div>
+        <div style="margin-top:10px;font-size:11px;font-family:var(--font-mono);color:var(--text3)">WCSS: <span id="k-wcss" style="color:var(--teal)">2.5</span> &middot; Mejora vs anterior: <span id="k-delta" style="color:var(--orange)">2.3</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INTERMEDIO ===== -->
+<div class="lp" id="panel-inter">
+  <div class="banner" style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15)">
+    <div class="banner-icon">&#9881;&#65039;</div>
+    <div>
+      <h2 style="color:var(--blue)">Nivel Intermedio &mdash; Silhouette Score</h2>
+      <p class="prose">El Elbow es visual e impreciso. El Silhouette Score cuantifica que tan bien asignado esta cada cliente a su cluster &mdash; mide a la vez la <strong style="color:var(--text)">cohesion interna</strong> y la <strong style="color:var(--text)">separacion externa</strong> en un solo numero entre -1 y 1.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Silhouette por cliente</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Silhouette medio por cluster</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Silhouette plot</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">K optimo cuantitativo</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">SILHOUETTE</div>
+        <div class="mex-title">Score de silueta &mdash; cohesion y separacion en uno</div>
+        <div class="mex-value" style="color:var(--blue)">0.543 (k=4)</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:54%;background:var(--blue)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--blue)"><div class="flbl">FORMULA POR PUNTO</div>s(i) = (b(i) &minus; a(i)) / max(a(i), b(i))</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">
+              <strong style="color:var(--text)">a(i)</strong> = distancia media del punto i a los demas puntos de su mismo cluster (cohesion interna).<br><br>
+              <strong style="color:var(--text)">b(i)</strong> = distancia media del punto i a todos los puntos del cluster mas cercano (separacion externa).<br><br>
+              El score individual va de <strong style="color:var(--red)">-1</strong> (mal asignado) a <strong style="color:var(--green)">+1</strong> (perfectamente asignado).
+            </div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">k=2</span><span style="color:var(--orange)">0.599</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">k=3</span><span style="color:var(--orange)">0.530</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px;border:1px solid rgba(96,165,250,.2)"><span style="color:var(--blue)">k=4 &larr; negocio</span><span style="color:var(--blue)">0.543</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">k=5</span><span style="color:var(--orange)">0.469</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">k=6</span><span style="color:var(--orange)">0.464</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox">
+              <strong style="color:var(--text)">Como interpretar el score</strong><br><br>
+              <span style="color:var(--green)">0.7 &ndash; 1.0</span> &rarr; clusters bien separados y compactos<br>
+              <span style="color:var(--blue)">0.5 &ndash; 0.7</span> &rarr; estructura razonable &larr; nuestro caso<br>
+              <span style="color:var(--orange)">0.25 &ndash; 0.5</span> &rarr; estructura debil, clusters solapados<br>
+              <span style="color:var(--red)">&lt; 0.25</span> &rarr; sin estructura real en los datos<br><br>
+              <strong style="color:var(--text)">Por que k=4 y no k=2?</strong><br>
+              k=2 tiene mayor Silhouette (0.599) pero solo genera dos segmentos: "buenos" y "malos" clientes. Desde el negocio, k=4 da 4 estrategias distintas de marketing. El <em>conocimiento del negocio</em> debe complementar la metrica.
+            </div>
+            <div style="margin-top:10px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; El Silhouette Score maximiza la separacion, pero un k con score ligeramente menor puede ser mas util si los segmentos tienen sentido de negocio.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Silhouette plot y por cluster -->
+  <div class="g2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="sec">Silhouette Score por k &mdash; cual es el optimo?</div>
+      <div class="chart-sm"><canvas id="i-sil-k-chart"></canvas></div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-top:5px">Mayor = mejor separacion y cohesion &middot; k=2 maximiza pero k=4 es el optimo de negocio</div>
+    </div>
+    <div class="card">
+      <div class="sec">Silhouette medio por cluster (k=4)</div>
+      <div class="chart-sm"><canvas id="i-sil-cluster-chart"></canvas></div>
+      <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-top:5px">Clusters con score bajo tienen clientes mal asignados</div>
+    </div>
+  </div>
+
+  <!-- Perfiles de segmentos -->
+  <div class="card">
+    <div class="sec">Perfiles de segmentos RFM &mdash; k=4</div>
+    <div class="g4" id="seg-cards"></div>
+  </div>
+</div>
+
+<!-- ===== AVANZADO ===== -->
+<div class="lp" id="panel-adv">
+  <div class="banner" style="background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.15)">
+    <div class="banner-icon">&#128300;</div>
+    <div>
+      <h2 style="color:var(--purple)">Nivel Avanzado &mdash; Davies-Bouldin, Calinski-Harabasz y visualizacion 2D</h2>
+      <p class="prose">Dos metricas adicionales que ven el clustering desde angulos distintos: DB penaliza la similitud entre clusters, CH premia la separacion global. El scatter 2D proyecta los 3 ejes RFM en un plano para ver la estructura de los clusters.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Davies-Bouldin &mdash; menor = mejor</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Calinski-Harabasz &mdash; mayor = mejor</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Proyeccion 2D por eje RFM</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Comparador de metricas</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(167,139,250,.12);color:var(--purple)">DAVIES-BOULDIN</div>
+        <div class="mex-title">Indice Davies-Bouldin &mdash; similitud entre clusters</div>
+        <div class="mex-value" style="color:var(--purple)">0.628</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:37%;background:var(--purple)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--purple)"><div class="flbl">FORMULA</div>DB = (1/k) &sum;&#8336; max&#8341;&ne;&#8336;[ (s&#8336; + s&#8341;) / d(c&#8336;, c&#8341;) ]</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">
+              <strong style="color:var(--text)">s&#8336;</strong> = dispersion media del cluster i (radio promedio)<br>
+              <strong style="color:var(--text)">d(c&#8336;, c&#8341;)</strong> = distancia entre centroides i y j<br><br>
+              Para cada cluster, encuentra el vecino mas similar (numerador grande + denominador pequeno). Promedia esos peores casos. <strong style="color:var(--text)">Menor DB = mejor.</strong>
+            </div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">DB &lt; 0.5</span><span style="color:var(--green)">Clusters muy bien separados</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px;border:1px solid rgba(167,139,250,.2)"><span style="color:var(--purple)">DB 0.5&ndash;1.0 &larr; aqui</span><span style="color:var(--purple)">Separacion aceptable</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">DB &gt; 1.0</span><span style="color:var(--red)">Clusters solapados</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">DB = 0.628: interpretacion</strong><br><br>Los clusters RFM estan razonablemente separados pero no son perfectos &mdash; hay algo de solapamiento entre "Loyal" y "At Risk", que comparten algunas caracteristicas de frecuencia.<br><br><strong style="color:var(--text)">Ventaja vs Silhouette:</strong> DB es mas rapido de calcular (O(k&sup2;) vs O(n&sup2;)) y util con datasets grandes donde el Silhouette es costoso computacionalmente.</div>
+            <div style="margin-top:10px;background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; DB no tiene rango fijo. Usalo para comparar el mismo dataset con distinto k o distintos algoritmos, no como numero absoluto.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(251,196,60,.12);color:var(--yellow)">CALINSKI-HARABASZ</div>
+        <div class="mex-title">Indice Calinski-Harabasz &mdash; varianza inter vs intra</div>
+        <div class="mex-value" style="color:var(--yellow)">378.1</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:63%;background:var(--yellow)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--yellow)"><div class="flbl">FORMULA</div>CH = [BGSS/(k-1)] / [WGSS/(n-k)]</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">
+              <strong style="color:var(--text)">BGSS</strong> = varianza entre clusters (Between-Group Sum of Squares)<br>
+              <strong style="color:var(--text)">WGSS</strong> = varianza intra-cluster (Within-Group Sum of Squares)<br><br>
+              Es una ratio: <em>que tan separados estan los clusters</em> vs <em>que tan dispersos son internamente</em>. <strong style="color:var(--text)">Mayor CH = mejor.</strong>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">CH = 378.1: no hay escala fija</strong><br><br>A diferencia del Silhouette (-1 a +1) o el DB (0 a infinito), el CH no tiene rango interpretable en terminos absolutos. Solo tiene sentido <em>comparativamente</em>:<br><br>Si k=4 da CH=378 y k=3 da CH=290, entonces k=4 tiene mejor separacion relativa a su compacidad interna.<br><br><strong style="color:var(--text)">Ventaja:</strong> muy rapido O(nk), ideal para datasets grandes.</div>
+            <div style="margin-top:10px;background:rgba(251,196,60,.05);border:1px solid rgba(251,196,60,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; Calinski-Harabasz tiende a favorecer clusters convexos y similares en tamano &mdash; como K-Means asume. Puede fallar con clusters elongados o de distinta densidad.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scatter 2D RFM -->
+  <div class="card" style="margin-bottom:18px">
+    <div class="sec">Proyeccion 2D &mdash; elige los ejes RFM</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <span style="font-size:11px;font-family:var(--font-mono);color:var(--text3);display:flex;align-items:center;margin-right:4px">EJE X:</span>
+      <button class="k-btn active" id="ax-R" onclick="setAxis('x','R')">Recency</button>
+      <button class="k-btn" id="ax-F" onclick="setAxis('x','F')">Frequency</button>
+      <button class="k-btn" id="ax-M" onclick="setAxis('x','M')">Monetary</button>
+      <span style="font-size:11px;font-family:var(--font-mono);color:var(--text3);display:flex;align-items:center;margin-left:12px;margin-right:4px">EJE Y:</span>
+      <button class="k-btn" id="ay-R" onclick="setAxis('y','R')">Recency</button>
+      <button class="k-btn" id="ay-F" onclick="setAxis('y','F')">Frequency</button>
+      <button class="k-btn active" id="ay-M" onclick="setAxis('y','M')">Monetary</button>
+    </div>
+    <div class="g2">
+      <div>
+        <div class="chart-wrap"><canvas id="adv-rfm-scatter"></canvas></div>
+        <div class="cluster-legend" style="justify-content:center;margin-top:8px">
+          <span style="font-size:11px;font-family:var(--font-mono)"><span class="cluster-dot" style="background:var(--c0)"></span>Champions</span>
+          <span style="font-size:11px;font-family:var(--font-mono)"><span class="cluster-dot" style="background:var(--c1)"></span>Loyal</span>
+          <span style="font-size:11px;font-family:var(--font-mono)"><span class="cluster-dot" style="background:var(--c2)"></span>At Risk</span>
+          <span style="font-size:11px;font-family:var(--font-mono)"><span class="cluster-dot" style="background:var(--c3)"></span>Lost</span>
+        </div>
+      </div>
+      <div>
+        <div class="sec">Comparador de metricas por k</div>
+        <div id="adv-cmp-table"></div>
+        <div style="margin-top:14px;background:var(--bg3);border-radius:var(--r);padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.8" id="adv-verdict"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function(){
+
+// ===== DATA =====
+var CUSTOMERS = [[12,22,860],[6,15,850],[5,14,880],[8,20,710],[8,18,620],[10,19,1210],[9,18,1030],[9,21,800],[9,21,950],[8,15,920],[8,20,880],[11,20,700],[10,17,750],[7,19,810],[5,21,900],[8,18,780],[11,16,830],[6,17,770],[10,20,960],[8,19,870],[7,18,820],[9,16,740],[8,21,890],[10,17,800],[9,19,840],[14,14,520],[20,12,480],[18,11,550],[25,13,510],[22,14,490],[19,10,530],[21,12,560],[17,13,500],[23,11,470],[16,14,580],[24,12,450],[20,13,540],[18,11,510],[22,14,500],[19,12,520],[15,13,570],[21,11,490],[17,14,530],[23,12,480],[20,13,510],[18,11,550],[22,14,500],[16,12,570],[24,11,460],[21,13,520],[15,12,590],[19,14,510],[17,11,540],[23,13,490],[20,12,530],[55,5,280],[60,4,260],[50,6,300],[65,5,270],[58,4,250],[52,6,290],[63,5,240],[57,4,270],[48,7,310],[66,5,260],[54,6,280],[61,4,250],[49,7,300],[64,5,270],[56,5,260],[51,6,290],[62,4,250],[58,5,270],[47,7,310],[65,5,250],[53,6,280],[60,4,260],[50,5,300],[64,5,270],[57,6,260],[55,4,280],[59,5,260],[48,7,310],[65,4,250],[52,6,290],[63,5,250],[57,4,270],[49,7,310],[66,5,260],[54,6,280],[90,2,90],[95,1,80],[85,2,100],[100,1,70],[92,2,85],[88,1,95],[97,2,75],[83,2,110],[102,1,65],[89,2,90],[94,1,80],[86,2,100],[99,1,70],[91,2,85],[87,1,95],[96,2,75],[82,2,110],[103,1,65],[90,2,90],[95,1,80],[85,2,100],[100,1,70],[92,2,85],[88,1,95],[97,2,75],[83,2,110],[102,1,65],[89,2,90],[94,1,80],[86,2,100]];
+var LABELS = [];
+for(var i=0;i<25;i++) LABELS.push(0);
+for(var i=0;i<30;i++) LABELS.push(1);
+for(var i=0;i<35;i++) LABELS.push(2);
+for(var i=0;i<30;i++) LABELS.push(3);
+
+var INERTIAS = {2:7.7,3:4.8,4:2.5,5:2.3,6:2.1,7:1.8,8:1.7};
+var SILHOUETTES = {2:0.599,3:0.530,4:0.543,5:0.469,6:0.464};
+var CLUSTER_NAMES = ['Champions','Loyal','At Risk','Lost'];
+var CLUSTER_COLORS = ['rgba(96,165,250,','rgba(74,240,176,','rgba(251,146,60,','rgba(248,113,113,'];
+
+// Approximate silhouette per cluster for k=4
+var SIL_BY_CLUSTER = [0.68, 0.55, 0.49, 0.53];
+// CH by k (approximate)
+var CH_BY_K = {2:310,3:340,4:378,5:355,6:330};
+// DB by k (approximate)
+var DB_BY_K = {2:0.71,3:0.65,4:0.628,5:0.68,6:0.72};
+
+var K_DESCS = {
+  2: 'Solo 2 grupos: clientes activos (Champions+Loyal) vs inactivos (AtRisk+Lost). Silhouette alto (0.599) pero poco util para marketing: no distingue entre clientes fieles y los que estan a punto de perderse.',
+  3: 'Champions, clientes medios, clientes perdidos. Mejor que 2 pero mezcla Loyal con At Risk en el grupo medio. Dificil de accionar con estrategias distintas.',
+  4: 'Champions (recenters, frecuentes, alto gasto) + Loyal (medios) + At Risk (inactivos) + Lost (perdidos). El codo es aqui. 4 estrategias distintas de marketing. Optimo de negocio.',
+  5: 'Subdivide uno de los grupos existentes. La mejora de WCSS es minima (2.3 vs 2.5). El grupo adicional suele ser un subgrupo de Champions o Loyal sin diferencia accionable.',
+  6: 'Demasiada fragmentacion. Clusters muy pequenos (10-15 clientes) que son estadisticamente fragiles. El equipo de marketing no puede ejecutar 6 campanas distintas eficientemente.'
+};
+
+// ===== HELPERS =====
+window.switchLevel=function(lv){
+  var lvs=['basic','inter','adv'];
+  var colors={basic:'var(--teal)',inter:'var(--blue)',adv:'var(--purple)'};
+  var bgs={basic:'rgba(45,212,191,.15)',inter:'rgba(96,165,250,.15)',adv:'rgba(167,139,250,.15)'};
+  var labels={basic:'BASICO',inter:'INTERMEDIO',adv:'AVANZADO'};
+  lvs.forEach(function(l){
+    document.getElementById('btn-'+l).style.borderBottom='3px solid transparent';
+    document.getElementById('icon-'+l).style.background='';
+    document.getElementById('name-'+l).style.color='var(--text3)';
+    document.getElementById('panel-'+l).classList.remove('active');
+  });
+  document.getElementById('btn-'+lv).style.borderBottom='3px solid '+colors[lv];
+  document.getElementById('icon-'+lv).style.background=bgs[lv];
+  document.getElementById('name-'+lv).style.color=colors[lv];
+  document.getElementById('panel-'+lv).classList.add('active');
+  var badge=document.getElementById('hdrBadge');
+  badge.textContent=labels[lv]; badge.style.background=bgs[lv]; badge.style.color=colors[lv];
+  if(lv==='inter'&&!initDone.inter){initInter();initDone.inter=true;}
+  if(lv==='adv'&&!initDone.adv){initAdv();initDone.adv=true;}
+};
+window.toggleMex=function(el){el.classList.toggle('open');};
+var initDone={basic:true,inter:false,adv:false};
+
+// ===== BASICO =====
+function buildBasicScatter(){
+  var ctx=document.getElementById('b-rfm-scatter').getContext('2d');
+  var ds=CLUSTER_NAMES.map(function(name,ci){
+    var pts=CUSTOMERS.filter(function(_,i){return LABELS[i]===ci;}).map(function(p){return {x:p[0],y:p[2]};});
+    return {label:name,data:pts,backgroundColor:CLUSTER_COLORS[ci]+'0.7)',pointRadius:5,showLine:false};
+  });
+  new Chart(ctx,{type:'scatter',data:{datasets:ds},options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{mode:'point',callbacks:{label:function(c){return c.dataset.label+': R='+c.parsed.x+' M=S/.'+c.parsed.y;}}}},
+    scales:{
+      x:{title:{display:true,text:'Recency (dias)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
+      y:{title:{display:true,text:'Monetary (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+    }
+  }});
+}
+
+var elbowChart=null;
+function buildElbowChart(highlightK){
+  var ks=[2,3,4,5,6,7,8];
+  var vals=ks.map(function(k){return INERTIAS[k];});
+  var ptColors=ks.map(function(k){return k===highlightK?'rgba(45,212,191,1)':'rgba(45,212,191,.35)';});
+  var ptSizes=ks.map(function(k){return k===highlightK?8:4;});
+  if(!elbowChart){
+    var ctx=document.getElementById('b-elbow-chart').getContext('2d');
+    elbowChart=new Chart(ctx,{type:'line',data:{
+      labels:ks.map(function(k){return 'k='+k;}),
+      datasets:[{
+        data:vals,borderColor:'rgba(45,212,191,.7)',borderWidth:2,
+        pointBackgroundColor:ptColors,pointRadius:ptSizes,
+        fill:false,tension:.3
+      }]
+    },options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'WCSS: '+c.parsed.y;}}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+        y:{title:{display:true,text:'WCSS (Inertia)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+      }
+    }});
+  } else {
+    elbowChart.data.datasets[0].pointBackgroundColor=ptColors;
+    elbowChart.data.datasets[0].pointRadius=ptSizes;
+    elbowChart.update('none');
+  }
+}
+
+window.selectK=function(k){
+  document.querySelectorAll('.k-btn').forEach(function(b){b.classList.remove('active');});
+  event.target.classList.add('active');
+  buildElbowChart(k);
+  document.getElementById('k-desc').textContent=K_DESCS[k]||'';
+  document.getElementById('k-wcss').textContent=INERTIAS[k];
+  var prev=INERTIAS[k-1];
+  document.getElementById('k-delta').textContent=prev?(prev-INERTIAS[k]).toFixed(1):'-';
+};
+
+// ===== INTERMEDIO =====
+function initInter(){
+  buildSilKChart();
+  buildSilClusterChart();
+  buildSegCards();
+}
+
+function buildSilKChart(){
+  var ks=[2,3,4,5,6];
+  var vals=ks.map(function(k){return SILHOUETTES[k];});
+  var colors=ks.map(function(k){return k===4?'rgba(96,165,250,1)':'rgba(96,165,250,.4)';});
+  var ctx=document.getElementById('i-sil-k-chart').getContext('2d');
+  new Chart(ctx,{type:'bar',data:{
+    labels:ks.map(function(k){return 'k='+k;}),
+    datasets:[{data:vals,backgroundColor:colors,borderRadius:5}]
+  },options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Silhouette: '+c.parsed.y.toFixed(3);}}}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'Silhouette Score',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.7}
+    }
+  }});
+}
+
+function buildSilClusterChart(){
+  var ctx=document.getElementById('i-sil-cluster-chart').getContext('2d');
+  new Chart(ctx,{type:'bar',data:{
+    labels:CLUSTER_NAMES,
+    datasets:[{
+      data:SIL_BY_CLUSTER,
+      backgroundColor:CLUSTER_COLORS.map(function(c){return c+'0.65)';}),
+      borderRadius:5
+    }]
+  },options:{
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Silhouette: '+c.parsed.y.toFixed(2);}}}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'Silhouette medio',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.8}
+    }
+  }});
+}
+
+function buildSegCards(){
+  var segs=[
+    {name:'Champions',color:CLUSTER_COLORS[0],n:25,R:'8 dias',F:'19 compras',M:'S/.860',action:'Programa VIP, early access, referidos'},
+    {name:'Loyal',color:CLUSTER_COLORS[1],n:30,R:'20 dias',F:'12 compras',M:'S/.520',action:'Cross-sell, upsell, descuento por volumen'},
+    {name:'At Risk',color:CLUSTER_COLORS[2],n:35,R:'57 dias',F:'5 compras',M:'S/.280',action:'Campana de reactivacion, oferta especial'},
+    {name:'Lost',color:CLUSTER_COLORS[3],n:30,R:'91 dias',F:'2 compras',M:'S/.90',action:'Win-back agresivo o deprioritizar'}
+  ];
+  var container=document.getElementById('seg-cards');
+  if(!container) return;
+  container.innerHTML=segs.map(function(s,i){
+    var rPct=(120-parseInt(s.R))/120*100;
+    var fPct=parseInt(s.F)/24*100;
+    var mPct=parseInt(s.M.replace('S/.','').replace(',',''))/1210*100;
+    return '<div class="seg-card" style="border-color:'+s.color+'0.3)">'
+      +'<div class="seg-name" style="color:'+s.color+'1)">'+s.name+' ('+s.n+')</div>'
+      +'<div class="rfm-axis">'
+      +'<span class="rfm-lbl">R</span><div class="rfm-bar-row"><div class="rfm-fill" style="width:'+rPct.toFixed(0)+'%;background:'+s.color+'0.8)"></div></div>'
+      +'<span class="rfm-lbl">F</span><div class="rfm-bar-row"><div class="rfm-fill" style="width:'+fPct.toFixed(0)+'%;background:'+s.color+'0.8)"></div></div>'
+      +'<span class="rfm-lbl">M</span><div class="rfm-bar-row"><div class="rfm-fill" style="width:'+mPct.toFixed(0)+'%;background:'+s.color+'0.8)"></div></div>'
+      +'</div>'
+      +'<div style="margin-top:8px;font-size:10px;font-family:var(--font-mono);color:var(--text3)">R: '+s.R+' &middot; F: '+s.F+' &middot; M: '+s.M+'</div>'
+      +'<div style="margin-top:6px;font-size:11px;color:var(--text2)">'+s.action+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ===== AVANZADO =====
+var advScatter=null, axisX='R', axisY='M';
+var AXIS_IDX={R:0,F:1,M:2};
+var AXIS_LABELS={R:'Recency (dias)',F:'Frequency (compras)',M:'Monetary (S/.)'};
+
+function initAdv(){
+  buildAdvScatter();
+  buildCmpTable();
+}
+
+window.setAxis=function(xy,axis){
+  if(xy==='x'){
+    axisX=axis;
+    ['R','F','M'].forEach(function(a){document.getElementById('ax-'+a).classList.remove('active');});
+    document.getElementById('ax-'+axis).classList.add('active');
+  } else {
+    axisY=axis;
+    ['R','F','M'].forEach(function(a){document.getElementById('ay-'+a).classList.remove('active');});
+    document.getElementById('ay-'+axis).classList.add('active');
+  }
+  buildAdvScatter();
+};
+
+function buildAdvScatter(){
+  var xi=AXIS_IDX[axisX], yi=AXIS_IDX[axisY];
+  var ds=CLUSTER_NAMES.map(function(name,ci){
+    var pts=CUSTOMERS.filter(function(_,i){return LABELS[i]===ci;}).map(function(p){return {x:p[xi],y:p[yi]};});
+    return {label:name,data:pts,backgroundColor:CLUSTER_COLORS[ci]+'0.7)',pointRadius:5,showLine:false};
+  });
+  if(!advScatter){
+    var ctx=document.getElementById('adv-rfm-scatter').getContext('2d');
+    advScatter=new Chart(ctx,{type:'scatter',data:{datasets:ds},options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{mode:'point',callbacks:{label:function(c){return c.dataset.label+': ('+c.parsed.x+', '+c.parsed.y+')';}}}},
+      scales:{
+        x:{title:{display:true,text:AXIS_LABELS[axisX],color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
+        y:{title:{display:true,text:AXIS_LABELS[axisY],color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+      }
+    }});
+  } else {
+    advScatter.data.datasets=ds;
+    advScatter.options.scales.x.title.text=AXIS_LABELS[axisX];
+    advScatter.options.scales.y.title.text=AXIS_LABELS[axisY];
+    advScatter.update('none');
+  }
+}
+
+function buildCmpTable(){
+  var ks=[2,3,4,5,6];
+  var rows=[
+    {label:'WCSS',vals:ks.map(function(k){return INERTIAS[k];}),lower:true,fmt:function(v){return v.toFixed(1);}},
+    {label:'Silhouette',vals:ks.map(function(k){return SILHOUETTES[k];}),lower:false,fmt:function(v){return v.toFixed(3);}},
+    {label:'Davies-Bouldin',vals:ks.map(function(k){return DB_BY_K[k];}),lower:true,fmt:function(v){return v.toFixed(3);}},
+    {label:'Calinski-H.',vals:ks.map(function(k){return CH_BY_K[k];}),lower:false,fmt:function(v){return v.toFixed(0);}}
+  ];
+  function bestIdx(vals,lower){
+    var best=lower?Math.min.apply(null,vals):Math.max.apply(null,vals);
+    return vals.indexOf(best);
+  }
+  var hdrcols='<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">METRICA</span>'
+    +ks.map(function(k){return '<span style="font-family:var(--font-mono);font-size:10px;color:'+(k===4?'var(--teal)':'var(--text3)')+';text-align:center">k='+k+'</span>';}).join('')
+    +'<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-align:center">MEJOR</span>';
+  var hdr='<div style="display:grid;grid-template-columns:120px repeat(5,1fr) 60px;gap:8px;padding:0 0 8px;border-bottom:2px solid var(--border2);margin-bottom:4px">'+hdrcols+'</div>';
+  var body=rows.map(function(r){
+    var bi=bestIdx(r.vals,r.lower);
+    var cols='<span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">'+r.label+'</span>'
+      +r.vals.map(function(v,i){
+        var isK4=ks[i]===4, isBest=i===bi;
+        var col=isBest?'var(--teal)':isK4?'var(--text)':'var(--text3)';
+        return '<span style="font-family:var(--font-mono);font-size:12px;color:'+col+';text-align:center'+(isBest?';font-weight:600':'')+'">'+(isBest?'&#9670; ':'')+r.fmt(v)+'</span>';
+      }).join('')
+      +'<span style="text-align:center;font-family:var(--font-mono);font-size:11px;color:var(--teal)">k='+(ks[bi])+'</span>';
+    return '<div style="display:grid;grid-template-columns:120px repeat(5,1fr) 60px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'+cols+'</div>';
+  }).join('');
+  document.getElementById('adv-cmp-table').innerHTML=hdr+body;
+  document.getElementById('adv-verdict').innerHTML=
+    '<strong style="color:var(--teal)">Resultado consenso: k=4</strong> es el optimo para este dataset RFM.<br><br>'
+    +'El <strong>Silhouette</strong> favorece k=2 (0.599) pero desde el negocio dos segmentos son insuficientes. '
+    +'El <strong>Calinski-Harabasz</strong> alcanza su pico en k=4 (378.1). '
+    +'El <strong>Davies-Bouldin</strong> tambien se minimiza en k=4 (0.628).<br><br>'
+    +'<strong style="color:var(--text)">Regla practica:</strong> cuando las metricas no coinciden, el desempate lo da el negocio. '
+    +'4 segmentos generan 4 estrategias distintas y accionables: programa VIP para Champions, upsell para Loyal, reactivacion para At Risk, y decision de win-back o baja para Lost.';
+}
+
+// ===== INIT =====
+document.getElementById('btn-basic').style.borderBottom='3px solid var(--teal)';
+document.getElementById('icon-basic').style.background='rgba(45,212,191,.15)';
+document.getElementById('name-basic').style.color='var(--teal)';
+selectK(4);
+setTimeout(function(){
+  buildBasicScatter();
+  buildElbowChart(4);
+  document.getElementById('k-desc').textContent=K_DESCS[4];
+},100);
+
+})();
+</script>
+</body>
+</html>

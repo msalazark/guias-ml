@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia de Algoritmos de ML</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--teal:#2dd4bf;--pink:#f472b6;--indigo:#818cf8;
+  --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;background:rgba(129,140,248,.15);color:var(--indigo)}
+.hdr-title{font-family:var(--font-mono);font-size:13px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto}
+.tab{padding:13px 22px;font-size:11px;font-family:var(--font-mono);color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;white-space:nowrap}
+.tab:hover{color:var(--text2)}
+.tab.ta.active{color:var(--indigo);border-bottom-color:var(--indigo)}
+.tab.tb.active{color:var(--teal);border-bottom-color:var(--teal)}
+.main{max-width:1080px;margin:0 auto;padding:24px 28px}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;margin-bottom:16px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+/* TREE */
+.q-text{font-size:13px;font-weight:500;color:var(--text);margin-bottom:12px;padding:12px 16px;background:var(--bg3);border-radius:var(--r);border-left:3px solid var(--indigo)}
+.q-opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.q-btn{padding:8px 16px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .18s;user-select:none}
+.q-btn:hover{border-color:var(--indigo);color:var(--indigo)}
+.breadcrumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;min-height:22px}
+.bc-item{font-size:11px;font-family:var(--font-mono);color:var(--text3);cursor:pointer}
+.bc-item:hover{color:var(--text2)}
+.bc-sep{color:var(--text3);font-size:11px}
+.bc-active{color:var(--indigo)}
+.result-card{border-radius:var(--rl);padding:20px 22px;border:1px solid var(--border);background:var(--bg2)}
+.result-name{font-family:var(--font-mono);font-size:18px;font-weight:600;margin-bottom:6px}
+.result-tag{display:inline-block;font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;font-weight:600;margin-bottom:12px;border:1px solid currentColor}
+.chart-h{position:relative;height:190px;margin-bottom:14px}
+.rsec{font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-top:14px;margin-bottom:7px}
+.alt-chip{display:inline-block;padding:5px 11px;border-radius:5px;font-size:11px;font-family:var(--font-mono);border:1px solid var(--border2);color:var(--text3);margin:3px}
+.reset-btn{padding:7px 16px;border-radius:5px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border2);color:var(--text3);cursor:pointer;background:transparent;transition:all .15s;margin-top:10px}
+.reset-btn:hover{border-color:var(--indigo);color:var(--indigo)}
+/* CODE */
+.ctog{display:flex;align-items:center;gap:7px;padding:7px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:10px;transition:all .15s}
+.ctog:hover{border-color:var(--border2);color:var(--text2)}
+.ctog-icon{display:inline-block;transition:transform .2s}
+.ctog.open .ctog-icon{transform:rotate(90deg)}
+.cblock{display:none;margin-top:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;font-family:var(--font-mono);font-size:11px;line-height:1.8;overflow-x:auto}
+.cblock.shown{display:block}
+.kw{color:#a78bfa}.fn{color:#60a5fa}.st{color:#4af0b0}.cm{color:#4d566b}.nu{color:#fb923c}
+/* GALLERY */
+.gal-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.gf{padding:6px 14px;border-radius:20px;font-size:11px;font-family:var(--font-mono);border:1px solid var(--border2);color:var(--text3);cursor:pointer;transition:all .15s;user-select:none}
+.gf:hover{border-color:var(--teal);color:var(--teal)}
+.gf.on{background:rgba(45,212,191,.12);border-color:rgba(45,212,191,.3);color:var(--teal)}
+.gal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.gc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px;cursor:pointer;transition:all .18s}
+.gc:hover{border-color:var(--border2);transform:translateY(-2px)}
+.gc.on{border-color:var(--teal)}
+.gc-name{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text);margin-bottom:4px}
+.gc-fam{font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px}
+.gc-desc{font-size:11px;color:var(--text2);line-height:1.55}
+.gal-detail{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px;margin-top:16px;display:none}
+.gal-detail.on{display:block}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;margin:2px}
+.p-sup{background:rgba(96,165,250,.15);color:var(--blue)}
+.p-uns{background:rgba(167,139,250,.15);color:var(--purple)}
+.p-ens{background:rgba(74,240,176,.15);color:var(--green)}
+.p-dl{background:rgba(244,114,182,.12);color:var(--pink)}
+.p-nlp{background:rgba(251,196,60,.12);color:var(--yellow)}
+.p-ts{background:rgba(45,212,191,.15);color:var(--teal)}
+.wi{display:flex;gap:8px;margin-bottom:7px;font-size:12px;color:var(--text2);line-height:1.55}
+.alert{border-radius:var(--r);padding:10px 13px;font-size:12px;line-height:1.65;margin-bottom:10px}
+.aw{background:rgba(251,196,60,.07);border:1px solid rgba(251,196,60,.2)}
+.ag{background:rgba(74,240,176,.06);border:1px solid rgba(74,240,176,.18)}
+.ar{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2)}
+.ab{background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.18)}
+/* family map */
+.fam-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.fam-card{border-radius:var(--rl);border:2px solid var(--border);padding:16px 18px;background:var(--bg2)}
+.fam-icon{font-size:26px;margin-bottom:6px}
+.fam-name{font-family:var(--font-mono);font-size:13px;font-weight:600;margin-bottom:6px}
+.fam-desc{font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px}
+.fam-algos{display:flex;flex-wrap:wrap;gap:5px}
+.fam-algo-chip{font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:3px;background:var(--bg3);color:var(--text3);border:1px solid var(--border)}
+/* complexity meter */
+.cx-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.cx-lbl{font-size:11px;font-family:var(--font-mono);color:var(--text3);width:90px;flex-shrink:0}
+.cx-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.cx-fill{height:100%;border-radius:3px}
+.cx-val{font-size:11px;font-family:var(--font-mono);color:var(--text2);width:60px;text-align:right;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="hdr-badge">ALGO GUIDE</span>
+  <span class="hdr-title">Guia de Algoritmos de Machine Learning</span>
+  <span class="hdr-sub">Mapa de orientacion &middot; arbol de decision &middot; galeria de familias</span>
+</div>
+<div class="tabs">
+  <div class="tab ta active" data-tab="tree" onclick="switchTab('tree')">&#129300; Arbol de Decision</div>
+  <div class="tab tb" data-tab="gallery" onclick="switchTab('gallery')">&#129513; Familias de Algoritmos</div>
+</div>
+<div class="main">
+
+<!-- TAB TREE -->
+<div class="panel active" id="panel-tree">
+  <div class="card">
+    <p class="prose" style="margin-bottom:14px">Responde las preguntas y el arbol te orienta hacia la familia y el algoritmo de partida adecuado para tu problema. No es una receta cerrada &mdash; es un punto de partida razonado para no divagar entre decenas de opciones.</p>
+    <div class="breadcrumb" id="bc"></div>
+    <div id="tree-body"></div>
+    <button class="reset-btn" onclick="resetTree()">&#8635; Reiniciar</button>
+  </div>
+</div>
+
+<!-- TAB GALLERY -->
+<div class="panel" id="panel-gallery">
+  <div class="card">
+    <div class="sec">Mapa de familias &mdash; el panorama completo</div>
+    <div class="fam-grid">
+      <div class="fam-card" style="border-color:rgba(96,165,250,.2)">
+        <div class="fam-icon">&#127919;</div>
+        <div class="fam-name" style="color:var(--blue)">Supervisado &mdash; Regresion</div>
+        <div class="fam-desc">Predices un numero continuo a partir de ejemplos etiquetados (X, y).</div>
+        <div class="fam-algos"><span class="fam-algo-chip">Linear Reg</span><span class="fam-algo-chip">Ridge/Lasso</span><span class="fam-algo-chip">Decision Tree Reg</span><span class="fam-algo-chip">SVR</span></div>
+      </div>
+      <div class="fam-card" style="border-color:rgba(96,165,250,.2)">
+        <div class="fam-icon">&#9989;</div>
+        <div class="fam-name" style="color:var(--blue)">Supervisado &mdash; Clasificacion</div>
+        <div class="fam-desc">Predices una categoria o clase a partir de ejemplos etiquetados.</div>
+        <div class="fam-algos"><span class="fam-algo-chip">Logistic Reg</span><span class="fam-algo-chip">Decision Tree</span><span class="fam-algo-chip">SVM</span><span class="fam-algo-chip">Naive Bayes</span><span class="fam-algo-chip">KNN</span></div>
+      </div>
+      <div class="fam-card" style="border-color:rgba(74,240,176,.2)">
+        <div class="fam-icon">&#127795;</div>
+        <div class="fam-name" style="color:var(--green)">Ensembles &mdash; Bagging y Boosting</div>
+        <div class="fam-desc">Combinan muchos modelos simples para lograr mayor precision y robustez.</div>
+        <div class="fam-algos"><span class="fam-algo-chip">Random Forest</span><span class="fam-algo-chip">XGBoost</span><span class="fam-algo-chip">LightGBM</span><span class="fam-algo-chip">CatBoost</span></div>
+      </div>
+      <div class="fam-card" style="border-color:rgba(167,139,250,.2)">
+        <div class="fam-icon">&#128300;</div>
+        <div class="fam-name" style="color:var(--purple)">No Supervisado &mdash; Clustering</div>
+        <div class="fam-desc">Encuentras grupos o patrones en datos sin etiquetas previas.</div>
+        <div class="fam-algos"><span class="fam-algo-chip">K-Means</span><span class="fam-algo-chip">DBSCAN</span><span class="fam-algo-chip">Hierarchical</span><span class="fam-algo-chip">Gaussian Mixture</span></div>
+      </div>
+      <div class="fam-card" style="border-color:rgba(167,139,250,.2)">
+        <div class="fam-icon">&#128202;</div>
+        <div class="fam-name" style="color:var(--purple)">No Supervisado &mdash; Reduccion de Dimensiones</div>
+        <div class="fam-desc">Reduces el numero de variables conservando la informacion mas relevante.</div>
+        <div class="fam-algos"><span class="fam-algo-chip">PCA</span><span class="fam-algo-chip">t-SNE</span><span class="fam-algo-chip">UMAP</span><span class="fam-algo-chip">Autoencoders</span></div>
+      </div>
+      <div class="fam-card" style="border-color:rgba(244,114,182,.2)">
+        <div class="fam-icon">&#129504;</div>
+        <div class="fam-name" style="color:var(--pink)">Deep Learning</div>
+        <div class="fam-desc">Redes neuronales para datos complejos: imagenes, secuencias, texto, audio.</div>
+        <div class="fam-algos"><span class="fam-algo-chip">MLP</span><span class="fam-algo-chip">CNN</span><span class="fam-algo-chip">RNN/LSTM</span><span class="fam-algo-chip">Transformers</span></div>
+      </div>
+      <div class="fam-card" style="border-color:rgba(251,196,60,.2)">
+        <div class="fam-icon">&#128172;</div>
+        <div class="fam-name" style="color:var(--yellow)">NLP &mdash; Procesamiento de Lenguaje</div>
+        <div class="fam-desc">Analizar, clasificar y generar texto en lenguaje natural.</div>
+        <div class="fam-algos"><span class="fam-algo-chip">TF-IDF + ML</span><span class="fam-algo-chip">Word2Vec</span><span class="fam-algo-chip">BERT</span><span class="fam-algo-chip">LLMs (GPT)</span></div>
+      </div>
+      <div class="fam-card" style="border-color:rgba(45,212,191,.2)">
+        <div class="fam-icon">&#128197;</div>
+        <div class="fam-name" style="color:var(--teal)">Series de Tiempo</div>
+        <div class="fam-desc">Predices valores futuros basados en patrones temporales pasados.</div>
+        <div class="fam-algos"><span class="fam-algo-chip">ARIMA/SARIMA</span><span class="fam-algo-chip">ETS</span><span class="fam-algo-chip">Prophet</span><span class="fam-algo-chip">LSTM / Transformers TS</span></div>
+      </div>
+      <div class="fam-card" style="border-color:rgba(248,113,113,.2)">
+        <div class="fam-icon">&#127919;</div>
+        <div class="fam-name" style="color:var(--red)">Sistemas de Recomendacion</div>
+        <div class="fam-desc">Sugieres items relevantes basado en comportamiento de usuarios y/o contenido.</div>
+        <div class="fam-algos"><span class="fam-algo-chip">Collaborative Filtering</span><span class="fam-algo-chip">Content-Based</span><span class="fam-algo-chip">Matrix Factorization</span><span class="fam-algo-chip">Hybrid</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="gal-filters" id="gal-filters"></div>
+  <div class="gal-grid" id="gal-grid"></div>
+  <div class="gal-detail" id="gal-detail"></div>
+</div>
+
+</div>
+<script>
+(function(){
+
+/* ─────────────── CATALOG ─────────────── */
+var A = {
+  linreg:{n:'Regresion Lineal',ic:'&#128201;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
+    when:'Predecir un valor numerico cuando la relacion entre features y target es aproximadamente lineal. Punto de partida obligatorio para cualquier problema de regresion.',
+    nope:'No cuando la relacion es claramente no lineal (curvas, umbrales). No con multicolinealidad severa sin regularizacion.',
+    cases:['Prediccion de revenue a partir de visitas y ticket','Estimacion de precio de propiedades','Forecast simple de demanda con tendencia lineal','Modelos de pricing y elasticidad'],
+    pros:['Rapido de entrenar e interpretar','Coeficientes con significado de negocio directo','Base para entender modelos mas complejos'],
+    cons:['Asume relacion lineal entre variables','Sensible a outliers','No captura interacciones sin feature engineering manual'],
+    cx:{train:1,interp:5,data:1},
+    alts:['Ridge / Lasso (regularizacion)','Decision Tree Regression','Polynomial Regression'],
+    code:'<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LinearRegression\nmodel = <span class="fn">LinearRegression</span>()\nmodel.<span class="fn">fit</span>(X_train, y_train)\n<span class="cm"># Coeficientes interpretables directamente</span>\n<span class="fn">print</span>(model.coef_, model.intercept_)'
+  },
+  logreg:{n:'Regresion Logistica',ic:'&#9989;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
+    when:'Clasificacion binaria o multiclase cuando necesitas probabilidades interpretables y un modelo rapido como baseline.',
+    nope:'No cuando hay relaciones muy no lineales entre features y la clase. No es ideal con muchas variables categoricas de alta cardinalidad sin encoding adecuado.',
+    cases:['Prediccion de churn (probabilidad 0-1)','Scoring crediticio (aprobado/rechazado)','Deteccion de fraude (baseline)','Clasificacion de leads (caliente/frio)'],
+    pros:['Devuelve probabilidades calibradas','Coeficientes interpretables (odds ratio)','Rapido y estable, buen baseline'],
+    cons:['Asume frontera de decision lineal (en el espacio logit)','Sensible a outliers y escalas','Performance limitada vs arboles/boosting en datos complejos'],
+    cx:{train:1,interp:5,data:1},
+    alts:['Decision Tree Classifier','Naive Bayes','SVM con kernel lineal'],
+    code:'<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression\nmodel = <span class="fn">LogisticRegression</span>(class_weight=<span class="st">\'balanced\'</span>)\nmodel.<span class="fn">fit</span>(X_train, y_train)\nproba = model.<span class="fn">predict_proba</span>(X_test)[:,<span class="nu">1</span>]'
+  },
+  dtree:{n:'Decision Tree',ic:'&#127795;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
+    when:'Cuando necesitas un modelo totalmente interpretable que capture relaciones no lineales e interacciones automaticamente. Sirve para clasificacion y regresion.',
+    nope:'No como modelo final de produccion si la precision es critica (un solo arbol overfittea facil). Mejor usarlo como ensamble (RF/Boosting).',
+    cases:['Reglas de churn explicables al negocio','Segmentacion de clientes con criterios claros','Prototipo rapido antes de ensambles','Auditoria de decisiones regulatorias'],
+    pros:['100% interpretable: arbol de reglas visual','Sin necesidad de escalar features','Captura no linealidad e interacciones'],
+    cons:['Alta varianza: pequeños cambios en datos cambian el arbol','Propenso a overfitting sin poda','Performance inferior a ensambles'],
+    cx:{train:1,interp:5,data:1},
+    alts:['Random Forest (ensamble)','XGBoost / LightGBM','Reglas de negocio manuales (rule-based)'],
+    code:'<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier\nmodel = <span class="fn">DecisionTreeClassifier</span>(max_depth=<span class="nu">4</span>, min_samples_leaf=<span class="nu">10</span>)\nmodel.<span class="fn">fit</span>(X_train, y_train)'
+  },
+  rf:{n:'Random Forest',ic:'&#127794;',fam:'ens',famName:'Ensemble (Bagging)',famColor:'var(--green)',famPill:'p-ens',
+    when:'Cuando quieres mejorar mucho sobre un solo arbol sin afinar demasiados hiperparametros. Excelente baseline robusto para clasificacion y regresion tabular.',
+    nope:'No cuando necesitas la maxima precision posible y tienes tiempo para afinar boosting. No para datos secuenciales/temporales sin feature engineering de lags.',
+    cases:['Prediccion de churn como segundo modelo tras un DT','Feature importance robusta para reportes','Forecast de demanda con features de calendario','Deteccion de anomalias (Isolation Forest, variante)'],
+    pros:['Robusto al overfitting (mas arboles rara vez empeora)','Feature importance estable','Funciona bien con poco tuning'],
+    cons:['Menos interpretable que un arbol solo','Mas lento y pesado que un DT','Boosting suele superarlo en precision pura'],
+    cx:{train:2,interp:3,data:2},
+    alts:['XGBoost / LightGBM / CatBoost','Extra Trees','Gradient Boosting clasico'],
+    code:'<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier\nmodel = <span class="fn">RandomForestClassifier</span>(n_estimators=<span class="nu">200</span>, max_depth=<span class="nu">6</span>, class_weight=<span class="st">\'balanced\'</span>)\nmodel.<span class="fn">fit</span>(X_train, y_train)'
+  },
+  boosting:{n:'Gradient Boosting (XGBoost/LightGBM/CatBoost)',ic:'&#9889;',fam:'ens',famName:'Ensemble (Boosting)',famColor:'var(--green)',famPill:'p-ens',
+    when:'Cuando la precision es prioritaria sobre la interpretabilidad y trabajas con datos tabulares. El estandar en competencias y produccion para churn, pricing, forecast, credit scoring.',
+    nope:'No como primer modelo de exploracion (empieza con DT/RF para entender el problema). No si necesitas explicabilidad total sin herramientas adicionales (SHAP).',
+    cases:['Modelo final de produccion para churn','Forecast de ventas con multiples features','Credit scoring de alta precision','Pricing dinamico y deteccion de fraude'],
+    pros:['Mayor precision en datos tabulares','Maneja missing values nativamente','Early stopping evita overfitting automaticamente'],
+    cons:['Mas hiperparametros y mas sensibles entre si','Menos interpretable (requiere SHAP/feature importance)','Mas lento de entrenar que RF (excepto LightGBM)'],
+    cx:{train:3,interp:2,data:2},
+    alts:['Random Forest (mas simple)','CatBoost (si hay muchas categoricas)','Stacking de varios modelos'],
+    code:'<span class="kw">import</span> lightgbm <span class="kw">as</span> lgb\nmodel = lgb.<span class="fn">LGBMClassifier</span>(n_estimators=<span class="nu">500</span>, learning_rate=<span class="nu">0.05</span>)\nmodel.<span class="fn">fit</span>(X_train, y_train,\n    eval_set=[(X_val,y_val)], callbacks=[lgb.<span class="fn">early_stopping</span>(<span class="nu">20</span>)])'
+  },
+  svm:{n:'SVM (Support Vector Machine)',ic:'&#9974;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
+    when:'Clasificacion con datasets pequeños/medianos donde existe una frontera de separacion clara, especialmente con kernels no lineales (RBF) para fronteras complejas.',
+    nope:'No con datasets muy grandes (escala mal, O(n\u00b2)-O(n\u00b3)). No si necesitas interpretabilidad directa. No sin escalar las features primero.',
+    cases:['Clasificacion de texto (con TF-IDF)','Deteccion de imagenes simples (pre-deep learning)','Diagnostico medico con pocas muestras','Clasificacion binaria con margen claro entre clases'],
+    pros:['Muy efectivo en alta dimensionalidad','Kernel trick captura fronteras no lineales','Robusto con pocas muestras relativas a features'],
+    cons:['Escala mal con datasets grandes (&gt;50k filas)','Requiere escalar features (StandardScaler)','Hiperparametros (C, gamma) sensibles y poco intuitivos'],
+    cx:{train:3,interp:1,data:1},
+    alts:['Logistic Regression (si es linealmente separable)','Random Forest / Boosting (datasets grandes)','KNN'],
+    code:'<span class="kw">from</span> sklearn.svm <span class="kw">import</span> SVC\n<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler\nX_scaled = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(X_train)\nmodel = <span class="fn">SVC</span>(kernel=<span class="st">\'rbf\'</span>, C=<span class="nu">1.0</span>, probability=<span class="kw">True</span>)\nmodel.<span class="fn">fit</span>(X_scaled, y_train)'
+  },
+  nb:{n:'Naive Bayes',ic:'&#127922;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
+    when:'Clasificacion de texto y problemas con muchas features categoricas/binarias donde la independencia entre features es una aproximacion razonable. Extremadamente rapido.',
+    nope:'No cuando las features estan muy correlacionadas entre si (viola el supuesto de independencia). No para regresion.',
+    cases:['Filtros de spam / deteccion de contenido','Clasificacion de sentimiento simple','Categorizacion automatica de tickets de soporte','Baseline ultra-rapido para clasificacion de texto'],
+    pros:['Extremadamente rapido de entrenar y predecir','Funciona bien con pocos datos','Buen baseline para NLP'],
+    cons:['Supuesto de independencia rara vez se cumple','Probabilidades a veces mal calibradas','Performance inferior a modelos modernos en tareas complejas'],
+    cx:{train:1,interp:4,data:1},
+    alts:['Logistic Regression','SVM con kernel lineal','TF-IDF + LightGBM (mas preciso)'],
+    code:'<span class="kw">from</span> sklearn.naive_bayes <span class="kw">import</span> MultinomialNB\n<span class="kw">from</span> sklearn.feature_extraction.text <span class="kw">import</span> TfidfVectorizer\nX = <span class="fn">TfidfVectorizer</span>().<span class="fn">fit_transform</span>(textos)\nmodel = <span class="fn">MultinomialNB</span>()\nmodel.<span class="fn">fit</span>(X, y_train)'
+  },
+  knn:{n:'KNN (K-Nearest Neighbors)',ic:'&#128205;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
+    when:'Cuando la similitud entre observaciones es el concepto central del problema y el dataset es pequeño. Util tambien como baseline simple para clasificacion y regresion.',
+    nope:'No con datasets grandes (prediccion lenta: calcula distancia a todos los puntos). No con muchas features sin reducir dimensionalidad (curse of dimensionality).',
+    cases:['Sistemas de recomendacion simples (usuarios similares)','Deteccion de anomalias por distancia','Imputacion de valores faltantes','Clasificacion con fronteras muy irregulares'],
+    pros:['Conceptualmente muy simple e intuitivo','No asume forma de la distribucion','Se adapta a fronteras de decision complejas'],
+    cons:['Prediccion lenta en datasets grandes','Sensible a la escala de features y a features irrelevantes','Curse of dimensionality con muchas variables'],
+    cx:{train:1,interp:3,data:1},
+    alts:['Clustering (si no hay etiquetas)','SVM','Arboles de decision'],
+    code:'<span class="kw">from</span> sklearn.neighbors <span class="kw">import</span> KNeighborsClassifier\n<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler\nX_scaled = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(X_train)\nmodel = <span class="fn">KNeighborsClassifier</span>(n_neighbors=<span class="nu">5</span>)\nmodel.<span class="fn">fit</span>(X_scaled, y_train)'
+  },
+  kmeans:{n:'K-Means',ic:'&#127807;',fam:'uns',famName:'No Supervisado',famColor:'var(--purple)',famPill:'p-uns',
+    when:'Segmentacion de clientes/productos en grupos cuando conoces aproximadamente cuantos grupos esperas (o usas Elbow/Silhouette para encontrarlo). El clustering mas usado en marketing.',
+    nope:'No con clusters de forma muy irregular o no convexa (usa DBSCAN). No sin normalizar las features primero.',
+    cases:['Segmentacion RFM de clientes','Agrupacion de productos por patron de compra','Segmentacion de tiendas por performance','Clustering de campanas por comportamiento'],
+    pros:['Rapido y escalable','Facil de interpretar (centroides = perfil del segmento)','Ampliamente soportado y entendido'],
+    cons:['Requiere elegir k de antemano','Asume clusters esfericos de tamano similar','Sensible a outliers y a la inicializacion'],
+    cx:{train:1,interp:4,data:1},
+    alts:['Hierarchical Clustering (no requiere k fijo)','DBSCAN (clusters de forma irregular)','Gaussian Mixture Models (clusters probabilisticos)'],
+    code:'<span class="kw">from</span> sklearn.cluster <span class="kw">import</span> KMeans\n<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler\nX_scaled = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(rfm_df)\nmodel = <span class="fn">KMeans</span>(n_clusters=<span class="nu">4</span>, random_state=<span class="nu">42</span>)\nlabels = model.<span class="fn">fit_predict</span>(X_scaled)'
+  },
+  dbscan:{n:'DBSCAN',ic:'&#127757;',fam:'uns',famName:'No Supervisado',famColor:'var(--purple)',famPill:'p-uns',
+    when:'Clustering basado en densidad cuando los grupos tienen forma irregular, hay ruido/outliers, y no sabes cuantos clusters esperar.',
+    nope:'No cuando los clusters tienen densidades muy distintas entre si. No con datasets de muy alta dimensionalidad sin reducir antes.',
+    cases:['Deteccion de zonas geograficas de alta concentracion de pedidos','Identificacion de comportamiento anomalo de usuarios','Clustering de transacciones para deteccion de fraude','Agrupacion de puntos GPS de entregas'],
+    pros:['No requiere especificar el numero de clusters','Detecta outliers automaticamente (los marca como ruido)','Encuentra clusters de forma arbitraria'],
+    cons:['Sensible a los hiperparametros eps y min_samples','No funciona bien con densidades muy variables','Mas lento que K-Means en datasets grandes'],
+    cx:{train:2,interp:3,data:1},
+    alts:['K-Means (si los clusters son esfericos)','HDBSCAN (densidades variables)','Gaussian Mixture Models'],
+    code:'<span class="kw">from</span> sklearn.cluster <span class="kw">import</span> DBSCAN\nmodel = <span class="fn">DBSCAN</span>(eps=<span class="nu">0.5</span>, min_samples=<span class="nu">5</span>)\nlabels = model.<span class="fn">fit_predict</span>(X_scaled)\n<span class="cm"># labels == -1 son outliers/ruido</span>'
+  },
+  pca:{n:'PCA (Analisis de Componentes Principales)',ic:'&#128201;',fam:'uns',famName:'No Supervisado',famColor:'var(--purple)',famPill:'p-uns',
+    when:'Reducir el numero de features antes de modelar (cuando hay multicolinealidad o muchas variables), o para visualizar datos de alta dimension en 2D/3D.',
+    nope:'No cuando necesitas que las features finales sean interpretables (los componentes son combinaciones lineales sin significado directo). No captura relaciones no lineales.',
+    cases:['Reducir 50 features de comportamiento a 5-10 componentes','Visualizacion de segmentos de clientes en 2D','Preprocesamiento antes de K-Means con muchas variables','Deteccion de multicolinealidad antes de regresion'],
+    pros:['Reduce dimensionalidad preservando varianza','Elimina multicolinealidad entre features','Acelera entrenamiento de modelos posteriores'],
+    cons:['Componentes no son interpretables directamente','Asume relaciones lineales','Requiere escalar features antes de aplicar'],
+    cx:{train:1,interp:2,data:1},
+    alts:['t-SNE / UMAP (visualizacion no lineal)','Feature selection (mantiene interpretabilidad)','Autoencoders (reduccion no lineal)'],
+    code:'<span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA\n<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler\nX_scaled = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(X)\npca = <span class="fn">PCA</span>(n_components=<span class="nu">0.95</span>) <span class="cm"># 95% varianza</span>\nX_reduced = pca.<span class="fn">fit_transform</span>(X_scaled)'
+  },
+  tsne:{n:'t-SNE / UMAP',ic:'&#127909;',fam:'uns',famName:'No Supervisado',famColor:'var(--purple)',famPill:'p-uns',
+    when:'Visualizar datos de alta dimension (decenas/cientos de features) en 2D para detectar agrupamientos visuales, especialmente con embeddings de texto o imagenes.',
+    nope:'No para reducir dimensionalidad como preprocesamiento de otro modelo (las distancias no se preservan globalmente). No para datasets muy grandes sin UMAP (t-SNE es lento).',
+    cases:['Visualizar embeddings de productos o clientes','Explorar clusters de texto (embeddings de reviews)','Detectar grupos visuales en datos de comportamiento','Validar visualmente resultados de K-Means'],
+    pros:['Revela estructura no lineal en los datos','UMAP es razonablemente rapido incluso con miles de puntos','Excelente para comunicar hallazgos visualmente'],
+    cons:['Las distancias entre clusters en el plot no son confiables','Resultados varian segun hiperparametros (perplexity)','No determinista entre ejecuciones (sin random_state fijo)'],
+    cx:{train:2,interp:3,data:1},
+    alts:['PCA (si solo necesitas reducir dimensiones)','Pairplot de las features mas importantes'],
+    code:'<span class="kw">from</span> sklearn.manifold <span class="kw">import</span> TSNE\nembedding = <span class="fn">TSNE</span>(n_components=<span class="nu">2</span>, perplexity=<span class="nu">30</span>, random_state=<span class="nu">42</span>).<span class="fn">fit_transform</span>(X_scaled)\n<span class="cm"># Luego: scatter plot coloreado por cluster o segmento</span>'
+  },
+  mlp:{n:'Redes Neuronales (MLP)',ic:'&#129504;',fam:'dl',famName:'Deep Learning',famColor:'var(--pink)',famPill:'p-dl',
+    when:'Cuando tienes datos tabulares con relaciones muy complejas y un dataset grande (decenas de miles de filas+), o cuando boosting ya no mejora y quieres explorar otra familia.',
+    nope:'No con datasets pequeños (&lt;5000 filas) &mdash; boosting casi siempre gana. No si necesitas interpretabilidad (son cajas negras).',
+    cases:['Modelos de credit scoring con millones de registros','Prediccion de demanda con muchas interacciones complejas','Modelos hibridos que combinan tabular + embeddings de texto/imagen','Investigacion academica comparativa'],
+    pros:['Capacidad de modelar relaciones muy complejas','Se integra naturalmente con otros tipos de datos (texto, imagen)','Escalable con GPU para datasets enormes'],
+    cons:['Requiere muchos datos para superar a boosting','Caja negra: dificil de interpretar','Mas complejo de tunear (arquitectura, regularizacion, learning rate)'],
+    cx:{train:4,interp:1,data:3},
+    alts:['XGBoost / LightGBM (datos tabulares medianos)','TabNet (arquitectura DL especifica para tabular)'],
+    code:'<span class="kw">import</span> tensorflow <span class="kw">as</span> tf\nmodel = tf.keras.<span class="fn">Sequential</span>([\n    tf.keras.layers.<span class="fn">Dense</span>(<span class="nu">64</span>, activation=<span class="st">\'relu\'</span>),\n    tf.keras.layers.<span class="fn">Dropout</span>(<span class="nu">0.3</span>),\n    tf.keras.layers.<span class="fn">Dense</span>(<span class="nu">1</span>, activation=<span class="st">\'sigmoid\'</span>)\n])\nmodel.<span class="fn">compile</span>(optimizer=<span class="st">\'adam\'</span>, loss=<span class="st">\'binary_crossentropy\'</span>)'
+  },
+  cnn:{n:'CNN (Redes Convolucionales)',ic:'&#128247;',fam:'dl',famName:'Deep Learning',famColor:'var(--pink)',famPill:'p-dl',
+    when:'Cualquier problema con imagenes: clasificacion, deteccion de objetos, segmentacion. Tambien aplicable a series de tiempo y audio con adaptaciones (Conv1D).',
+    nope:'No para datos tabulares estandar (usa boosting). No empieces desde cero: usa transfer learning con modelos pre-entrenados.',
+    cases:['Clasificacion de imagenes de productos para catalogo','Control de calidad visual de inventario','Deteccion de objetos en fotos de tiendas','OCR de documentos y facturas'],
+    pros:['Estado del arte para vision por computadora','Transfer learning permite buenos resultados con pocos datos propios','Arquitecturas pre-entrenadas ampliamente disponibles'],
+    cons:['Requiere GPU para entrenar eficientemente','Necesita muchos datos etiquetados (o transfer learning)','Caja negra, dificil de auditar decisiones'],
+    cx:{train:4,interp:1,data:4},
+    alts:['Transfer Learning (ResNet, EfficientNet pre-entrenados)','APIs de vision en la nube (Google Vision, AWS Rekognition)'],
+    code:'<span class="kw">import</span> tensorflow <span class="kw">as</span> tf\nbase = tf.keras.applications.<span class="fn">EfficientNetB0</span>(\n    include_top=<span class="kw">False</span>, weights=<span class="st">\'imagenet\'</span>)\nbase.trainable = <span class="kw">False</span> <span class="cm"># transfer learning</span>\nmodel = tf.keras.<span class="fn">Sequential</span>([base, tf.keras.layers.<span class="fn">GlobalAveragePooling2D</span>(),\n    tf.keras.layers.<span class="fn">Dense</span>(<span class="nu">10</span>, activation=<span class="st">\'softmax\'</span>)])'
+  },
+  rnn:{n:'RNN / LSTM',ic:'&#128257;',fam:'dl',famName:'Deep Learning',famColor:'var(--pink)',famPill:'p-dl',
+    when:'Datos secuenciales donde el orden importa: series de tiempo complejas con multiples variables, texto (antes de Transformers), audio.',
+    nope:'No para series de tiempo simples (Prophet/ARIMA suelen ser mas faciles y suficientes). No para texto moderno (usa Transformers/BERT).',
+    cases:['Forecast multivariado con muchas series relacionadas','Prediccion de secuencias de comportamiento de usuario','Modelos de demanda con dependencias temporales complejas y largas'],
+    pros:['Captura dependencias temporales de largo plazo (LSTM/GRU)','Maneja naturalmente secuencias de longitud variable','Puede combinar multiples series simultaneamente'],
+    cons:['Lento de entrenar comparado con modelos clasicos de series de tiempo','Requiere bastante data para evitar overfitting','Mayormente superado por Transformers en tareas de secuencia'],
+    cx:{train:4,interp:1,data:3},
+    alts:['Prophet / ARIMA (series simples)','Transformers para series de tiempo (PatchTST, Informer)','LightGBM con features de lag (a menudo igual de bueno)'],
+    code:'<span class="kw">import</span> tensorflow <span class="kw">as</span> tf\nmodel = tf.keras.<span class="fn">Sequential</span>([\n    tf.keras.layers.<span class="fn">LSTM</span>(<span class="nu">50</span>, return_sequences=<span class="kw">False</span>),\n    tf.keras.layers.<span class="fn">Dense</span>(<span class="nu">1</span>)\n])\nmodel.<span class="fn">compile</span>(optimizer=<span class="st">\'adam\'</span>, loss=<span class="st">\'mse\'</span>)'
+  },
+  tfidf:{n:'TF-IDF + Modelo Clasico',ic:'&#128221;',fam:'nlp',famName:'NLP',famColor:'var(--yellow)',famPill:'p-nlp',
+    when:'Clasificacion o analisis de texto cuando necesitas un modelo rapido, interpretable y que no requiere GPU. Excelente baseline para cualquier tarea de NLP.',
+    nope:'No para tareas que requieren entender contexto y significado profundo (sarcasmo, ambiguedad). No para generacion de texto.',
+    cases:['Clasificacion de tickets de soporte por categoria','Analisis de sentimiento de reviews','Deteccion de spam','Busqueda de documentos similares (information retrieval)'],
+    pros:['Rapido, sin GPU, facil de desplegar','Interpretable: puedes ver que palabras pesan mas','Buen baseline antes de invertir en modelos mas pesados'],
+    cons:['No captura significado ni contexto (orden de palabras se pierde)','Vocabulario fijo: palabras nuevas no vistas en train se ignoran','Performance limitada en tareas semanticamente complejas'],
+    cx:{train:1,interp:4,data:1},
+    alts:['Word2Vec / embeddings preentrenados','BERT / modelos transformer','spaCy para NLP estructurado (NER, POS tagging)'],
+    code:'<span class="kw">from</span> sklearn.feature_extraction.text <span class="kw">import</span> TfidfVectorizer\n<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression\nX = <span class="fn">TfidfVectorizer</span>(max_features=<span class="nu">5000</span>, ngram_range=(<span class="nu">1</span>,<span class="nu">2</span>)).<span class="fn">fit_transform</span>(textos)\nmodel = <span class="fn">LogisticRegression</span>().<span class="fn">fit</span>(X, y_train)'
+  },
+  transformers:{n:'Transformers / BERT / LLMs',ic:'&#129302;',fam:'nlp',famName:'NLP',famColor:'var(--yellow)',famPill:'p-nlp',
+    when:'Tareas de NLP que requieren entender contexto y significado: clasificacion semantica avanzada, extraccion de informacion, generacion de texto, chatbots, resumenes.',
+    nope:'No para tareas simples donde TF-IDF ya funciona bien (no agregues complejidad innecesaria). No sin considerar costos de inferencia en produccion.',
+    cases:['Chatbot de atencion al cliente','Clasificacion de intencion en mensajes de WhatsApp','Generacion automatica de descripciones de producto','Extraccion de entidades de documentos (RUC, montos, fechas)'],
+    pros:['Entiende contexto, sinonimos, sarcasmo en cierto grado','Modelos pre-entrenados (BERT, GPT) reducen necesidad de datos propios','Fine-tuning permite adaptar a dominio especifico'],
+    cons:['Costoso computacionalmente (GPU para fine-tuning, latencia en inferencia)','Requiere mas expertise para implementar y mantener','Riesgo de alucinaciones en modelos generativos'],
+    cx:{train:4,interp:1,data:2},
+    alts:['TF-IDF + modelo clasico (si la tarea es simple)','APIs de LLM (Claude, GPT) sin fine-tuning propio','spaCy + reglas para extraccion estructurada'],
+    code:'<span class="kw">from</span> transformers <span class="kw">import</span> pipeline\nclassifier = <span class="fn">pipeline</span>(<span class="st">\'sentiment-analysis\'</span>,\n    model=<span class="st">\'nlptown/bert-base-multilingual-uncased-sentiment\'</span>)\nresultado = classifier(<span class="st">\'Excelente atencion, volveria a comprar\'</span>)'
+  },
+  arima:{n:'ARIMA / SARIMA',ic:'&#128202;',fam:'ts',famName:'Series de Tiempo',famColor:'var(--teal)',famPill:'p-ts',
+    when:'Series de tiempo univariadas (una sola variable), estacionarias o que se pueden hacer estacionarias mediante diferenciacion, con horizonte de prediccion corto-mediano.',
+    nope:'No para series con multiples variables explicativas externas (usa SARIMAX o regresion). No con series muy cortas (&lt;30-50 observaciones).',
+    cases:['Forecast de ventas mensuales sin variables externas','Prediccion de demanda con estacionalidad clara (SARIMA)','Series financieras de corto plazo','Benchmark estadistico clasico antes de probar ML'],
+    pros:['Fundamento estadistico solido y bien establecido','Intervalos de confianza interpretables','SARIMA captura estacionalidad explicitamente'],
+    cons:['Requiere que la serie sea (o se vuelva) estacionaria','Seleccion de p,d,q,P,D,Q,s puede ser tediosa (auto_arima ayuda)','No incorpora facilmente variables externas (eventos, promociones)'],
+    cx:{train:2,interp:4,data:1},
+    alts:['ETS / Exponential Smoothing (mas simple)','Prophet (mas flexible con feriados/eventos)','LightGBM con features de lag (enfoque ML)'],
+    code:'<span class="kw">from</span> statsmodels.tsa.arima.model <span class="kw">import</span> ARIMA\nmodel = <span class="fn">ARIMA</span>(serie, order=(<span class="nu">1</span>,<span class="nu">1</span>,<span class="nu">1</span>), seasonal_order=(<span class="nu">1</span>,<span class="nu">1</span>,<span class="nu">1</span>,<span class="nu">12</span>))\nfit = model.<span class="fn">fit</span>()\nforecast = fit.<span class="fn">forecast</span>(steps=<span class="nu">12</span>)'
+  },
+  prophet:{n:'Prophet',ic:'&#127807;',fam:'ts',famName:'Series de Tiempo',famColor:'var(--teal)',famPill:'p-ts',
+    when:'Forecast de negocio con estacionalidad multiple (semanal + anual), feriados, y cambios de tendencia, cuando necesitas resultados rapidos sin ser experto en estadistica.',
+    nope:'No para series muy cortas o muy ruidosas sin patron claro. No cuando necesitas el maximo rendimiento posible (boosting con features de lag suele superarlo).',
+    cases:['Forecast de ventas con feriados peruanos (Fiestas Patrias, Navidad)','Prediccion de trafico web con estacionalidad semanal','Planificacion de inventario con tendencias y picos','Forecast rapido para multiples productos/tiendas en paralelo'],
+    pros:['Maneja feriados y eventos especiales facilmente','Robusto a datos faltantes y outliers','Configuracion minima, buenos resultados por defecto'],
+    cons:['Menos preciso que ARIMA bien afinado en series simples','Menos preciso que ML con features de lag en datasets grandes','Puede sobre-suavizar cambios abruptos recientes'],
+    cx:{train:1,interp:3,data:1},
+    alts:['ARIMA/SARIMA (mayor control estadistico)','ETS (mas simple, sin regresores externos)','LightGBM con features de calendario y lags'],
+    code:'<span class="kw">from</span> prophet <span class="kw">import</span> Prophet\nmodel = <span class="fn">Prophet</span>(yearly_seasonality=<span class="kw">True</span>, weekly_seasonality=<span class="kw">True</span>)\nmodel.<span class="fn">add_country_holidays</span>(country_name=<span class="st">\'PE\'</span>)\nmodel.<span class="fn">fit</span>(df) <span class="cm"># columnas: ds, y</span>\nforecast = model.<span class="fn">predict</span>(future_df)'
+  },
+  ets:{n:'ETS / Exponential Smoothing',ic:'&#128201;',fam:'ts',famName:'Series de Tiempo',famColor:'var(--teal)',famPill:'p-ts',
+    when:'Series de tiempo simples con tendencia y/o estacionalidad clara, cuando necesitas un modelo rapido, robusto e interpretable como primer intento.',
+    nope:'No con multiples variables explicativas. No con patrones muy complejos no capturables por nivel+tendencia+estacionalidad.',
+    cases:['Forecast rapido de inventario para cientos de SKUs','Baseline antes de probar Prophet o ARIMA','Series con tendencia y estacionalidad simple y estable','Suavizado de series ruidosas para reporting'],
+    pros:['Muy rapido, ideal para forecast masivo (miles de series)','Pocos hiperparametros, faciles de entender','Buen punto de comparacion (benchmark) para modelos mas complejos'],
+    cons:['No incorpora variables externas','Limitado con patrones estacionales multiples o complejos','Menos preciso que Prophet/ML en series con eventos especiales'],
+    cx:{train:1,interp:4,data:1},
+    alts:['ARIMA (mas flexible estadisticamente)','Prophet (con feriados y eventos)','Naive forecast (benchmark minimo)'],
+    code:'<span class="kw">from</span> statsmodels.tsa.holtwinters <span class="kw">import</span> ExponentialSmoothing\nmodel = <span class="fn">ExponentialSmoothing</span>(serie, trend=<span class="st">\'add\'</span>, seasonal=<span class="st">\'add\'</span>, seasonal_periods=<span class="nu">12</span>)\nfit = model.<span class="fn">fit</span>()\nforecast = fit.<span class="fn">forecast</span>(<span class="nu">12</span>)'
+  },
+  cf:{n:'Sistemas de Recomendacion (Collaborative Filtering)',ic:'&#127919;',fam:'rec',famName:'Recomendacion',famColor:'var(--red)',famPill:'p-sup',
+    when:'Recomendar productos/contenido basado en el comportamiento de usuarios similares (que compraron/vieron cosas similares).',
+    nope:'No funciona bien para usuarios o items completamente nuevos (cold start) sin complementar con content-based.',
+    cases:['"Clientes que compraron esto tambien compraron..."','Recomendacion de productos en e-commerce','Sistemas de recomendacion de contenido (streaming)','Personalizacion de catalogo por segmento'],
+    pros:['No requiere conocer atributos de los productos','Captura patrones de comportamiento complejos','Mejora con mas datos de interaccion'],
+    cons:['Cold start: usuarios/items nuevos sin historial','Requiere suficiente densidad de interacciones','Puede reforzar burbujas de filtro (siempre lo mismo)'],
+    cx:{train:2,interp:2,data:2},
+    alts:['Content-based filtering (usa atributos de producto)','Hybrid (combina ambos enfoques)','Matrix Factorization (SVD, ALS)'],
+    code:'<span class="kw">from</span> implicit.als <span class="kw">import</span> AlternatingLeastSquares\nmodel = <span class="fn">AlternatingLeastSquares</span>(factors=<span class="nu">50</span>)\nmodel.<span class="fn">fit</span>(user_item_matrix)\nrecomendaciones = model.<span class="fn">recommend</span>(user_id, user_item_matrix, N=<span class="nu">10</span>)'
+  }
+};
+
+var FAM_LABELS = {todos:'Todos',sup:'Supervisado',uns:'No Supervisado',ens:'Ensembles',dl:'Deep Learning',nlp:'NLP',ts:'Series de Tiempo'};
+var FAM_TYPES = ['todos','sup','uns','ens','dl','nlp','ts'];
+
+/* ─────────────── TREE ─────────────── */
+var NODES = {
+  q1:{q:'Que tipo de problema tienes?',opts:[
+    {l:'Predecir un numero o categoria a partir de datos etiquetados',n:'q_sup'},
+    {l:'Encontrar patrones o grupos sin etiquetas previas',n:'q_uns'},
+    {l:'Trabajar con texto / lenguaje natural',n:'q_nlp'},
+    {l:'Predecir valores futuros en una serie de tiempo',n:'q_ts'},
+    {l:'Recomendar productos o contenido',r:'cf'}
+  ]},
+  q_sup:{q:'Cual es tu objetivo principal?',opts:[
+    {l:'Predecir un numero continuo (regresion)',n:'q_reg'},
+    {l:'Predecir una categoria (clasificacion)',n:'q_clas'}
+  ]},
+  q_reg:{q:'Que priorizas?',opts:[
+    {l:'Interpretabilidad: entender por que predice eso',n:'q_reg_interp'},
+    {l:'Precision: el mejor resultado posible',r:'boosting'},
+    {l:'Es una serie de tiempo (prediccion futura)',n:'q_ts'}
+  ]},
+  q_reg_interp:{q:'La relacion entre variables y el target parece...?',opts:[
+    {l:'Aproximadamente lineal',r:'linreg'},
+    {l:'No lineal, con umbrales o interacciones',r:'dtree'}
+  ]},
+  q_clas:{q:'Que priorizas?',opts:[
+    {l:'Interpretabilidad y probabilidades calibradas',r:'logreg'},
+    {l:'Reglas de negocio visuales y explicables',r:'dtree'},
+    {l:'Precision maxima en datos tabulares',r:'boosting'},
+    {l:'Dataset pequeño con frontera de separacion clara',r:'svm'},
+    {l:'Es clasificacion de texto',r:'tfidf'}
+  ]},
+  q_uns:{q:'Que quieres lograr?',opts:[
+    {l:'Agrupar observaciones en segmentos (clustering)',n:'q_clust'},
+    {l:'Reducir el numero de variables (dimensionalidad)',n:'q_dim'}
+  ]},
+  q_clust:{q:'Sabes cuantos grupos esperas, aproximadamente?',opts:[
+    {l:'Si, tengo una idea aproximada de k',r:'kmeans'},
+    {l:'No, y los grupos pueden tener forma irregular',r:'dbscan'}
+  ]},
+  q_dim:{q:'Para que vas a usar la reduccion?',opts:[
+    {l:'Preprocesar antes de otro modelo (clustering, regresion)',r:'pca'},
+    {l:'Visualizar los datos en 2D para explorar',r:'tsne'}
+  ]},
+  q_nlp:{q:'Que tan compleja es la tarea?',opts:[
+    {l:'Clasificacion/analisis simple (spam, sentimiento basico)',r:'tfidf'},
+    {l:'Necesito entender contexto, generar texto, o un chatbot',r:'transformers'},
+    {l:'Es solo un baseline rapido sin GPU',r:'nb'}
+  ]},
+  q_ts:{q:'Cuantas variables tiene tu serie?',opts:[
+    {l:'Una sola variable (univariada)',n:'q_ts_uni'},
+    {l:'Multiples variables relacionadas (multivariada)',n:'q_ts_multi'}
+  ]},
+  q_ts_uni:{q:'Que necesitas?',opts:[
+    {l:'Forecast rapido con feriados/eventos especiales',r:'prophet'},
+    {l:'Control estadistico clasico (p,d,q)',r:'arima'},
+    {l:'Lo mas simple posible, para muchas series a la vez',r:'ets'}
+  ]},
+  q_ts_multi:{q:'Que enfoque prefieres?',opts:[
+    {l:'Machine learning con features de lag (recomendado)',r:'boosting'},
+    {l:'Deep learning para dependencias temporales complejas',r:'rnn'}
+  ]}
+};
+
+var treeHistory = [];
+var currentNode = 'q1';
+
+function renderTree() {
+  var bc = document.getElementById('bc');
+  var body = document.getElementById('tree-body');
+  var bcHtml = '<span class="bc-item bc-active" onclick="jumpTree(-1)">Inicio</span>';
+  for (var i = 0; i < treeHistory.length; i++) {
+    bcHtml += '<span class="bc-sep"> &rsaquo; </span>';
+    var isCurrent = (i === treeHistory.length - 1);
+    bcHtml += '<span class="bc-item' + (isCurrent ? ' bc-active' : '') + '" onclick="jumpTree(' + i + ')">' + treeHistory[i].l + '</span>';
+  }
+  bc.innerHTML = bcHtml;
+  var last = treeHistory.length > 0 ? treeHistory[treeHistory.length - 1] : null;
+  if (last && last.r) {
+    renderResult(last.r, body);
+    return;
+  }
+  var node = NODES[currentNode];
+  if (!node) return;
+  var html = '<div class="q-text">' + node.q + '</div><div class="q-opts">';
+  for (var j = 0; j < node.opts.length; j++) {
+    html += '<button class="q-btn" onclick="chooseOpt(' + j + ')">' + node.opts[j].l + '</button>';
+  }
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+window.chooseOpt = function(idx) {
+  var node = NODES[currentNode];
+  if (!node) return;
+  var opt = node.opts[idx];
+  treeHistory.push(opt);
+  if (opt.r) {
+    renderTree();
+  } else if (opt.n) {
+    currentNode = opt.n;
+    renderTree();
+  }
+};
+
+window.jumpTree = function(idx) {
+  if (idx === -1) {
+    treeHistory = [];
+    currentNode = 'q1';
+  } else {
+    treeHistory = treeHistory.slice(0, idx + 1);
+    currentNode = 'q1';
+    var last = treeHistory[treeHistory.length - 1];
+    if (last && last.n) currentNode = last.n;
+  }
+  renderTree();
+};
+
+window.resetTree = function() {
+  treeHistory = [];
+  currentNode = 'q1';
+  renderTree();
+};
+
+function renderResult(id, container) {
+  var c = A[id];
+  if (!c) return;
+  var casesHtml = c.cases.map(function(cs) {
+    return '<div class="wi"><span style="color:var(--green);flex-shrink:0">+</span><span>' + cs + '</span></div>';
+  }).join('');
+  var prosHtml = c.pros.map(function(p) {
+    return '<div class="wi"><span style="color:var(--green);flex-shrink:0">+</span><span>' + p + '</span></div>';
+  }).join('');
+  var consHtml = c.cons.map(function(w) {
+    return '<div class="wi"><span style="color:var(--red);flex-shrink:0">&minus;</span><span>' + w + '</span></div>';
+  }).join('');
+  var altHtml = c.alts.map(function(a) {
+    return '<span class="alt-chip">' + a + '</span>';
+  }).join('');
+  container.innerHTML = '<div class="result-card">'
+    + '<div class="g2">'
+    + '<div>'
+    + '<div style="font-size:32px;margin-bottom:8px">' + c.ic + '</div>'
+    + '<div class="result-name" style="color:' + c.famColor + '">' + c.n + '</div>'
+    + '<span class="result-tag" style="color:' + c.famColor + '">' + c.famName + '</span>'
+    + '<div class="rsec">Cuando usarlo</div>'
+    + '<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:8px">' + c.when + '</div>'
+    + '<div class="rsec">No lo uses cuando</div>'
+    + '<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:8px">' + c.nope + '</div>'
+    + '<div class="rsec">Complejidad relativa</div>'
+    + buildComplexity(c.cx)
+    + '</div>'
+    + '<div>'
+    + '<div class="rsec">Casos de uso tipicos</div>'
+    + casesHtml
+    + '<div class="rsec">Ventajas</div>'
+    + prosHtml
+    + '<div class="rsec">Limitaciones</div>'
+    + consHtml
+    + '<div class="rsec">Alternativas a considerar</div>'
+    + altHtml
+    + '<div class="ctog" onclick="toggleCode(this)"><span class="ctog-icon">&#9654;</span> Ver codigo Python</div>'
+    + '<div class="cblock">' + c.code + '</div>'
+    + '</div>'
+    + '</div></div>';
+}
+
+function buildComplexity(cx){
+  var labels={train:'Entrenamiento',interp:'Interpretabilidad',data:'Datos necesarios'};
+  var colors={train:'var(--orange)',interp:'var(--blue)',data:'var(--purple)'};
+  var keys=['train','interp','data'];
+  return keys.map(function(k){
+    var v=cx[k];
+    var pct=(v/5*100);
+    var label = v<=1?'Baja':v<=2?'Media-baja':v<=3?'Media':v<=4?'Media-alta':'Alta';
+    if(k==='interp') label = v<=1?'Muy baja':v<=2?'Baja':v<=3?'Media':v<=4?'Alta':'Muy alta';
+    return '<div class="cx-row"><span class="cx-lbl">'+labels[k]+'</span><div class="cx-bar"><div class="cx-fill" style="width:'+pct+'%;background:'+colors[k]+'"></div></div><span class="cx-val">'+label+'</span></div>';
+  }).join('');
+}
+
+/* ─────────────── GALLERY ─────────────── */
+var activeFilter = 'todos';
+var activeGalAlgo = null;
+
+function buildGallery() {
+  var fc = document.getElementById('gal-filters');
+  fc.innerHTML = FAM_TYPES.map(function(t) {
+    return '<div class="gf' + (t === activeFilter ? ' on' : '') + '" data-filter="' + t + '">' + FAM_LABELS[t] + '</div>';
+  }).join('');
+  renderGrid();
+}
+
+function renderGrid() {
+  var keys = Object.keys(A).filter(function(k) {
+    return activeFilter === 'todos' || A[k].fam === activeFilter;
+  });
+  var grid = document.getElementById('gal-grid');
+  grid.innerHTML = keys.map(function(k) {
+    return '<div class="gc' + (activeGalAlgo === k ? ' on' : '') + '" id="gc-' + k + '" data-algo="' + k + '">'
+      + '<div style="font-size:22px;margin-bottom:6px">' + A[k].ic + '</div>'
+      + '<div class="gc-name">' + A[k].n + '</div>'
+      + '<div class="gc-fam"><span class="pill ' + A[k].famPill + '">' + A[k].famName + '</span></div>'
+      + '<div class="gc-desc">' + A[k].when.slice(0, 95) + '&hellip;</div>'
+      + '</div>';
+  }).join('');
+  if (activeGalAlgo && keys.indexOf(activeGalAlgo) >= 0) {
+    renderGalDetail(activeGalAlgo);
+  } else {
+    var det = document.getElementById('gal-detail');
+    det.classList.remove('on'); det.innerHTML = '';
+    activeGalAlgo = null;
+  }
+}
+
+window.setFamFilter = function(f) {
+  activeFilter = f;
+  var els = document.querySelectorAll('.gf');
+  for (var i = 0; i < els.length; i++) {
+    els[i].classList.remove('on');
+    if (FAM_TYPES[i] === f) els[i].classList.add('on');
+  }
+  renderGrid();
+};
+
+window.selectAlgo = function(k) {
+  activeGalAlgo = k;
+  var cards = document.querySelectorAll('.gc');
+  for (var i = 0; i < cards.length; i++) cards[i].classList.remove('on');
+  var el = document.getElementById('gc-' + k);
+  if (el) el.classList.add('on');
+  renderGalDetail(k);
+  var det = document.getElementById('gal-detail');
+  if (det && det.scrollIntoView) det.scrollIntoView({behavior:'smooth',block:'nearest'});
+};
+
+function renderGalDetail(k) {
+  var c = A[k];
+  var det = document.getElementById('gal-detail');
+  var casesHtml = c.cases.map(function(cs) {
+    return '<div class="wi"><span style="color:var(--green);flex-shrink:0">+</span><span>' + cs + '</span></div>';
+  }).join('');
+  var prosHtml = c.pros.map(function(p) {
+    return '<div class="wi"><span style="color:var(--green);flex-shrink:0">+</span><span>' + p + '</span></div>';
+  }).join('');
+  var consHtml = c.cons.map(function(w) {
+    return '<div class="wi"><span style="color:var(--red);flex-shrink:0">&minus;</span><span>' + w + '</span></div>';
+  }).join('');
+  var altHtml = c.alts.map(function(a) {
+    return '<span class="alt-chip">' + a + '</span>';
+  }).join('');
+  det.innerHTML = '<div class="g2">'
+    + '<div>'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+    + '<div style="font-size:30px">' + c.ic + '</div>'
+    + '<div><div style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:' + c.famColor + '">' + c.n + '</div>'
+    + '<span class="pill ' + c.famPill + '">' + c.famName + '</span></div></div>'
+    + '<div class="rsec">Cuando usarlo</div>'
+    + '<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:8px">' + c.when + '</div>'
+    + '<div class="rsec">No lo uses cuando</div>'
+    + '<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:8px">' + c.nope + '</div>'
+    + '<div class="rsec">Complejidad relativa</div>'
+    + buildComplexity(c.cx)
+    + '</div>'
+    + '<div>'
+    + '<div class="rsec">Casos de uso tipicos</div>'
+    + casesHtml
+    + '<div class="rsec">Ventajas</div>'
+    + prosHtml
+    + '<div class="rsec">Limitaciones</div>'
+    + consHtml
+    + '<div class="rsec">Alternativas</div>'
+    + altHtml
+    + '<div class="ctog" onclick="toggleCode(this)"><span class="ctog-icon">&#9654;</span> Ver codigo Python</div>'
+    + '<div class="cblock">' + c.code + '</div>'
+    + '</div></div>';
+  det.classList.add('on');
+}
+
+/* ─────────────── UTILS ─────────────── */
+window.toggleCode = function(btn) {
+  btn.classList.toggle('open');
+  var b = btn.nextElementSibling;
+  if (b) b.classList.toggle('shown');
+};
+
+window.switchTab = function(t) {
+  var tabs = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.panel');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+  for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+  document.querySelector('[data-tab="' + t + '"]').classList.add('active');
+  document.getElementById('panel-' + t).classList.add('active');
+  if (t === 'gallery' && !galBuilt) { buildGallery(); galBuilt = true; }
+};
+var galBuilt = false;
+
+/* ─────────────── EVENT DELEGATION (gallery) ─────────────── */
+document.addEventListener('click', function(e){
+  var f = e.target.closest && e.target.closest('.gf');
+  if (f && f.dataset && f.dataset.filter) { setFamFilter(f.dataset.filter); return; }
+  var g = e.target.closest && e.target.closest('.gc');
+  if (g && g.dataset && g.dataset.algo) { selectAlgo(g.dataset.algo); return; }
+});
+
+/* ─────────────── INIT ─────────────── */
+renderTree();
+
+})();
+</script>
+</body>
+</html>

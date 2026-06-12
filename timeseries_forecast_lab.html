@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Series Forecast Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--pink:#f472b6;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em}
+.hdr-title{font-family:var(--font-mono);font-size:14px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.level-bar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg2)}
+.level-btn{display:flex;align-items:center;gap:10px;padding:15px 28px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;flex:1;justify-content:center}
+.level-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s;flex-shrink:0}
+.level-info{display:flex;flex-direction:column;gap:2px}
+.level-name{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text3);transition:color .2s;letter-spacing:.03em}
+.level-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.level-sep{width:1px;background:var(--border);flex-shrink:0}
+.main{max-width:1060px;margin:0 auto;padding:26px 32px}
+.lp{display:none}.lp.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+.banner{border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;display:flex;gap:18px;align-items:flex-start}
+.banner-icon{font-size:34px;flex-shrink:0;margin-top:2px}
+.banner h2{font-family:var(--font-mono);font-size:17px;font-weight:600;margin-bottom:6px}
+.banner p{font-size:13px;line-height:1.7}
+.chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:3px 9px;border-radius:4px;font-weight:500}
+.mex-grid{display:grid;gap:12px;margin-bottom:18px}
+.mex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;cursor:pointer;transition:border-color .15s}
+.mex:hover{border-color:var(--border2)}
+.mex-top{display:flex;align-items:center;gap:12px}
+.mex-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 11px;border-radius:5px;white-space:nowrap}
+.mex-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.mex-value{font-family:var(--font-mono);font-size:20px;font-weight:600;min-width:90px;text-align:right}
+.mex-toggle{font-size:16px;color:var(--text3);transition:transform .2s;margin-left:6px}
+.mex.open .mex-toggle{transform:rotate(180deg)}
+.mex-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.mex.open .mex-body{display:block}
+.mbg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fbox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border)}
+.flbl{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:.06em}
+.ibox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.65}
+.bar-track{height:5px;background:var(--border);border-radius:3px;margin-top:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.chart-wrap{position:relative;height:260px}
+.chart-sm{position:relative;height:200px}
+.sl-row{margin-bottom:11px}
+.sl-lbl{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:4px}
+.sl-lbl span:first-child{color:var(--text2)}.sl-lbl span:last-child{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid var(--bg);background:var(--pink)}
+.model-tab{display:flex;gap:0;margin-bottom:14px}
+.model-tab-btn{padding:7px 16px;font-family:var(--font-mono);font-size:11px;color:var(--text3);cursor:pointer;border:1px solid var(--border);background:transparent;transition:all .15s;letter-spacing:.04em}
+.model-tab-btn:first-child{border-radius:4px 0 0 4px}
+.model-tab-btn:last-child{border-radius:0 4px 4px 0}
+.model-tab-btn:not(:first-child){border-left:none}
+.model-tab-btn.act-prophet{background:rgba(74,240,176,.10);color:var(--green);border-color:rgba(74,240,176,.25)}
+.model-tab-btn.act-arima{background:rgba(96,165,250,.12);color:var(--blue);border-color:rgba(96,165,250,.3)}
+.model-tab-btn.act-ets{background:rgba(167,139,250,.10);color:var(--purple);border-color:rgba(167,139,250,.25)}
+.cmp-row{display:grid;grid-template-columns:110px 1fr 1fr 1fr 90px;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)}
+.cmp-row:last-child{border-bottom:none}
+.cmp-lbl{font-family:var(--font-mono);font-size:11px;color:var(--text3)}
+.cmp-a{font-family:var(--font-mono);font-size:13px;color:var(--blue);text-align:center}
+.cmp-b{font-family:var(--font-mono);font-size:13px;color:var(--green);text-align:center}
+.cmp-c{font-family:var(--font-mono);font-size:13px;color:var(--purple);text-align:center}
+.wbadge{font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;text-align:center;display:inline-block}
+.w-a{background:rgba(96,165,250,.15);color:var(--blue);border:1px solid rgba(96,165,250,.3)}
+.w-b{background:rgba(74,240,176,.12);color:var(--green);border:1px solid rgba(74,240,176,.25)}
+.w-c{background:rgba(167,139,250,.15);color:var(--purple);border:1px solid rgba(167,139,250,.3)}
+.horizon-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-top:4px}
+.horizon-fill{height:100%;border-radius:4px;transition:width .4s}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-badge" id="hdrBadge" style="background:rgba(244,114,182,.15);color:var(--pink)">BASICO</span>
+  <span class="hdr-title">Time Series Forecast Lab</span>
+  <span class="hdr-sub">Ventas semanales &mdash; Cadena Retail Peru</span>
+</div>
+
+<div class="level-bar">
+  <div class="level-btn" id="btn-basic" onclick="switchLevel('basic')">
+    <div class="level-icon" id="icon-basic">&#127807;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-basic">Basico</div>
+      <div class="level-sub">MAE &middot; RMSE &middot; MAPE</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-inter" onclick="switchLevel('inter')">
+    <div class="level-icon" id="icon-inter">&#9881;&#65039;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-inter">Intermedio</div>
+      <div class="level-sub">MASE &middot; SMAPE &middot; Error por horizonte</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-adv" onclick="switchLevel('adv')">
+    <div class="level-icon" id="icon-adv">&#128300;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-adv">Avanzado</div>
+      <div class="level-sub">Intervalos &middot; ARIMA vs Prophet vs ETS</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ===== BASICO ===== -->
+<div class="lp active" id="panel-basic">
+  <div class="banner" style="background:rgba(244,114,182,.05);border:1px solid rgba(244,114,182,.15)">
+    <div class="banner-icon">&#127807;</div>
+    <div>
+      <h2 style="color:var(--pink)">Nivel Basico &mdash; Error puntual en forecasting</h2>
+      <p class="prose">Una cadena retail peruana predice sus <strong style="color:var(--text)">ventas semanales en S/.</strong> 40 semanas de entrenamiento, 12 de evaluacion. Las metricas son las mismas que en regresion, pero con matices importantes por el orden temporal.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(244,114,182,.12);color:var(--pink)">MAE &mdash; error promedio en S/.</span>
+        <span class="chip" style="background:rgba(244,114,182,.12);color:var(--pink)">RMSE &mdash; penaliza semanas criticas</span>
+        <span class="chip" style="background:rgba(244,114,182,.12);color:var(--pink)">MAPE &mdash; error porcentual semanal</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Serie de ventas &mdash; 52 semanas (40 train + 12 test)</div>
+    <div class="chart-wrap"><canvas id="b-main-chart"></canvas></div>
+    <div style="display:flex;gap:20px;justify-content:center;margin-top:8px;font-size:11px;font-family:var(--font-mono)">
+      <span><span style="display:inline-block;width:18px;height:2px;background:rgba(255,255,255,.5);vertical-align:middle;margin-right:5px"></span>Train (real)</span>
+      <span><span style="display:inline-block;width:18px;height:2px;background:rgba(255,255,255,.9);vertical-align:middle;margin-right:5px"></span>Test (real)</span>
+      <span><span style="display:inline-block;width:18px;height:2px;background:var(--green);vertical-align:middle;margin-right:5px"></span>Prophet</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Series de tiempo vs regresion &mdash; que cambia</div>
+    <div class="g2">
+      <div style="display:grid;gap:8px">
+        <div class="card-sm" style="border-left:3px solid var(--pink)">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--pink);margin-bottom:5px">ORDEN TEMPORAL IMPORTA</div>
+          <div class="prose" style="font-size:12px">El set de test siempre es el futuro. No puedes barajar los datos. El error en la semana 45 depende de lo que el modelo aprendio en semanas 1-40.</div>
+        </div>
+        <div class="card-sm" style="border-left:3px solid var(--yellow)">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--yellow);margin-bottom:5px">EL ERROR CRECE CON EL HORIZONTE</div>
+          <div class="prose" style="font-size:12px">Predecir la semana siguiente es mucho mas facil que predecir 12 semanas adelante. Las metricas globales ocultan este deterioro.</div>
+        </div>
+        <div class="card-sm" style="border-left:3px solid var(--blue)">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:5px">ESTACIONALIDAD Y TENDENCIA</div>
+          <div class="prose" style="font-size:12px">Un modelo puede tener buen MAPE global pero fallar en semanas pico. Los errores tienen estructura temporal, no son aleatorios.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:10px;letter-spacing:.06em">METRICAS PROPHET &mdash; 12 SEMANAS TEST</div>
+        <div style="display:grid;gap:8px">
+          <div style="background:var(--bg3);border-radius:var(--r);padding:11px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">MAE</div><div style="font-size:10px;color:var(--text3)">mean(|y - y&#770;|)</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--pink)">S/. 272</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:11px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">RMSE</div><div style="font-size:10px;color:var(--text3)">&radic;mean((y - y&#770;)&sup2;)</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--orange)">S/. 423</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:11px 14px;display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">MAPE</div><div style="font-size:10px;color:var(--text3)">mean(|error|/|real|)&times;100</div></div>
+            <span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--green)">3.8%</span>
+          </div>
+        </div>
+        <div style="margin-top:10px;background:rgba(244,114,182,.05);border:1px solid rgba(244,114,182,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2);line-height:1.65">
+          &#128161; RMSE (S/.423) &gt; MAE (S/.272): hay semanas donde el modelo falla bastante mas que el promedio. MAPE 3.8% es excelente para planificacion de inventario.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(244,114,182,.12);color:var(--pink)">MAE</div>
+        <div class="mex-title">Error Absoluto Medio &mdash; S/. por semana</div>
+        <div class="mex-value" style="color:var(--pink)" id="b-mae-val">S/. 272</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="b-mae-bar" style="width:27%;background:var(--pink)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--pink)"><div class="flbl">FORMULA</div>MAE = (1/h) &sum; |y&#8209;t &minus; y&#770;&#8209;t|</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">h</strong> = horizonte de prediccion (12 semanas). Se calcula igual que en regresion pero solo sobre el test set, respetando el orden temporal. S/.272 = desviacion promedio por semana respecto a ventas reales.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Matiz en series de tiempo</strong><br><br>El MAE global puede enmascarar que el error en las primeras semanas (horizonte corto) es mucho menor que en las ultimas (horizonte largo).<br><br>MAE sem. 41-44 = S/.180<br>MAE sem. 49-52 = S/.380<br>Promedio global = S/.272<br><br>&#8594; Ver error por horizonte en Nivel Intermedio.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(251,146,60,.12);color:var(--orange)">RMSE</div>
+        <div class="mex-title">Raiz del Error Cuadratico Medio &mdash; penaliza semanas criticas</div>
+        <div class="mex-value" style="color:var(--orange)" id="b-rmse-val">S/. 423</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="b-rmse-bar" style="width:42%;background:var(--orange)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--orange)"><div class="flbl">FORMULA</div>RMSE = &radic;[(1/h) &sum; (y&#8209;t &minus; y&#770;&#8209;t)&sup2;]</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">En retail, una semana con error muy alto (campana, evento) puede desestabilizar el inventario. El RMSE penaliza esos picos mas que el MAE.<br><br>Ratio RMSE/MAE = 423/272 = <strong style="color:var(--text)">1.55</strong>: hay 1-2 semanas con errores significativamente mayores al promedio.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Cuando RMSE/MAE me preocupa</strong><br><br>Ratio cercano a 1 &rarr; errores homogeneos, el modelo falla uniformemente.<br><br>Ratio &gt; 1.5 &rarr; hay semanas con errores grandes. Investiga que ocurrio: &iquest;promocion no registrada? &iquest;quiebre de stock? &iquest;feriado?<br><br>Accion: agregar variable de evento al modelo para capturar esos picos.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(74,240,176,.12);color:var(--green)">MAPE</div>
+        <div class="mex-title">Error Porcentual Absoluto Medio &mdash; comparable entre tiendas</div>
+        <div class="mex-value" style="color:var(--green)" id="b-mape-val">3.8%</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="b-mape-bar" style="width:38%;background:var(--green)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--green)"><div class="flbl">FORMULA</div>MAPE = (100/h) &sum; |y&#8209;t &minus; y&#770;&#8209;t| / |y&#8209;t|</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Permite comparar modelos entre tiendas con distinto nivel de ventas. Una tienda de S/.3,000/sem y otra de S/.15,000/sem tendran MAPE comparables aunque sus MAE sean muy distintos.</div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">MAPE &lt; 5%</span><span style="color:var(--green)">Excelente &larr; aqui</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">5% &ndash; 10%</span><span style="color:var(--blue)">Bueno</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">10% &ndash; 20%</span><span style="color:var(--orange)">Aceptable</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">&gt; 20%</span><span style="color:var(--red)">Revisar modelo</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Limitacion critica en series de tiempo</strong><br><br>Si hay semanas con ventas cero o muy bajas (feriado, cierre), el MAPE explota a infinito porque divides entre cero.<br><br>Solucion: excluir esos periodos, usar SMAPE, o usar MASE (ver Nivel Intermedio).<br><br>Ademas, el MAPE penaliza asimetricamente: sobrestock y rotura de stock dan el mismo MAPE aunque el impacto en negocio sea muy distinto.</div>
+            <div style="margin-top:10px;background:rgba(74,240,176,.05);border:1px solid rgba(74,240,176,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; En forecasting de retail, MAPE &lt; 10% se considera operativamente util para planificacion de inventario.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec">Simulador &mdash; ajusta el modelo y ve las metricas en tiempo real</div>
+    <div class="g2">
+      <div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Ruido del modelo (S/. por semana)</span><span style="color:var(--pink)" id="sv-noise">300</span></div>
+          <input type="range" id="sl-noise" min="50" max="2000" value="300" step="50">
+        </div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Sesgo sistematico (S/.)</span><span style="color:var(--pink)" id="sv-bias">0</span></div>
+          <input type="range" id="sl-bias" min="-1500" max="1500" value="0" step="100">
+        </div>
+        <div class="divider"></div>
+        <div style="display:grid;gap:8px">
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between"><span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">MAE</span><span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--pink)" id="sim-mae">S/. 272</span></div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between"><span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">RMSE</span><span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--orange)" id="sim-rmse">S/. 423</span></div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between"><span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">MAPE</span><span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--green)" id="sim-mape">3.8%</span></div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between"><span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">RMSE/MAE</span><span style="font-family:var(--font-mono);font-size:16px;font-weight:600;color:var(--yellow)" id="sim-ratio">1.55</span></div>
+        </div>
+        <div style="margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text3);line-height:1.6" id="sim-interp">Ajusta los sliders para simular distintos niveles de error.</div>
+      </div>
+      <div>
+        <div class="chart-sm"><canvas id="b-sim-chart"></canvas></div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-top:5px">Blanco = real &middot; Rosa = prediccion simulada &middot; 12 semanas test</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INTERMEDIO ===== -->
+<div class="lp" id="panel-inter">
+  <div class="banner" style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15)">
+    <div class="banner-icon">&#9881;&#65039;</div>
+    <div>
+      <h2 style="color:var(--blue)">Nivel Intermedio &mdash; MASE, SMAPE y error por horizonte</h2>
+      <p class="prose">El MAPE tiene problemas con ceros y es asimetrico. El MASE lo resuelve comparando contra un modelo <em>naive</em>. El error por horizonte revela si el modelo se degrada al predecir mas lejos en el tiempo.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">MASE &mdash; vs predictor naive</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">SMAPE &mdash; error % simetrico</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Error por horizonte</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">MASE</div>
+        <div class="mex-title">Mean Absolute Scaled Error &mdash; vs predictor naive</div>
+        <div class="mex-value" style="color:var(--blue)">1.08</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:36%;background:var(--blue)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--blue)"><div class="flbl">FORMULA</div>MASE = MAE&#8209;modelo / MAE&#8209;naive</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">El <strong style="color:var(--text)">predictor naive</strong> predice que el valor de manana sera igual al de hoy: y&#770;&#8209;t = y&#8209;(t-1).<br><br>MAE naive = S/.252<br>MAE Prophet = S/.272<br>MASE = 272/252 = <strong style="color:var(--blue)">1.08</strong></div>
+            <div style="margin-top:10px;display:grid;gap:5px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">MASE &lt; 1</span><span style="color:var(--green)">Mejor que naive &#128293;</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">MASE = 1</span><span style="color:var(--yellow)">Igual que naive</span></div>
+              <div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 8px;background:var(--bg3);border-radius:4px"><span style="color:var(--text3)">MASE &gt; 1</span><span style="color:var(--red)">Peor que naive &#128584;</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">MASE = 1.08: lectura honesta</strong><br><br>Prophet apenas supera en 8% al predictor mas simple posible. No es necesariamente malo: en series con alta variabilidad, el naive es dificil de vencer.<br><br><strong style="color:var(--text)">Por que MASE y no MAPE?</strong><br>1. No explota con ventas cero<br>2. Escala interpretable (referencia = 1)<br>3. Es simetrico<br>4. Estandar en competencias M1&ndash;M4 de forecasting</div>
+            <div style="margin-top:10px;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2)">&#128161; Si tu modelo tiene MASE &gt; 1 en produccion, la semana anterior lo hubiera hecho mejor. Es la metrica de validacion mas honesta.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(167,139,250,.12);color:var(--purple)">SMAPE</div>
+        <div class="mex-title">Symmetric MAPE &mdash; penaliza sobreestimacion y subestimacion igual</div>
+        <div class="mex-value" style="color:var(--purple)">3.6%</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:36%;background:var(--purple)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--purple)"><div class="flbl">FORMULA</div>SMAPE = (200/h)&sum;|y&#8209;t&minus;y&#770;&#8209;t|/(|y&#8209;t|+|y&#770;&#8209;t|)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Divide entre la suma del real y el predicho. Resultado: sobreestimar 50% y subestimar 50% dan el mismo SMAPE. Rango: 0% a 200%.<br><br>SMAPE (3.6%) &lt; MAPE (3.8%): el modelo tiende ligeramente a sobreestimar.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">SMAPE vs MAPE en retail</strong><br><br><strong style="color:var(--text)">Sobreestimar</strong> ventas &rarr; sobrestock, capital inmovilizado.<br><strong style="color:var(--text)">Subestimar</strong> ventas &rarr; rotura de stock, ventas perdidas.<br><br>El MAPE penaliza estas dos situaciones asimetricamente. El SMAPE las trata igual. Antes de elegir, define si el costo de sobrestock y rotura de stock son equivalentes en tu negocio.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Error por horizonte &mdash; como se degrada la prediccion</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:14px">Las primeras semanas son mas faciles de predecir. El error crece a medida que el modelo predice mas lejos en el futuro.</p>
+        <div style="display:grid;gap:10px" id="horizon-bars"></div>
+        <div style="margin-top:12px;background:rgba(96,165,250,.06);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.7">
+          &#128161; <strong style="color:var(--text)">Si el error crece mucho:</strong> considera forecasting recursivo (usa h=1 como input de h=2) o un ensemble de modelos distintos para distintos horizontes.
+        </div>
+      </div>
+      <div>
+        <div class="chart-sm"><canvas id="i-horizon-chart"></canvas></div>
+        <div style="margin-top:8px;display:flex;gap:14px;justify-content:center;font-size:11px;font-family:var(--font-mono)">
+          <span style="color:var(--blue)">&#9644; ARIMA</span>
+          <span style="color:var(--green)">&#9644; Prophet</span>
+          <span style="color:var(--purple)">&#9644; ETS</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec">MASE de los 3 modelos vs predictor naive</div>
+    <div class="chart-sm"><canvas id="i-mase-chart"></canvas></div>
+  </div>
+</div>
+
+<!-- ===== AVANZADO ===== -->
+<div class="lp" id="panel-adv">
+  <div class="banner" style="background:rgba(167,139,250,.05);border:1px solid rgba(167,139,250,.15)">
+    <div class="banner-icon">&#128300;</div>
+    <div>
+      <h2 style="color:var(--purple)">Nivel Avanzado &mdash; Intervalos de prediccion y comparador</h2>
+      <p class="prose">Una prediccion puntual dice "venderemos S/.7,500". Un intervalo dice "venderemos entre S/.6,800 y S/.8,200 con 95% de probabilidad". La cobertura mide si ese intervalo realmente captura los valores reales.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Intervalos 80% y 95%</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">Coverage &mdash; calibracion del intervalo</span>
+        <span class="chip" style="background:rgba(167,139,250,.12);color:var(--purple)">ARIMA vs Prophet vs ETS</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Forecast con intervalos de prediccion</div>
+    <div class="model-tab">
+      <button class="model-tab-btn act-prophet" id="tab-prophet" onclick="selectModel('prophet')">Prophet</button>
+      <button class="model-tab-btn" id="tab-arima" onclick="selectModel('arima')">ARIMA</button>
+      <button class="model-tab-btn" id="tab-ets" onclick="selectModel('ets')">ETS</button>
+    </div>
+    <div class="chart-wrap"><canvas id="adv-ts-chart"></canvas></div>
+    <div style="display:flex;gap:20px;justify-content:center;margin-top:8px;font-size:11px;font-family:var(--font-mono)">
+      <span><span style="display:inline-block;width:18px;height:2px;background:rgba(255,255,255,.7);vertical-align:middle;margin-right:5px"></span>Real</span>
+      <span><span style="display:inline-block;width:18px;height:2px;background:var(--purple);vertical-align:middle;margin-right:5px"></span>Prediccion</span>
+      <span><span style="display:inline-block;width:14px;height:10px;background:rgba(167,139,250,.35);vertical-align:middle;margin-right:5px;border-radius:2px"></span>IC 80%</span>
+      <span><span style="display:inline-block;width:14px;height:10px;background:rgba(167,139,250,.15);vertical-align:middle;margin-right:5px;border-radius:2px"></span>IC 95%</span>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Coverage &mdash; calibracion de los intervalos</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:12px">Si dices "intervalo de 95%", el 95% de los valores reales deberia caer dentro. Si solo el 60% cae dentro, el intervalo esta mal calibrado (demasiado estrecho).</p>
+        <div style="display:grid;gap:8px" id="coverage-display"></div>
+        <div style="margin-top:12px;background:var(--bg3);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text2);line-height:1.7">
+          <strong style="color:var(--text)">Como interpretar:</strong><br>
+          &bull; Cobertura &asymp; nivel nominal &rarr; bien calibrado<br>
+          &bull; Cobertura &gt; nominal &rarr; intervalo demasiado ancho (conservador)<br>
+          &bull; Cobertura &lt; nominal &rarr; intervalo demasiado estrecho (subestima incertidumbre)
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;letter-spacing:.06em">CALIBRACION IC 95% POR MODELO</div>
+        <div class="chart-sm"><canvas id="adv-cov-chart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec" style="margin-bottom:14px">Comparador ARIMA vs Prophet vs ETS</div>
+    <div id="adv-cmp-table"></div>
+    <div id="adv-verdict" style="margin-top:14px;background:var(--bg3);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.8"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function(){
+
+// ===== DATA =====
+var TRAIN   = [7942,8187,8464,9035,8938,8612,9549,9495,9679,9952,10113,10572,10428,10239,9900,9761,10209,10550,9933,9739,9839,8870,9135,9250,9188,8520,8541,8263,8254,7281,7748,6723,6106,6755,6498,7104,6936,6125,6924,6184];
+var TEST    = [6580,6556,6806,7202,7269,7318,7624,7760,7540,7739,8083,8724];
+var ARIMA   = [5946,6883,7503,6994,6572,7379,8011,8519,6910,7063,8607,9108];
+var PROPHET = [6732,6452,8121,7356,7296,7444,7371,7425,7702,7513,8356,8590];
+var ETS     = [6115,6441,7177,7020,6836,6625,8105,7779,7323,7352,6930,8895];
+var NAIVE   = [6184,6580,6556,6806,7202,7269,7318,7624,7760,7540,7739,8083];
+var METRICS = {
+  arima:   {mae:499,rmse:542,mape:6.8,smape:6.8,mase:1.98,h:{h1:6.9,h2:6.3,h3:7.0}},
+  prophet: {mae:272,rmse:423,mape:3.8,smape:3.6,mase:1.08,h:{h1:6.3,h2:2.4,h3:2.5}},
+  ets:     {mae:391,rmse:488,mape:5.2,smape:5.4,mase:1.55,h:{h1:4.2,h2:5.5,h3:6.0}}
+};
+
+// ===== HELPERS =====
+var CHART_DEFAULTS = {
+  responsive:true, maintainAspectRatio:false, animation:false,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},maxTicksLimit:13}},
+    y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}}
+  }
+};
+function cloneOpts(extra){
+  var o=JSON.parse(JSON.stringify(CHART_DEFAULTS));
+  if(extra) Object.keys(extra).forEach(function(k){o[k]=extra[k];});
+  return o;
+}
+
+// Week labels
+var WEEKS_ALL = [];
+for(var i=1;i<=52;i++) WEEKS_ALL.push('S'+i);
+var WEEKS_TEST = [];
+for(var i=41;i<=52;i++) WEEKS_TEST.push('S'+i);
+
+function mae(a,p){return a.reduce(function(s,v,i){return s+Math.abs(v-p[i]);},0)/a.length;}
+function rmse(a,p){return Math.sqrt(a.reduce(function(s,v,i){return s+(v-p[i])*(v-p[i]);},0)/a.length);}
+function mape(a,p){return a.reduce(function(s,v,i){return s+Math.abs(v-p[i])/Math.abs(v);},0)/a.length*100;}
+
+// RNG
+var seed=42;
+function rng(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967295;}
+function randn(){var u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function genPreds(noise,bias){
+  seed=77;
+  return TEST.map(function(v){return Math.max(500,Math.round(v+randn()*noise+bias));});
+}
+
+// ===== LEVEL SWITCH =====
+window.switchLevel=function(lv){
+  var lvs=['basic','inter','adv'];
+  var colors={basic:'var(--pink)',inter:'var(--blue)',adv:'var(--purple)'};
+  var bgs={basic:'rgba(244,114,182,.15)',inter:'rgba(96,165,250,.15)',adv:'rgba(167,139,250,.15)'};
+  var labels={basic:'BASICO',inter:'INTERMEDIO',adv:'AVANZADO'};
+  lvs.forEach(function(l){
+    document.getElementById('btn-'+l).style.borderBottom='3px solid transparent';
+    document.getElementById('icon-'+l).style.background='';
+    document.getElementById('name-'+l).style.color='var(--text3)';
+    document.getElementById('panel-'+l).classList.remove('active');
+  });
+  document.getElementById('btn-'+lv).style.borderBottom='3px solid '+colors[lv];
+  document.getElementById('icon-'+lv).style.background=bgs[lv];
+  document.getElementById('name-'+lv).style.color=colors[lv];
+  document.getElementById('panel-'+lv).classList.add('active');
+  var badge=document.getElementById('hdrBadge');
+  badge.textContent=labels[lv]; badge.style.background=bgs[lv]; badge.style.color=colors[lv];
+  if(lv==='inter'&&!initDone.inter){initInter();initDone.inter=true;}
+  if(lv==='adv'&&!initDone.adv){initAdv();initDone.adv=true;}
+};
+window.toggleMex=function(el){el.classList.toggle('open');};
+var initDone={basic:true,inter:false,adv:false};
+
+// ===== BASICO =====
+var mainChart=null, simChart=null;
+
+function buildMainChart(){
+  // All 52 labels, train=40 vals, test=12 vals, prophet=12 vals (aligned to positions 40-51)
+  var trainData = TRAIN.slice(); // 40 values for positions 0-39
+  var testData  = new Array(40).fill(null).concat(TEST); // null for 0-39, TEST for 40-51
+  var predData  = new Array(40).fill(null).concat(PROPHET);
+  var ctx=document.getElementById('b-main-chart').getContext('2d');
+  mainChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:WEEKS_ALL,
+      datasets:[
+        {label:'Train',data:trainData,borderColor:'rgba(255,255,255,.4)',borderWidth:1.5,pointRadius:0,fill:false,tension:.3,spanGaps:false},
+        {label:'Test real',data:testData,borderColor:'rgba(255,255,255,.85)',borderWidth:2,pointRadius:3,pointBackgroundColor:'rgba(255,255,255,.85)',fill:false,tension:.3,spanGaps:false},
+        {label:'Prophet',data:predData,borderColor:'rgba(74,240,176,.9)',borderWidth:2,pointRadius:3,pointBackgroundColor:'rgba(74,240,176,.9)',borderDash:[5,3],fill:false,tension:.3,spanGaps:false}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){if(c.raw===null)return null;return c.dataset.label+': S/.'+c.raw.toLocaleString();}}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},maxTicksLimit:14}},
+        y:{title:{display:true,text:'Ventas (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}}
+      }
+    }
+  });
+}
+
+function buildSimChart(preds){
+  if(!simChart){
+    var ctx=document.getElementById('b-sim-chart').getContext('2d');
+    simChart=new Chart(ctx,{
+      type:'line',
+      data:{
+        labels:WEEKS_TEST,
+        datasets:[
+          {label:'Real',data:TEST,borderColor:'rgba(255,255,255,.7)',borderWidth:1.5,pointRadius:2,fill:false,tension:.3},
+          {label:'Simulado',data:preds,borderColor:'rgba(244,114,182,.9)',borderWidth:2,pointRadius:2,borderDash:[4,3],fill:false,tension:.3}
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false, animation:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
+          y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+        }
+      }
+    });
+  } else {
+    simChart.data.datasets[1].data=preds;
+    simChart.update('none');
+  }
+}
+
+function updateSim(){
+  var noise=parseInt(document.getElementById('sl-noise').value);
+  var bias=parseInt(document.getElementById('sl-bias').value);
+  document.getElementById('sv-noise').textContent=noise;
+  document.getElementById('sv-bias').textContent=bias>0?'+'+bias:String(bias);
+  var preds=genPreds(noise,bias);
+  var m_mae=mae(TEST,preds), m_rmse=rmse(TEST,preds), m_mape=mape(TEST,preds);
+  var ratio=m_rmse/m_mae;
+  document.getElementById('sim-mae').textContent='S/.'+m_mae.toFixed(0);
+  document.getElementById('sim-rmse').textContent='S/.'+m_rmse.toFixed(0);
+  document.getElementById('sim-mape').textContent=m_mape.toFixed(1)+'%';
+  document.getElementById('sim-ratio').textContent=ratio.toFixed(2);
+  var interp='';
+  if(Math.abs(bias)>500) interp='Sesgo alto: el modelo '+(bias>0?'sobreestima':'subestima')+' sistematicamente. Revisa la calibracion.';
+  else if(ratio>2) interp='Ratio RMSE/MAE='+ratio.toFixed(1)+': hay semanas con errores muy altos. Investiga que ocurrio.';
+  else if(m_mape<5) interp='Buen modelo: MAPE '+m_mape.toFixed(1)+'% es excelente para planificacion de inventario.';
+  else interp='MAPE '+m_mape.toFixed(1)+'% es aceptable. Busca reducir el ruido con mejores features.';
+  document.getElementById('sim-interp').textContent=interp;
+  buildSimChart(preds);
+}
+
+document.getElementById('sl-noise').addEventListener('input',updateSim);
+document.getElementById('sl-bias').addEventListener('input',updateSim);
+
+// ===== INTERMEDIO =====
+function initInter(){
+  buildHorizonBars();
+  buildHorizonChart();
+  buildMaseChart();
+}
+
+function buildHorizonBars(){
+  var container=document.getElementById('horizon-bars');
+  if(!container) return;
+  var models=[
+    {name:'ARIMA',color:'var(--blue)',h:METRICS.arima.h},
+    {name:'Prophet',color:'var(--green)',h:METRICS.prophet.h},
+    {name:'ETS',color:'var(--purple)',h:METRICS.ets.h}
+  ];
+  var zones=[
+    {key:'h1',label:'Semanas 1-4 (horizonte corto)'},
+    {key:'h2',label:'Semanas 5-8 (horizonte medio)'},
+    {key:'h3',label:'Semanas 9-12 (horizonte largo)'}
+  ];
+  container.innerHTML=zones.map(function(z){
+    var bars=models.map(function(m){
+      var v=m.h[z.key];
+      var w=Math.min(100,v*5);
+      var col=v<5?'var(--green)':v<10?'var(--orange)':'var(--red)';
+      return '<div style="margin-bottom:5px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:2px"><span>'+m.name+'</span><span style="color:'+col+'">'+v+'%</span></div>'
+        +'<div class="horizon-bar"><div class="horizon-fill" style="width:'+w+'%;background:'+col+'"></div></div>'
+        +'</div>';
+    }).join('');
+    return '<div class="card-sm"><div style="font-size:11px;font-family:var(--font-mono);color:var(--text);margin-bottom:8px">'+z.label+'</div>'+bars+'</div>';
+  }).join('');
+}
+
+function buildHorizonChart(){
+  var ctx=document.getElementById('i-horizon-chart').getContext('2d');
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['Sem 1-4','Sem 5-8','Sem 9-12'],
+      datasets:[
+        {label:'ARIMA',data:[METRICS.arima.h.h1,METRICS.arima.h.h2,METRICS.arima.h.h3],backgroundColor:'rgba(96,165,250,.6)',borderRadius:4},
+        {label:'Prophet',data:[METRICS.prophet.h.h1,METRICS.prophet.h.h2,METRICS.prophet.h.h3],backgroundColor:'rgba(74,240,176,.5)',borderRadius:4},
+        {label:'ETS',data:[METRICS.ets.h.h1,METRICS.ets.h.h2,METRICS.ets.h.h3],backgroundColor:'rgba(167,139,250,.6)',borderRadius:4}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.dataset.label+': '+c.parsed.y+'%';}}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+        y:{title:{display:true,text:'MAPE (%)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:12}
+      }
+    }
+  });
+}
+
+function buildMaseChart(){
+  var ctx=document.getElementById('i-mase-chart').getContext('2d');
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['ARIMA','Prophet','ETS'],
+      datasets:[
+        {label:'MASE',data:[METRICS.arima.mase,METRICS.prophet.mase,METRICS.ets.mase],backgroundColor:['rgba(96,165,250,.6)','rgba(74,240,176,.5)','rgba(167,139,250,.6)'],borderRadius:6},
+        {label:'Naive',type:'line',data:[1,1,1],borderColor:'rgba(255,255,255,.25)',borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:10}}},
+        y:{title:{display:true,text:'MASE (referencia naive = 1)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:2.5}
+      }
+    }
+  });
+}
+
+// ===== AVANZADO =====
+var advChart=null, covChart=null, currentModel='prophet';
+var MODEL_COLORS={arima:'96,165,250',prophet:'74,240,176',ets:'167,139,250'};
+var MODEL_LABELS={arima:'ARIMA',prophet:'Prophet',ets:'ETS'};
+
+function initAdv(){
+  buildAdvChart('prophet');
+  buildCovChart();
+  updateCoverageDisplay('prophet');
+  buildCmpTable();
+}
+
+window.selectModel=function(model){
+  currentModel=model;
+  ['arima','prophet','ets'].forEach(function(t){
+    var btn=document.getElementById('tab-'+t);
+    btn.className='model-tab-btn'+(t===model?' act-'+t:'');
+  });
+  buildAdvChart(model);
+  updateCoverageDisplay(model);
+};
+
+function getModelData(model){return model==='arima'?ARIMA:model==='prophet'?PROPHET:ETS;}
+
+function buildAdvChart(model){
+  var preds=getModelData(model);
+  var col=MODEL_COLORS[model];
+  var pi95up=preds.map(function(v){return Math.round(v*1.22);});
+  var pi95lo=preds.map(function(v){return Math.round(v*0.78);});
+  var pi80up=preds.map(function(v){return Math.round(v*1.13);});
+  var pi80lo=preds.map(function(v){return Math.round(v*0.87);});
+  // Full 52-week display: train + test intervals
+  var fullReal=TRAIN.concat(TEST);
+  var nullTrain=new Array(40).fill(null);
+  var ds=[
+    {label:'Real train',data:TRAIN,borderColor:'rgba(255,255,255,.35)',borderWidth:1.5,pointRadius:0,fill:false,tension:.3},
+    {label:'Real test',data:new Array(40).fill(null).concat(TEST),borderColor:'rgba(255,255,255,.85)',borderWidth:2,pointRadius:3,pointBackgroundColor:'rgba(255,255,255,.85)',fill:false,tension:.3,spanGaps:false},
+    {label:'IC95 up',data:nullTrain.concat(pi95up),borderColor:'transparent',backgroundColor:'rgba('+col+',.10)',fill:'+1',pointRadius:0,tension:.3,spanGaps:false},
+    {label:'IC95 lo',data:nullTrain.concat(pi95lo),borderColor:'transparent',fill:false,pointRadius:0,tension:.3,spanGaps:false},
+    {label:'IC80 up',data:nullTrain.concat(pi80up),borderColor:'transparent',backgroundColor:'rgba('+col+',.28)',fill:'+1',pointRadius:0,tension:.3,spanGaps:false},
+    {label:'IC80 lo',data:nullTrain.concat(pi80lo),borderColor:'transparent',fill:false,pointRadius:0,tension:.3,spanGaps:false},
+    {label:MODEL_LABELS[model],data:nullTrain.concat(preds),borderColor:'rgba('+col+',1)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'rgba('+col+',1)',fill:false,tension:.3,spanGaps:false}
+  ];
+  if(!advChart){
+    var ctx=document.getElementById('adv-ts-chart').getContext('2d');
+    advChart=new Chart(ctx,{type:'line',data:{labels:WEEKS_ALL,datasets:ds},options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:function(c){if(c.raw===null)return null;return c.dataset.label+': S/.'+c.raw.toLocaleString();}}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},maxTicksLimit:14}},
+        y:{title:{display:true,text:'Ventas (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+      }
+    }});
+  } else {
+    advChart.data.datasets=ds;
+    advChart.update('none');
+  }
+}
+
+function calcCoverage(preds,factor){
+  return TEST.filter(function(v,i){return v>=preds[i]*(1-factor)&&v<=preds[i]*(1+factor);}).length/TEST.length*100;
+}
+
+function updateCoverageDisplay(model){
+  var preds=getModelData(model);
+  var cov95=calcCoverage(preds,0.22);
+  var cov80=calcCoverage(preds,0.13);
+  var col='rgba('+MODEL_COLORS[model]+',1)';
+  var container=document.getElementById('coverage-display');
+  if(!container) return;
+  container.innerHTML=[{level:'95%',cov:cov95,target:95},{level:'80%',cov:cov80,target:80}].map(function(c){
+    var diff=c.cov-c.target;
+    var status=Math.abs(diff)<10?'Bien calibrado':diff>10?'Demasiado ancho':'Demasiado estrecho';
+    var statusIcon=Math.abs(diff)<10?'&#9989;':diff>10?'&#9888;&#65039;':'&#10060;';
+    var statusColor=Math.abs(diff)<10?'var(--green)':diff>10?'var(--orange)':'var(--red)';
+    return '<div class="card-sm" style="display:flex;justify-content:space-between;align-items:center">'
+      +'<div><div style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">IC '+c.level+'</div>'
+      +'<div style="font-size:12px;color:'+statusColor+';margin-top:3px">'+statusIcon+' '+status+'</div></div>'
+      +'<div style="text-align:right">'
+      +'<div style="font-family:var(--font-mono);font-size:20px;font-weight:600;color:'+col+'">'+c.cov.toFixed(0)+'%</div>'
+      +'<div style="font-size:10px;color:var(--text3)">objetivo: '+c.target+'%</div>'
+      +'</div></div>';
+  }).join('');
+}
+
+function buildCovChart(){
+  var ctx=document.getElementById('adv-cov-chart').getContext('2d');
+  var cov95=[ARIMA,PROPHET,ETS].map(function(p){return calcCoverage(p,0.22);});
+  covChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['ARIMA','Prophet','ETS'],
+      datasets:[
+        {label:'Cobertura real',data:cov95,backgroundColor:['rgba(96,165,250,.6)','rgba(74,240,176,.5)','rgba(167,139,250,.6)'],borderRadius:6},
+        {label:'Objetivo 95%',type:'line',data:[95,95,95],borderColor:'rgba(248,113,113,.6)',borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+        y:{title:{display:true,text:'Cobertura (%)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:110}
+      }
+    }
+  });
+}
+
+function buildCmpTable(){
+  var rows=[
+    {label:'MAE (S/.)',va:METRICS.arima.mae,vb:METRICS.prophet.mae,vc:METRICS.ets.mae,lower:true,fmt:function(v){return 'S/.'+v;}},
+    {label:'RMSE (S/.)',va:METRICS.arima.rmse,vb:METRICS.prophet.rmse,vc:METRICS.ets.rmse,lower:true,fmt:function(v){return 'S/.'+v;}},
+    {label:'MAPE (%)',va:METRICS.arima.mape,vb:METRICS.prophet.mape,vc:METRICS.ets.mape,lower:true,fmt:function(v){return v+'%';}},
+    {label:'SMAPE (%)',va:METRICS.arima.smape,vb:METRICS.prophet.smape,vc:METRICS.ets.smape,lower:true,fmt:function(v){return v+'%';}},
+    {label:'MASE',va:METRICS.arima.mase,vb:METRICS.prophet.mase,vc:METRICS.ets.mase,lower:true,fmt:function(v){return v.toFixed(2);}}
+  ];
+  function best(va,vb,vc,lower){var b=lower?Math.min(va,vb,vc):Math.max(va,vb,vc);return va===b?'a':vb===b?'b':'c';}
+  function wbadge(w){return w==='a'?'<span class="wbadge w-a">ARIMA</span>':w==='b'?'<span class="wbadge w-b">Prophet</span>':'<span class="wbadge w-c">ETS</span>';}
+  var hdr='<div class="cmp-row" style="border-bottom:2px solid var(--border2)">'
+    +'<span class="cmp-lbl">METRICA</span><span class="cmp-a">ARIMA</span><span class="cmp-b">Prophet</span><span class="cmp-c">ETS</span>'
+    +'<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);text-align:center">MEJOR</span></div>';
+  var body=rows.map(function(r){
+    var w=best(r.va,r.vb,r.vc,r.lower);
+    return '<div class="cmp-row"><span class="cmp-lbl">'+r.label+'</span>'
+      +'<span class="cmp-a">'+r.fmt(r.va)+'</span><span class="cmp-b">'+r.fmt(r.vb)+'</span><span class="cmp-c">'+r.fmt(r.vc)+'</span>'
+      +'<span style="text-align:center">'+wbadge(w)+'</span></div>';
+  }).join('');
+  document.getElementById('adv-cmp-table').innerHTML=hdr+body;
+  document.getElementById('adv-verdict').innerHTML=
+    '<strong style="color:var(--green)">Prophet</strong> gana en todas las metricas de error: '
+    +'MAE S/.272 (vs ARIMA S/.499, ETS S/.391), MAPE 3.8% y MASE 1.08.<br><br>'
+    +'<strong style="color:var(--text)">Sin embargo, MASE = 1.08 significa que Prophet apenas supera al predictor naive en un 8%.</strong> '
+    +'Hay espacio de mejora importante agregando features: calendario de promociones, festivos, precio de competidores.<br><br>'
+    +'<strong style="color:var(--blue)">ARIMA</strong> tiene el peor error puntual (MAPE 6.8%) pero puede ser preferible cuando la interpretabilidad es critica o los datos de entrenamiento son escasos.<br><br>'
+    +'<strong style="color:var(--text)">Recomendacion:</strong> usar Prophet en produccion con un pipeline de monitoreo que alerte cuando el MAPE semanal supere el 10%.';
+}
+
+// ===== INIT =====
+document.getElementById('btn-basic').style.borderBottom='3px solid var(--pink)';
+document.getElementById('icon-basic').style.background='rgba(244,114,182,.15)';
+document.getElementById('name-basic').style.color='var(--pink)';
+setTimeout(function(){buildMainChart();updateSim();},100);
+
+})();
+</script>
+</body>
+</html>

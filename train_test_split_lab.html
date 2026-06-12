@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Train Test Split Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--cyan:#22d3ee;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em;background:rgba(34,211,238,.15);color:var(--cyan)}
+.hdr-title{font-family:var(--font-mono);font-size:14px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.level-bar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg2)}
+.level-btn{display:flex;align-items:center;gap:10px;padding:15px 28px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;flex:1;justify-content:center}
+.level-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s;flex-shrink:0}
+.level-info{display:flex;flex-direction:column;gap:2px}
+.level-name{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text3);transition:color .2s;letter-spacing:.03em}
+.level-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.level-sep{width:1px;background:var(--border);flex-shrink:0}
+.main{max-width:1060px;margin:0 auto;padding:26px 32px}
+.lp{display:none}.lp.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+.banner{border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;display:flex;gap:18px;align-items:flex-start}
+.banner-icon{font-size:34px;flex-shrink:0;margin-top:2px}
+.banner h2{font-family:var(--font-mono);font-size:17px;font-weight:600;margin-bottom:6px}
+.banner p{font-size:13px;line-height:1.7}
+.chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:3px 9px;border-radius:4px;font-weight:500}
+/* dataset viz */
+.dataset-strip{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:10px}
+.dot{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--font-mono);font-weight:600;cursor:pointer;transition:all .2s;user-select:none;flex-shrink:0}
+.dot.train{background:rgba(34,211,238,.2);border:1px solid rgba(34,211,238,.4);color:var(--cyan)}
+.dot.test{background:rgba(251,146,60,.2);border:1px solid rgba(251,146,60,.4);color:var(--orange)}
+.dot.val{background:rgba(167,139,250,.2);border:1px solid rgba(167,139,250,.4);color:var(--purple)}
+.split-bar{height:24px;border-radius:6px;overflow:hidden;display:flex;margin-bottom:8px}
+.split-seg{display:flex;align-items:center;justify-content:center;font-size:10px;font-family:var(--font-mono);font-weight:600;transition:all .4s}
+/* slider */
+.sl-row{margin-bottom:11px}
+.sl-lbl{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:4px}
+.sl-lbl span:first-child{color:var(--text2)}.sl-lbl span:last-child{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid var(--bg);background:var(--cyan)}
+/* mex */
+.mex-grid{display:grid;gap:12px;margin-bottom:18px}
+.mex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;cursor:pointer;transition:border-color .15s}
+.mex:hover{border-color:var(--border2)}
+.mex-top{display:flex;align-items:center;gap:12px}
+.mex-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 11px;border-radius:5px;white-space:nowrap}
+.mex-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.mex-toggle{font-size:16px;color:var(--text3);transition:transform .2s;margin-left:6px}
+.mex.open .mex-toggle{transform:rotate(180deg)}
+.mex-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.mex.open .mex-body{display:block}
+.mbg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fbox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border)}
+.flbl{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:.06em}
+.ibox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.65}
+/* charts */
+.chart-wrap{position:relative;height:240px}
+.chart-sm{position:relative;height:180px}
+/* split method cards */
+.method-card{border-radius:var(--rl);border:1px solid var(--border);padding:16px 18px;cursor:pointer;transition:all .2s}
+.method-card:hover{border-color:var(--border2)}
+.method-card.active{border-color:var(--cyan)}
+.method-title{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.method-desc{font-size:12px;color:var(--text2);line-height:1.6}
+/* kfold viz */
+.kfold-wrap{display:flex;flex-direction:column;gap:5px;margin:12px 0}
+.kfold-row{display:flex;gap:3px;align-items:center}
+.kfold-label{font-size:10px;font-family:var(--font-mono);color:var(--text3);width:40px;flex-shrink:0}
+.kfold-seg{height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:var(--font-mono);font-weight:600;transition:all .3s}
+/* leakage cards */
+.leak-card{border-radius:var(--r);padding:14px 16px;margin-bottom:10px}
+.leak-bad{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2)}
+.leak-good{background:rgba(74,240,176,.06);border:1px solid rgba(74,240,176,.18)}
+.leak-title{font-family:var(--font-mono);font-size:11px;font-weight:600;margin-bottom:6px}
+.leak-code{background:var(--bg);border-radius:4px;padding:8px 10px;font-family:var(--font-mono);font-size:11px;margin:8px 0;border:1px solid var(--border2);line-height:1.7}
+/* pipeline viz */
+.pipe-step{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pipe-box{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;font-size:11px;font-family:var(--font-mono);color:var(--text);white-space:nowrap}
+.pipe-arrow{color:var(--text3);font-size:16px;flex-shrink:0}
+.pipe-bad .pipe-box{border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);color:var(--red)}
+.pipe-good .pipe-box{border-color:rgba(74,240,176,.3);background:rgba(74,240,176,.06);color:var(--green)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-badge" id="hdrBadge">BASICO</span>
+  <span class="hdr-title">Train / Test Split Lab</span>
+  <span class="hdr-sub">Por que y como dividir tus datos correctamente</span>
+</div>
+
+<div class="level-bar">
+  <div class="level-btn" id="btn-basic" onclick="switchLevel('basic')">
+    <div class="level-icon" id="icon-basic">&#127807;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-basic">Basico</div>
+      <div class="level-sub">Por que separar &middot; Overfitting &middot; Split ratio</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-inter" onclick="switchLevel('inter')">
+    <div class="level-icon" id="icon-inter">&#9881;&#65039;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-inter">Intermedio</div>
+      <div class="level-sub">Random &middot; Estratificado &middot; Temporal &middot; K-Fold</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-adv" onclick="switchLevel('adv')">
+    <div class="level-icon" id="icon-adv">&#9888;&#65039;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-adv">Avanzado</div>
+      <div class="level-sub">Data leakage &middot; Shuffle temporal &middot; Escalar correctamente</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ===== BASICO ===== -->
+<div class="lp active" id="panel-basic">
+  <div class="banner" style="background:rgba(34,211,238,.05);border:1px solid rgba(34,211,238,.15)">
+    <div class="banner-icon">&#127807;</div>
+    <div>
+      <h2 style="color:var(--cyan)">Nivel Basico &mdash; Por que necesitamos separar los datos</h2>
+      <p class="prose">Cuando entrenas un modelo con todos tus datos y luego lo evaluas con esos mismos datos, obtienes una <strong style="color:var(--text)">nota de examen con las respuestas en mano</strong>. El modelo parece bueno pero falla con clientes nuevos. El split train/test simula el mundo real.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(34,211,238,.12);color:var(--cyan)">El problema de memorizar</span>
+        <span class="chip" style="background:rgba(34,211,238,.12);color:var(--cyan)">Train vs Test vs Validation</span>
+        <span class="chip" style="background:rgba(34,211,238,.12);color:var(--cyan)">Como afecta el ratio</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analogia -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">La analogia del examen</div>
+    <div class="g2">
+      <div>
+        <div style="display:grid;gap:10px">
+          <div class="card-sm" style="border-left:3px solid var(--red)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:6px">&#10060; SIN SPLIT &mdash; TRAMPA</div>
+            <div class="prose" style="font-size:12px">El profesor da el examen con las respuestas incluidas. El alumno saca 100. Pero el dia del examen real, sin las respuestas, saca 45. El modelo <strong style="color:var(--text)">memorizo los datos</strong> pero no aprendio el patron.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--green)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-bottom:6px">&#9989; CON SPLIT &mdash; EVALUACION HONESTA</div>
+            <div class="prose" style="font-size:12px">El profesor usa los ejercicios del libro (train) para que el alumno aprenda, y el dia del examen presenta ejercicios <strong style="color:var(--text)">que nunca vio</strong> (test). El resultado refleja lo que realmente aprendio.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--cyan)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--cyan);margin-bottom:6px">&#128161; EN ML ES EXACTAMENTE IGUAL</div>
+            <div class="prose" style="font-size:12px">Train = datos con los que aprende el modelo. Test = datos nuevos que simulan clientes reales futuros. El modelo nunca debe ver el test hasta la evaluacion final.</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:12px;letter-spacing:.06em">VISUALIZACION: 100 CLIENTES &mdash; SPLIT 80/20</div>
+        <div class="dataset-strip" id="b-dots"></div>
+        <div class="split-bar" id="b-splitbar">
+          <div class="split-seg" style="background:rgba(34,211,238,.25);color:var(--cyan);flex:80">80% TRAIN</div>
+          <div class="split-seg" style="background:rgba(251,146,60,.25);color:var(--orange);flex:20">20% TEST</div>
+        </div>
+        <div style="display:flex;gap:16px;font-size:11px;font-family:var(--font-mono)">
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(34,211,238,.4);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Train: <strong id="b-train-n">80</strong></span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(251,146,60,.4);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Test: <strong id="b-test-n">20</strong></span>
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">&#9888;&#65039; Los puntos test (naranja) <strong style="color:var(--text)">no existen para el modelo</strong> durante el entrenamiento. Son invisibles hasta el momento de la evaluacion.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overfitting visual -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Por que evaluar en train es inutil &mdash; el overfitting en accion</div>
+    <div class="g2">
+      <div>
+        <div class="chart-wrap"><canvas id="b-overfit-chart"></canvas></div>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:11px;font-family:var(--font-mono)">
+          <span style="color:var(--cyan)">&#9644; Acc. Train</span>
+          <span style="color:var(--orange)">&#9644; Acc. Test</span>
+        </div>
+      </div>
+      <div>
+        <p class="prose" style="margin-bottom:14px">Este grafico muestra el accuracy de un modelo de churn a medida que aumenta su complejidad (profundidad del arbol):</p>
+        <div style="display:grid;gap:8px">
+          <div class="card-sm">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:4px">COMPLEJIDAD BAJA</div>
+            <div style="font-size:12px;color:var(--text2)">Train 72%, Test 70%. Ambos bajos &mdash; el modelo no aprende suficiente. <strong style="color:var(--text)">Underfitting.</strong></div>
+          </div>
+          <div class="card-sm" style="border-color:rgba(74,240,176,.2)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-bottom:4px">COMPLEJIDAD OPTIMA</div>
+            <div style="font-size:12px;color:var(--text2)">Train 83%, Test 80%. Gap pequeno. El modelo <strong style="color:var(--text)">generaliza bien</strong> a nuevos datos.</div>
+          </div>
+          <div class="card-sm" style="border-color:rgba(248,113,113,.2)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:4px">COMPLEJIDAD ALTA &mdash; PELIGRO</div>
+            <div style="font-size:12px;color:var(--text2)">Train 100%, Test 70%. Gap enorme. El modelo <strong style="color:var(--text)">memorizo el train</strong>. Sin test set, nunca lo sabriamos.</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;background:rgba(34,211,238,.06);border:1px solid rgba(34,211,238,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2);line-height:1.65">
+          &#128161; <strong style="color:var(--text)">Si solo mides en train, siempre ves el accuracy subir.</strong> Necesitas el test para saber si realmente estas aprendiendo o solo memorizando.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulador ratio -->
+  <div class="card">
+    <div class="sec">Simulador &mdash; como afecta el ratio train/test</div>
+    <div class="g2">
+      <div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Ratio de entrenamiento (%)</span><span style="color:var(--cyan)" id="sv-ratio">80</span></div>
+          <input type="range" id="sl-ratio" min="40" max="95" value="80" step="5">
+        </div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Total de muestras (n)</span><span style="color:var(--cyan)" id="sv-n">200</span></div>
+          <input type="range" id="sl-n" min="50" max="1000" value="200" step="50">
+        </div>
+        <div class="divider"></div>
+        <div style="display:grid;gap:8px" id="ratio-stats"></div>
+        <div style="margin-top:12px;padding:10px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text3);line-height:1.7" id="ratio-advice"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;letter-spacing:.06em">DISTRIBUCION DE DATOS</div>
+        <div class="chart-sm"><canvas id="b-ratio-chart"></canvas></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">
+          <strong style="color:var(--text)">Regla practica:</strong><br>
+          &bull; n &lt; 1,000 &rarr; 80/20 o 70/30<br>
+          &bull; n 1,000&ndash;10,000 &rarr; 80/20<br>
+          &bull; n &gt; 10,000 &rarr; 90/10 o incluso 95/5<br>
+          &bull; Siempre garantiza al menos <strong style="color:var(--cyan)">30 muestras en test</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INTERMEDIO ===== -->
+<div class="lp" id="panel-inter">
+  <div class="banner" style="background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15)">
+    <div class="banner-icon">&#9881;&#65039;</div>
+    <div>
+      <h2 style="color:var(--blue)">Nivel Intermedio &mdash; Como separar correctamente</h2>
+      <p class="prose">No todos los splits son iguales. Un split aleatorio simple puede generar un test con muy pocos casos positivos (churn) si la clase es minoritaria. Una serie de tiempo no se puede barajar. Cada problema tiene su metodo correcto.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Random split</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Estratificado</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">Temporal</span>
+        <span class="chip" style="background:rgba(96,165,250,.12);color:var(--blue)">K-Fold Cross Validation</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metodos de split -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec" style="margin-bottom:14px">Selecciona un metodo para ver su visualizacion</div>
+    <div class="g2" style="margin-bottom:16px">
+      <div class="method-card active" id="mc-random" onclick="selectMethod('random')" style="background:var(--bg3)">
+        <div class="method-title">&#127922; Random Split</div>
+        <div class="method-desc">Mezcla aleatoriamente todos los datos y toma el X% para train y el resto para test. Simple y suficiente para la mayoria de problemas de clasificacion y regresion.</div>
+        <div style="margin-top:8px;font-size:10px;font-family:var(--font-mono);color:var(--text3)">sklearn: train_test_split(X, y, test_size=0.2, random_state=42)</div>
+      </div>
+      <div class="method-card" id="mc-strat" onclick="selectMethod('strat')" style="background:var(--bg3)">
+        <div class="method-title">&#9878; Estratificado</div>
+        <div class="method-desc">Garantiza que la proporcion de clases en train y test sea la misma que en el dataset original. Critico con clases desbalanceadas (ej. churn 10%, fraude 1%).</div>
+        <div style="margin-top:8px;font-size:10px;font-family:var(--font-mono);color:var(--text3)">sklearn: train_test_split(X, y, stratify=y)</div>
+      </div>
+      <div class="method-card" id="mc-time" onclick="selectMethod('time')" style="background:var(--bg3)">
+        <div class="method-title">&#128197; Temporal</div>
+        <div class="method-desc">Para series de tiempo: el test SIEMPRE es el futuro. Nunca se mezclan periodos. Entrenar con datos de 2024 y predecir 2025, no al reves.</div>
+        <div style="margin-top:8px;font-size:10px;font-family:var(--font-mono);color:var(--text3)">sklearn: TimeSeriesSplit(n_splits=5)</div>
+      </div>
+      <div class="method-card" id="mc-kfold" onclick="selectMethod('kfold')" style="background:var(--bg3)">
+        <div class="method-title">&#128260; K-Fold CV</div>
+        <div class="method-desc">Divide en K partes iguales. Entrena K veces usando K-1 partes y evalua en la parte restante. Promedia los K scores. Mas robusto con datasets pequenos.</div>
+        <div style="margin-top:8px;font-size:10px;font-family:var(--font-mono);color:var(--text3)">sklearn: KFold(n_splits=5, shuffle=True)</div>
+      </div>
+    </div>
+
+    <div id="method-viz" style="background:var(--bg3);border-radius:var(--r);padding:16px 18px">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- Estratificado en detalle -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">El problema del split aleatorio con clases desbalanceadas</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:14px">Tienes 200 clientes: <strong style="color:var(--text)">180 no churn (90%)</strong> y <strong style="color:var(--red)">20 churn (10%)</strong>. Con un split aleatorio al 80/20:</p>
+        <div style="display:grid;gap:10px">
+          <div class="card-sm" style="border-color:rgba(248,113,113,.2)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:6px">SPLIT ALEATORIO &mdash; PROBLEMA</div>
+            <div id="strat-bad" style="font-size:12px;color:var(--text2);line-height:1.7"></div>
+          </div>
+          <div class="card-sm" style="border-color:rgba(74,240,176,.2)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-bottom:6px">SPLIT ESTRATIFICADO &mdash; CORRECTO</div>
+            <div id="strat-good" style="font-size:12px;color:var(--text2);line-height:1.7"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="chart-sm"><canvas id="i-strat-chart"></canvas></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7;background:rgba(96,165,250,.05);border:1px solid rgba(96,165,250,.15);border-radius:var(--r);padding:10px 12px">
+          &#128161; <strong style="color:var(--text)">Cuando SIEMPRE estratificar:</strong> clasificacion con clases desbalanceadas, cuando la clase minoritaria tiene menos del 20% de los datos, cuando el dataset es pequeno (n &lt; 500).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- K-Fold -->
+  <div class="card">
+    <div class="sec">K-Fold Cross Validation &mdash; por que es mas robusto</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:14px">Con un solo split, el resultado depende de la suerte del shuffle. K-Fold usa <strong style="color:var(--text)">todos los datos como test</strong> exactamente una vez:</p>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Numero de folds (k)</span><span style="color:var(--blue)" id="sv-kfold">5</span></div>
+          <input type="range" id="sl-kfold" min="2" max="10" value="5" step="1" style="--c:var(--blue)">
+        </div>
+        <div class="kfold-wrap" id="kfold-viz"></div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-top:8px">Score promedio: <span id="kfold-score" style="color:var(--blue)">0.798 &plusmn; 0.018</span></div>
+      </div>
+      <div>
+        <div style="display:grid;gap:10px">
+          <div class="card-sm">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:5px">VENTAJA PRINCIPAL</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Cada punto del dataset se usa como test exactamente una vez. El score final es el promedio de K evaluaciones &mdash; mucho mas estable que un solo split.</div>
+          </div>
+          <div class="card-sm">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--orange);margin-bottom:5px">CUANDO USARLO</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Datasets pequenos (n &lt; 1,000), comparacion de algoritmos, ajuste de hiperparametros (GridSearchCV usa K-Fold internamente).</div>
+          </div>
+          <div class="card-sm">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:5px">CUIDADO: COSTO COMPUTACIONAL</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Con k=10 entrenas el modelo 10 veces. Para modelos lentos (redes neuronales, GBM con muchos datos), puede ser muy costoso. Usa k=3 o 5.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AVANZADO ===== -->
+<div class="lp" id="panel-adv">
+  <div class="banner" style="background:rgba(248,113,113,.05);border:1px solid rgba(248,113,113,.2)">
+    <div class="banner-icon">&#9888;&#65039;</div>
+    <div>
+      <h2 style="color:var(--red)">Nivel Avanzado &mdash; Errores criticos que invalidan tu modelo</h2>
+      <p class="prose">Un modelo puede tener 99% de accuracy en test y ser <strong style="color:var(--text)">completamente inutil en produccion</strong> si cometiste alguno de estos errores. Son los mas comunes en proyectos reales y los mas dificiles de detectar.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(248,113,113,.12);color:var(--red)">Data Leakage</span>
+        <span class="chip" style="background:rgba(248,113,113,.12);color:var(--red)">Shuffle en series de tiempo</span>
+        <span class="chip" style="background:rgba(248,113,113,.12);color:var(--red)">Escalar antes del split</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error 1: Data Leakage -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Error 1 &mdash; Data Leakage (fuga de informacion del futuro)</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:14px">El data leakage ocurre cuando el modelo tiene acceso a informacion que <strong style="color:var(--text)">no estaria disponible en produccion</strong>. El resultado: accuracy perfecto en test, modelo inutil en el mundo real.</p>
+        <div class="leak-card leak-bad">
+          <div class="leak-title" style="color:var(--red)">&#10060; EJEMPLO: CHURN BANCARIO CON LEAKAGE</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7">Tienes una feature "dias_desde_cierre_cuenta". Los clientes que cerraron la cuenta tienen 0 dias. <strong style="color:var(--text)">Esta variable es el target disfrazado.</strong> El modelo aprende la respuesta, no el patron.</div>
+          <div class="leak-code"><span style="color:var(--red)"># MAL: usando features que revelan el resultado</span><br>features = ['edad', 'saldo', 'dias_desde_cierre_cuenta', ...]<br><span style="color:var(--red)"># dias_desde_cierre_cuenta = 0 solo si el cliente ya se fue</span></div>
+        </div>
+        <div class="leak-card leak-good">
+          <div class="leak-title" style="color:var(--green)">&#9989; SIN LEAKAGE</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7">Solo usa informacion disponible <strong style="color:var(--text)">antes</strong> del evento que predices. Preguntate: "En el momento de la prediccion, &iquest;tendria acceso a este dato?"</div>
+          <div class="leak-code"><span style="color:var(--green)"># BIEN: solo features disponibles antes del churn</span><br>features = ['edad', 'saldo', 'num_productos', 'dias_ultimo_login', ...]</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:10px;letter-spacing:.06em">TIPOS DE LEAKAGE MAS COMUNES</div>
+        <div style="display:grid;gap:8px">
+          <div class="card-sm" style="border-left:3px solid var(--red)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:4px">TARGET LEAKAGE</div>
+            <div style="font-size:12px;color:var(--text2)">Feature que contiene informacion del futuro. Ej: "monto_devolucion" para predecir fraude &mdash; solo existe despues de que el fraude ocurrio.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--orange)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--orange);margin-bottom:4px">TRAIN-TEST CONTAMINATION</div>
+            <div style="font-size:12px;color:var(--text2)">Calculas estadisticas (media, desvio) sobre TODO el dataset antes de dividirlo. El test contamina el train a traves de esas estadisticas.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--yellow)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--yellow);margin-bottom:4px">TEMPORAL LEAKAGE</div>
+            <div style="font-size:12px;color:var(--text2)">En series de tiempo, usar datos del futuro para predecir el pasado. Ej: entrenar con datos de 2024 + 2025, y poner algunos de 2023 en test.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error 2: Shuffle en series de tiempo -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Error 2 &mdash; Shuffle en series de tiempo</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:14px">Mezclar aleatoriamente una serie de tiempo antes del split es uno de los errores mas graves. El modelo aprende del <strong style="color:var(--text)">futuro para predecir el pasado</strong>.</p>
+        <div class="leak-card leak-bad">
+          <div class="leak-title" style="color:var(--red)">&#10060; MAL: shuffle aleatorio en ventas semanales</div>
+          <div class="leak-code">from sklearn.model_selection import train_test_split<br><span style="color:var(--red)"># NUNCA hagas esto con series de tiempo:</span><br>X_train, X_test = train_test_split(ventas, <span style="color:var(--red)">shuffle=True</span>)<br><span style="color:var(--red)"># El modelo ve datos de dic-2024 para predecir ene-2024</span></div>
+        </div>
+        <div class="leak-card leak-good">
+          <div class="leak-title" style="color:var(--green)">&#9989; CORRECTO: split temporal</div>
+          <div class="leak-code"><span style="color:var(--green)"># El test SIEMPRE es el periodo mas reciente:</span><br>train = ventas[ventas.fecha &lt; '2025-01-01']<br>test  = ventas[ventas.fecha &gt;= '2025-01-01']<br><span style="color:var(--green)"># O usar TimeSeriesSplit de sklearn</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:10px;letter-spacing:.06em">SPLIT CORRECTO VS INCORRECTO &mdash; SERIE DE TIEMPO</div>
+        <div class="chart-sm"><canvas id="adv-ts-chart"></canvas></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3);font-family:var(--font-mono)">
+          <span style="color:var(--cyan)">&#9644;</span> Train (pasado) &nbsp;
+          <span style="color:var(--orange)">&#9644;</span> Test (futuro) &nbsp;
+          <span style="color:var(--red)">&#9135;</span> Limite temporal
+        </div>
+        <div style="margin-top:10px;background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2);line-height:1.65">
+          &#9888;&#65039; <strong style="color:var(--text)">Senal de alerta:</strong> si tu modelo de series de tiempo tiene accuracy muy alto y luego falla completamente en produccion, probablemente hay shuffle en el split.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error 3: Escalar antes del split -->
+  <div class="card">
+    <div class="sec">Error 3 &mdash; Escalar (normalizar) antes del split</div>
+    <div class="g2">
+      <div>
+        <p class="prose" style="margin-bottom:14px">Aplicar StandardScaler o MinMaxScaler sobre todo el dataset antes del split <strong style="color:var(--text)">contamina el test con informacion del train</strong>. El scaler aprende la media y desvio de TODO el dataset, incluyendo el test.</p>
+
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:10px;letter-spacing:.06em">PIPELINE CORRECTO vs INCORRECTO</div>
+
+        <div style="margin-bottom:12px">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:8px">&#10060; MAL &mdash; leakage del scaler</div>
+          <div class="pipe-step pipe-bad"><div class="pipe-box">Datos completos</div><div class="pipe-arrow">&#8594;</div><div class="pipe-box">StandardScaler.fit(TODO)</div><div class="pipe-arrow">&#8594;</div><div class="pipe-box">Split train/test</div></div>
+          <div style="font-size:11px;color:var(--red);margin-top:4px">El scaler usa media/std del test para normalizar el train. Contaminacion.</div>
+        </div>
+
+        <div>
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-bottom:8px">&#9989; CORRECTO &mdash; fit solo en train</div>
+          <div class="pipe-step pipe-good"><div class="pipe-box">Split train/test</div><div class="pipe-arrow">&#8594;</div><div class="pipe-box">scaler.fit(X_train)</div><div class="pipe-arrow">&#8594;</div><div class="pipe-box">scaler.transform(X_test)</div></div>
+          <div style="font-size:11px;color:var(--green);margin-top:4px">El scaler aprende SOLO de train. Transforma test con esa misma escala.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:10px;letter-spacing:.06em">LA SOLUCION: SKLEARN PIPELINE</div>
+        <div class="leak-code" style="line-height:1.9">
+          <span style="color:var(--green)">from</span> sklearn.pipeline <span style="color:var(--green)">import</span> Pipeline<br>
+          <span style="color:var(--green)">from</span> sklearn.preprocessing <span style="color:var(--green)">import</span> StandardScaler<br>
+          <span style="color:var(--green)">from</span> sklearn.tree <span style="color:var(--green)">import</span> DecisionTreeClassifier<br><br>
+          <span style="color:var(--cyan)">pipe</span> = Pipeline([<br>
+          &nbsp;&nbsp;(<span style="color:var(--orange)">'scaler'</span>, StandardScaler()),<br>
+          &nbsp;&nbsp;(<span style="color:var(--orange)">'model'</span>, DecisionTreeClassifier())<br>
+          ])<br><br>
+          <span style="color:var(--cyan)">pipe</span>.fit(X_train, y_train) <span style="color:var(--text3)"># fit solo en train</span><br>
+          <span style="color:var(--cyan)">pipe</span>.score(X_test, y_test) <span style="color:var(--text3)"># transforma test correctamente</span>
+        </div>
+        <div style="margin-top:10px;background:rgba(74,240,176,.05);border:1px solid rgba(74,240,176,.15);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2);line-height:1.7">
+          &#128161; <strong style="color:var(--text)">Pipeline es la solucion definitiva.</strong> Encadena preprocesamiento + modelo y garantiza que el fit solo ocurra en train, tanto en evaluacion como en produccion.
+        </div>
+        <div style="margin-top:10px;background:var(--bg3);border-radius:var(--r);padding:12px 14px">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:8px;letter-spacing:.06em">CHECKLIST ANTES DE PUBLICAR UN MODELO</div>
+          <div style="display:grid;gap:5px;font-size:12px;color:var(--text2)">
+            <div>&#9989; Split antes de cualquier preprocesamiento</div>
+            <div>&#9989; scaler.fit() solo en X_train</div>
+            <div>&#9989; No hay features que revelen el target</div>
+            <div>&#9989; Series de tiempo: test es siempre el futuro</div>
+            <div>&#9989; random_state fijo para reproducibilidad</div>
+            <div>&#9989; Estratificado si hay desbalance de clases</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function(){
+
+// ===== LEVEL SWITCH =====
+window.switchLevel=function(lv){
+  var c={basic:'var(--cyan)',inter:'var(--blue)',adv:'var(--red)'};
+  var bg={basic:'rgba(34,211,238,.15)',inter:'rgba(96,165,250,.15)',adv:'rgba(248,113,113,.15)'};
+  var lb={basic:'BASICO',inter:'INTERMEDIO',adv:'AVANZADO'};
+  ['basic','inter','adv'].forEach(function(l){
+    document.getElementById('btn-'+l).style.borderBottom='3px solid transparent';
+    document.getElementById('icon-'+l).style.background='';
+    document.getElementById('name-'+l).style.color='var(--text3)';
+    document.getElementById('panel-'+l).classList.remove('active');
+  });
+  document.getElementById('btn-'+lv).style.borderBottom='3px solid '+c[lv];
+  document.getElementById('icon-'+lv).style.background=bg[lv];
+  document.getElementById('name-'+lv).style.color=c[lv];
+  document.getElementById('panel-'+lv).classList.add('active');
+  var badge=document.getElementById('hdrBadge');
+  badge.textContent=lb[lv]; badge.style.background=bg[lv]; badge.style.color=c[lv];
+  if(lv==='inter'&&!done.inter){initInter();done.inter=true;}
+  if(lv==='adv'&&!done.adv){initAdv();done.adv=true;}
+};
+window.toggleMex=function(el){el.classList.toggle('open');};
+var done={basic:true,inter:false,adv:false};
+
+// ===== BASICO =====
+function buildDots(n,ratio){
+  var container=document.getElementById('b-dots');
+  if(!container) return;
+  var trainN=Math.round(n*ratio/100);
+  var testN=n-trainN;
+  var show=Math.min(n,60);
+  var trainShow=Math.round(show*ratio/100);
+  var html='';
+  for(var i=0;i<show;i++){
+    var cls=i<trainShow?'train':'test';
+    var lbl=cls==='train'?'TR':'TE';
+    html+='<div class="dot '+cls+'">'+lbl+'</div>';
+  }
+  container.innerHTML=html;
+  var bar=document.getElementById('b-splitbar');
+  if(bar){
+    bar.innerHTML='<div class="split-seg" style="background:rgba(34,211,238,.25);color:var(--cyan);flex:'+ratio+'">'+ratio+'% TRAIN ('+trainN+')</div>'
+      +'<div class="split-seg" style="background:rgba(251,146,60,.25);color:var(--orange);flex:'+(100-ratio)+'">'+( 100-ratio)+'% TEST ('+testN+')</div>';
+  }
+  document.getElementById('b-train-n').textContent=trainN;
+  document.getElementById('b-test-n').textContent=testN;
+}
+
+var overfitChart=null;
+function buildOverfitChart(){
+  var ctx=document.getElementById('b-overfit-chart').getContext('2d');
+  var depths=[1,2,3,4,5,6,7,8];
+  var train=[72,78,83,87,91,95,98,100];
+  var test=[70,75,80,80,79,76,73,70];
+  overfitChart=new Chart(ctx,{type:'line',data:{
+    labels:depths.map(function(d){return 'depth='+d;}),
+    datasets:[
+      {label:'Train',data:train,borderColor:'rgba(34,211,238,.8)',borderWidth:2,pointRadius:3,fill:false,tension:.3},
+      {label:'Test',data:test,borderColor:'rgba(251,146,60,.9)',borderWidth:2,pointRadius:3,fill:false,tension:.3}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'Accuracy (%)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:60,max:105}
+    }
+  }});
+}
+
+var ratioChart=null;
+function updateRatio(){
+  var ratio=parseInt(document.getElementById('sl-ratio').value);
+  var n=parseInt(document.getElementById('sl-n').value);
+  document.getElementById('sv-ratio').textContent=ratio;
+  document.getElementById('sv-n').textContent=n;
+  var trainN=Math.round(n*ratio/100);
+  var testN=n-trainN;
+  var stats=document.getElementById('ratio-stats');
+  if(stats){
+    stats.innerHTML=[
+      {lbl:'Muestras train',val:trainN,col:'var(--cyan)'},
+      {lbl:'Muestras test',val:testN,col:'var(--orange)'},
+      {lbl:'Ratio',val:ratio+'/'+(100-ratio),col:'var(--text)'}
+    ].map(function(s){
+      return '<div style="background:var(--bg3);border-radius:var(--r);padding:9px 13px;display:flex;justify-content:space-between">'
+        +'<span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">'+s.lbl+'</span>'
+        +'<span style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:'+s.col+'">'+s.val+'</span>'
+        +'</div>';
+    }).join('');
+  }
+  var advice=document.getElementById('ratio-advice');
+  if(advice){
+    var txt='';
+    if(testN<30) txt='&#9888;&#65039; Solo '+testN+' muestras en test. Muy pocas para una evaluacion confiable. Sube el total de datos o reduce el ratio de train.';
+    else if(ratio>90&&n<500) txt='&#9888;&#65039; Con n='+n+' y ratio '+ratio+'/'+( 100-ratio)+', el test tiene solo '+testN+' muestras. Considera 80/20 para datasets pequenos.';
+    else if(ratio<60) txt='&#9888;&#65039; Solo '+trainN+' muestras para entrenar. El modelo puede no aprender suficiente. Considera al menos 70/30.';
+    else txt='&#9989; Configuracion razonable: '+trainN+' para entrenar, '+testN+' para evaluar.';
+    advice.innerHTML=txt;
+  }
+  if(!ratioChart){
+    var ctx=document.getElementById('b-ratio-chart').getContext('2d');
+    ratioChart=new Chart(ctx,{type:'doughnut',data:{
+      labels:['Train','Test'],
+      datasets:[{data:[trainN,testN],backgroundColor:['rgba(34,211,238,.5)','rgba(251,146,60,.5)'],borderColor:['rgba(34,211,238,.8)','rgba(251,146,60,.8)'],borderWidth:2}]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{labels:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10},boxWidth:10}},
+        tooltip:{callbacks:{label:function(c){return c.label+': '+c.parsed+' ('+Math.round(c.parsed/n*100)+'%)';}}}
+      }
+    }});
+  } else {
+    ratioChart.data.datasets[0].data=[trainN,testN];
+    ratioChart.update('none');
+  }
+  buildDots(60,ratio);
+}
+
+document.getElementById('sl-ratio').addEventListener('input',updateRatio);
+document.getElementById('sl-n').addEventListener('input',updateRatio);
+
+// ===== INTERMEDIO =====
+var METHOD_DATA={
+  random:{
+    title:'Random Split &mdash; mezcla y divide aleatoriamente',
+    html:function(){
+      var rows=['<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">Todos los datos se mezclan con una semilla aleatoria (random_state=42) y se dividen en proporcion fija. Simple, rapido, suficiente para la mayoria de casos.</div>'];
+      rows.push('<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px">');
+      for(var i=0;i<40;i++){
+        var cls=i<32?'train':'test';
+        rows.push('<div class="dot '+cls+'" style="width:22px;height:22px;font-size:9px">'+( cls==='train'?'TR':'TE')+'</div>');
+      }
+      rows.push('</div>');
+      rows.push('<div style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">80% train (32) &middot; 20% test (8) &middot; distribucion aleatoria</div>');
+      return rows.join('');
+    }
+  },
+  strat:{
+    title:'Estratificado &mdash; mantiene la proporcion de clases',
+    html:function(){
+      return '<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">Con stratify=y, sklearn garantiza que train y test tengan la misma proporcion de cada clase que el dataset original.</div>'
+        +'<div class="g2" style="gap:10px">'
+        +'<div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:6px">TRAIN (80%)</div><div style="display:flex;gap:3px;flex-wrap:wrap">'+buildStratDots(32,0.9)+'</div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-top:4px">90% no-churn &middot; 10% churn</div></div>'
+        +'<div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-bottom:6px">TEST (20%)</div><div style="display:flex;gap:3px;flex-wrap:wrap">'+buildStratDots(8,0.9)+'</div><div style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-top:4px">90% no-churn &middot; 10% churn</div></div>'
+        +'</div>';
+    }
+  },
+  time:{
+    title:'Split temporal &mdash; el test siempre es el futuro',
+    html:function(){
+      var months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      var dots=months.map(function(m,i){
+        var cls=i<9?'train':'test';
+        return '<div class="dot '+cls+'" style="width:38px;height:28px;font-size:9px">'+m+'</div>';
+      }).join('');
+      return '<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">El tiempo no se puede barajar. Los 9 primeros meses son train, los 3 ultimos son test. El modelo nunca ve datos del futuro durante el entrenamiento.</div>'
+        +'<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px">'+dots+'</div>'
+        +'<div style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">Ene&ndash;Sep = train &middot; Oct&ndash;Dic = test &middot; sin mezcla posible</div>';
+    }
+  },
+  kfold:{
+    title:'K-Fold &mdash; cada punto es test exactamente una vez',
+    html:function(){
+      var k=5;
+      var n=20;
+      var rows=[];
+      for(var fold=0;fold<k;fold++){
+        var segs='';
+        for(var seg=0;seg<k;seg++){
+          var isTest=(seg===fold);
+          segs+='<div class="kfold-seg" style="flex:1;background:'+(isTest?'rgba(251,146,60,.35)':'rgba(34,211,238,.2)')+';color:'+(isTest?'var(--orange)':'var(--cyan)')+';">'+(isTest?'TEST':'TR')+'</div>';
+        }
+        rows.push('<div class="kfold-row"><span class="kfold-label">Fold '+( fold+1)+'</span><div style="display:flex;gap:3px;flex:1">'+segs+'</div></div>');
+      }
+      return '<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">5 iteraciones. En cada una, un fold diferente es el test (naranja). Al final, el score es el promedio de los 5 resultados.</div>'
+        +'<div class="kfold-wrap">'+rows.join('')+'</div>'
+        +'<div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-top:4px">Score final = mean([0.81, 0.79, 0.82, 0.78, 0.80]) = 0.800 &plusmn; 0.014</div>';
+    }
+  }
+};
+
+function buildStratDots(n,noChurnRate){
+  var res='';
+  for(var i=0;i<n;i++){
+    var isChurn=i>= Math.round(n*noChurnRate);
+    res+='<div class="dot '+(isChurn?'test':'train')+'" style="width:22px;height:22px;font-size:9px">'+(isChurn?'CH':'OK')+'</div>';
+  }
+  return res;
+}
+
+window.selectMethod=function(m){
+  ['random','strat','time','kfold'].forEach(function(id){
+    var el=document.getElementById('mc-'+id);
+    if(el) el.classList.remove('active');
+  });
+  var sel=document.getElementById('mc-'+m);
+  if(sel) sel.classList.add('active');
+  var viz=document.getElementById('method-viz');
+  if(viz&&METHOD_DATA[m]){
+    var d=METHOD_DATA[m];
+    viz.innerHTML='<div style="font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--blue);margin-bottom:12px">'+d.title+'</div>'+d.html();
+  }
+};
+
+function initInter(){
+  selectMethod('random');
+  buildStratChart();
+  buildKFoldViz(5);
+  fillStratCards();
+}
+
+function fillStratCards(){
+  var badEl=document.getElementById('strat-bad');
+  var goodEl=document.getElementById('strat-good');
+  if(badEl) badEl.innerHTML='Train: 162 no-churn (90%), <strong style="color:var(--text)">18 churn (10%)</strong><br>Test: 18 no-churn (90%), <strong style="color:var(--red)">2 churn (10%)</strong> &larr; Con solo 2 casos de churn en test, el Recall y F1 son completamente inestables. Una sola prediccion erronea cambia el F1 en 0.2 puntos.';
+  if(goodEl) goodEl.innerHTML='Train: 162 no-churn (90%), <strong style="color:var(--text)">18 churn (10%)</strong><br>Test: 18 no-churn (90%), <strong style="color:var(--green)">2 churn (10%)</strong> &larr; Misma proporcion que el dataset original. El test es representativo. Las metricas son comparables entre experimentos.';
+}
+
+var stratChart=null;
+function buildStratChart(){
+  var ctx=document.getElementById('i-strat-chart').getContext('2d');
+  stratChart=new Chart(ctx,{type:'bar',data:{
+    labels:['Dataset original','Split aleatorio\n(train)','Split aleatorio\n(test)','Estratificado\n(train)','Estratificado\n(test)'],
+    datasets:[
+      {label:'No Churn %',data:[90,91,85,90,90],backgroundColor:'rgba(34,211,238,.5)',borderRadius:4},
+      {label:'Churn %',data:[10,9,15,10,10],backgroundColor:'rgba(248,113,113,.5)',borderRadius:4}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{labels:{color:'#8891a8',font:{family:'IBM Plex Mono',size:9},boxWidth:10}}},
+    scales:{
+      x:{stacked:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}},
+      y:{stacked:true,title:{display:true,text:'% clases',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},max:100}
+    }
+  }});
+}
+
+function buildKFoldViz(k){
+  var container=document.getElementById('kfold-viz');
+  if(!container) return;
+  var html='';
+  for(var fold=0;fold<k;fold++){
+    var segs='';
+    for(var seg=0;seg<k;seg++){
+      var isTest=(seg===fold);
+      segs+='<div class="kfold-seg" style="flex:1;background:'+(isTest?'rgba(251,146,60,.35)':'rgba(34,211,238,.18)')+';color:'+(isTest?'var(--orange)':'var(--cyan)')+';">'+(isTest?'VAL':'TR')+'</div>';
+    }
+    var score=(0.798+((fold%2===0?1:-1)*(fold+1)*0.007)).toFixed(3);
+    html+='<div class="kfold-row"><span class="kfold-label">Fold '+(fold+1)+'</span><div style="display:flex;gap:2px;flex:1">'+segs+'</div><span style="font-size:10px;font-family:var(--font-mono);color:var(--text3);margin-left:8px;min-width:50px">acc='+score+'</span></div>';
+  }
+  container.innerHTML=html;
+  var scores=Array.from({length:k},function(_,i){return 0.798+((i%2===0?1:-1)*(i+1)*0.007);});
+  var mean=(scores.reduce(function(a,b){return a+b;})/k).toFixed(3);
+  var std=Math.sqrt(scores.map(function(s){return (s-parseFloat(mean))*(s-parseFloat(mean));}).reduce(function(a,b){return a+b;})/k).toFixed(3);
+  var el=document.getElementById('kfold-score');
+  if(el) el.textContent=mean+' \u00b1 '+std;
+}
+
+document.getElementById('sl-kfold').addEventListener('input',function(){
+  var k=parseInt(this.value);
+  document.getElementById('sv-kfold').textContent=k;
+  buildKFoldViz(k);
+});
+
+// ===== AVANZADO =====
+function initAdv(){
+  buildTSChart();
+}
+
+function buildTSChart(){
+  var ctx=document.getElementById('adv-ts-chart').getContext('2d');
+  var labels=[];
+  for(var i=1;i<=24;i++) labels.push('S'+i);
+  var seed=42;
+  function rng(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967295;}
+  function randn(){var u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+  var base=5000;
+  var allVals=labels.map(function(_,i){
+    base+=50;
+    var seasonal=800*Math.sin(2*Math.PI*i/12);
+    return Math.round(base+seasonal+randn()*300);
+  });
+  var CUTOFF=18;
+  var trainData=allVals.map(function(v,i){return i<CUTOFF?v:null;});
+  var testData=allVals.map(function(v,i){return i>=CUTOFF?v:null;});
+  var cutoffLine=allVals.map(function(_,i){return i===CUTOFF-1||i===CUTOFF?allVals[CUTOFF]:null;});
+  new Chart(ctx,{type:'line',data:{
+    labels:labels,
+    datasets:[
+      {label:'Train',data:trainData,borderColor:'rgba(34,211,238,.8)',borderWidth:2,pointRadius:2,fill:false,tension:.3,spanGaps:false},
+      {label:'Test',data:testData,borderColor:'rgba(251,146,60,.8)',borderWidth:2,pointRadius:2,fill:false,tension:.3,spanGaps:false},
+      {label:'Limite',data:cutoffLine,borderColor:'rgba(248,113,113,.7)',borderWidth:1.5,pointRadius:0,fill:false,borderDash:[5,3],tension:0,spanGaps:false}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},maxTicksLimit:12}},
+      y:{title:{display:true,text:'Ventas (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+    }
+  }});
+}
+
+// ===== INIT =====
+document.getElementById('btn-basic').style.borderBottom='3px solid var(--cyan)';
+document.getElementById('icon-basic').style.background='rgba(34,211,238,.15)';
+document.getElementById('name-basic').style.color='var(--cyan)';
+setTimeout(function(){
+  buildDots(60,80);
+  buildOverfitChart();
+  updateRatio();
+},100);
+
+})();
+</script>
+</body>
+</html>

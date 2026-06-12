@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guia de Graficos para Dashboards</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--teal:#2dd4bf;--pink:#f472b6;
+  --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;background:rgba(251,196,60,.15);color:var(--yellow)}
+.hdr-title{font-family:var(--font-mono);font-size:13px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto}
+.tab{padding:13px 22px;font-size:11px;font-family:var(--font-mono);color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;white-space:nowrap}
+.tab:hover{color:var(--text2)}
+.tab.ta.active{color:var(--yellow);border-bottom-color:var(--yellow)}
+.tab.tb.active{color:var(--teal);border-bottom-color:var(--teal)}
+.main{max-width:1080px;margin:0 auto;padding:24px 28px}
+.panel{display:none}.panel.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;margin-bottom:16px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:11px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.09em;text-transform:uppercase;margin-bottom:10px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+/* TREE */
+.q-text{font-size:13px;font-weight:500;color:var(--text);margin-bottom:12px;padding:12px 16px;background:var(--bg3);border-radius:var(--r);border-left:3px solid var(--yellow)}
+.q-opts{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.q-btn{padding:8px 16px;border-radius:6px;font-size:12px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text2);transition:all .18s;user-select:none}
+.q-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+.breadcrumb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:14px;min-height:22px}
+.bc-item{font-size:11px;font-family:var(--font-mono);color:var(--text3);cursor:pointer}
+.bc-item:hover{color:var(--text2)}
+.bc-sep{color:var(--text3);font-size:11px}
+.bc-active{color:var(--yellow)}
+.result-card{border-radius:var(--rl);padding:20px 22px;border:1px solid var(--border);background:var(--bg2)}
+.result-name{font-family:var(--font-mono);font-size:18px;font-weight:600;margin-bottom:6px}
+.result-tag{display:inline-block;font-family:var(--font-mono);font-size:10px;padding:3px 8px;border-radius:4px;font-weight:600;margin-bottom:12px;border:1px solid currentColor}
+.chart-h{position:relative;height:200px;margin-bottom:14px}
+.chart-sm{position:relative;height:130px}
+.rsec{font-family:var(--font-mono);font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-top:14px;margin-bottom:7px}
+.alt-chip{display:inline-block;padding:5px 11px;border-radius:5px;font-size:11px;font-family:var(--font-mono);border:1px solid var(--border2);color:var(--text3);margin:3px}
+
+.reset-btn{padding:7px 16px;border-radius:5px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border2);color:var(--text3);cursor:pointer;background:transparent;transition:all .15s;margin-top:10px}
+.reset-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+/* CODE */
+.ctog{display:flex;align-items:center;gap:7px;padding:7px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:10px;transition:all .15s}
+.ctog:hover{border-color:var(--border2);color:var(--text2)}
+.ctog-icon{display:inline-block;transition:transform .2s}
+.ctog.open .ctog-icon{transform:rotate(90deg)}
+.cblock{display:none;margin-top:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;font-family:var(--font-mono);font-size:11px;line-height:1.8;overflow-x:auto}
+.cblock.shown{display:block}
+.kw{color:#a78bfa}.fn{color:#60a5fa}.st{color:#4af0b0}.cm{color:#4d566b}.nu{color:#fb923c}
+/* GALLERY */
+.gal-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.gf{padding:6px 14px;border-radius:20px;font-size:11px;font-family:var(--font-mono);border:1px solid var(--border2);color:var(--text3);cursor:pointer;transition:all .15s;user-select:none}
+.gf:hover{border-color:var(--teal);color:var(--teal)}
+.gf.on{background:rgba(45,212,191,.12);border-color:rgba(45,212,191,.3);color:var(--teal)}
+.gal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.gc{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px;cursor:pointer;transition:all .18s}
+.gc:hover{border-color:var(--border2);transform:translateY(-2px)}
+.gc.on{border-color:var(--teal)}
+.gc-preview{height:100px;position:relative;margin-bottom:8px}
+.gc-name{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--text);margin-bottom:3px}
+.gc-type{font-size:10px;font-family:var(--font-mono);color:var(--text3)}
+.gal-detail{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px;margin-top:16px;display:none}
+.gal-detail.on{display:block}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600;margin:2px}
+.p-comp{background:rgba(96,165,250,.15);color:var(--blue)}
+.p-dist{background:rgba(167,139,250,.15);color:var(--purple)}
+.p-rel{background:rgba(74,240,176,.15);color:var(--green)}
+.p-time{background:rgba(251,196,60,.15);color:var(--yellow)}
+.p-part{background:rgba(251,146,60,.12);color:var(--orange)}
+.p-adv{background:rgba(244,114,182,.12);color:var(--pink)}
+.wi{display:flex;gap:8px;margin-bottom:7px;font-size:12px;color:var(--text2);line-height:1.55}
+.alert{border-radius:var(--r);padding:10px 13px;font-size:12px;line-height:1.65;margin-bottom:10px}
+.aw{background:rgba(251,196,60,.07);border:1px solid rgba(251,196,60,.2)}
+.ag{background:rgba(74,240,176,.06);border:1px solid rgba(74,240,176,.18)}
+.ar{background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.2)}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="hdr-badge">CHART GUIDE</span>
+  <span class="hdr-title">Guia de Graficos para Dashboards</span>
+  <span class="hdr-sub">20 graficos &middot; arbol de decision &middot; galeria interactiva</span>
+</div>
+<div class="tabs">
+  <div class="tab ta active" data-tab="tree" onclick="switchTab('tree')">&#129300; Arbol de Decision</div>
+  <div class="tab tb" data-tab="gallery" onclick="switchTab('gallery')">&#127912; Galeria de Graficos</div>
+</div>
+<div class="main">
+
+<!-- TAB TREE -->
+<div class="panel active" id="panel-tree">
+  <div class="card">
+    <p class="prose" style="margin-bottom:14px">Responde las preguntas y el arbol te recomienda el grafico ideal. Cada decision filtra las opciones hasta llegar al grafico correcto con ejemplo, errores comunes y codigo.</p>
+    <div class="breadcrumb" id="bc"></div>
+    <div id="tree-body"></div>
+    <button class="reset-btn" onclick="resetTree()">&#8635; Reiniciar</button>
+  </div>
+</div>
+
+<!-- TAB GALLERY -->
+<div class="panel" id="panel-gallery">
+  <div class="gal-filters" id="gal-filters"></div>
+  <div class="gal-grid" id="gal-grid"></div>
+  <div class="gal-detail" id="gal-detail"></div>
+</div>
+
+</div>
+<script>
+(function(){
+
+/* ─────────────── CATALOG ─────────────── */
+var C = {
+  bar:{n:'Barras',ic:'&#9646;&#9646;&#9646;',type:'comp',tl:'Comparacion',tc:'var(--blue)',tp:'p-comp',
+    when:'Comparar magnitudes entre 3-15 categorias. La mas usada en dashboards ejecutivos.',
+    nope:'No para series de tiempo largas. No para composicion de un todo.',
+    cases:['Revenue por region (Lima vs Arequipa)','Ventas por categoria de producto','Clientes por segmento RFM','CTR por canal de marketing'],
+    warns:['Empieza el eje Y en 0 siempre. Si no, las diferencias parecen mayores.','Ordena de mayor a menor para facilitar la lectura.','Con +15 categorias usa barras horizontales o un top-N.'],
+    alts:['Barras horizontales','Barras agrupadas','Lollipop chart','Treemap si hay jerarquia'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">bar</span>(df, x=<span class="st">\'region\'</span>, y=<span class="st">\'revenue\'</span>,\n           color=<span class="st">\'region\'</span>, title=<span class="st">\'Revenue por Region\'</span>)\nfig.<span class="fn">update_layout</span>(yaxis_rangemode=<span class="st">\'tozero\'</span>)'
+  },
+  line:{n:'Linea',ic:'&#128200;',type:'time',tl:'Evolucion temporal',tc:'var(--yellow)',tp:'p-time',
+    when:'Mostrar como cambia una variable en el tiempo. Enfatiza tendencia y continuidad.',
+    nope:'No conectes categorias sin orden temporal. No uses mas de 5-6 lineas en el mismo grafico.',
+    cases:['Ventas semanales 52 semanas','DAU (usuarios activos diarios)','Revenue acumulado mensual','Tasa de conversion en una campana'],
+    warns:['Mas de 5 lineas = espagueti ilegible.','Considera media movil (7d) para suavizar el ruido.','Incluye el rango temporal en el titulo.'],
+    alts:['Area chart (enfatiza volumen)','Multi-line comparando periodos','Sparkline para resumen compacto'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\ndf[<span class="st">\'ma7\'</span>] = df[<span class="st">\'ventas\'</span>].<span class="fn">rolling</span>(<span class="nu">7</span>).<span class="fn">mean</span>()\nfig = px.<span class="fn">line</span>(df, x=<span class="st">\'fecha\'</span>, y=[<span class="st">\'ventas\'</span>,<span class="st">\'ma7\'</span>],\n            title=<span class="st">\'Ventas semanales + MA7\'</span>)'
+  },
+  scatter:{n:'Scatter Plot',ic:'&#8901;&#8901;&#8901;',type:'rel',tl:'Relacion',tc:'var(--green)',tp:'p-rel',
+    when:'Ver correlacion entre dos variables numericas. Detectar outliers y patrones no lineales.',
+    nope:'No con categoricas en ambos ejes. Con +10K puntos usa hexbin o density.',
+    cases:['Ticket promedio vs Revenue','Visitas vs Conversion rate','Inversion en pauta vs ROAS','Edad vs Saldo del cliente'],
+    warns:['Agrega linea de tendencia (OLS) para mostrar la correlacion.','Anota el valor de R en el grafico.','El tamano del punto puede ser una tercera variable (bubble).'],
+    alts:['Bubble chart (3 variables)','Scatter matrix','Hexbin para datasets grandes'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">scatter</span>(df, x=<span class="st">\'ticket\'</span>, y=<span class="st">\'revenue\'</span>,\n               size=<span class="st">\'visitas\'</span>, color=<span class="st">\'region\'</span>,\n               trendline=<span class="st">\'ols\'</span>)'
+  },
+  histogram:{n:'Histograma',ic:'&#9646;&#9642;&#9646;',type:'dist',tl:'Distribucion',tc:'var(--purple)',tp:'p-dist',
+    when:'Ver la distribucion de una variable continua. Detectar skewness, bimodalidad y outliers.',
+    nope:'No para categoricas (usa barras). No para comparar muchos grupos (usa boxplot).',
+    cases:['Distribucion de edades de clientes','Distribucion de ticket promedio','Revenue por cliente','Residuales del modelo'],
+    warns:['El numero de bins cambia la historia. Prueba 10, 20 y 50.','Agrega lineas de media y mediana. Si estan separadas hay skew.','Con dos grupos usa transparencia (opacity=0.6).'],
+    alts:['KDE plot','Boxplot (comparar grupos)','Violin plot'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">histogram</span>(df, x=<span class="st">\'ticket\'</span>, nbins=<span class="nu">30</span>,\n                   color=<span class="st">\'churn\'</span>, barmode=<span class="st">\'overlay\'</span>,\n                   opacity=<span class="nu">0.7</span>)'
+  },
+  boxplot:{n:'Boxplot',ic:'&#9645;&#9646;&#9645;',type:'dist',tl:'Distribucion',tc:'var(--purple)',tp:'p-dist',
+    when:'Comparar la distribucion de una variable entre varios grupos. Muestra mediana, IQR y outliers.',
+    nope:'No con menos de 20 obs por grupo. Para audiencias no tecnicas usa barra de mediana + error.',
+    cases:['Revenue por segmento RFM','Ticket por device','Tiempo de sesion por fuente','Saldo por region'],
+    warns:['Ordena grupos por mediana.','Muestra los puntos individuales cuando n es pequeno.','Para ejecutivos: barra de mediana es mas legible.'],
+    alts:['Violin plot','Strip plot','Beeswarm plot'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">box</span>(df, x=<span class="st">\'segmento\'</span>, y=<span class="st">\'revenue\'</span>,\n           color=<span class="st">\'segmento\'</span>, points=<span class="st">\'outliers\'</span>)'
+  },
+  heatmap:{n:'Heatmap',ic:'&#9632;&#9632;&#9632;',type:'rel',tl:'Relacion',tc:'var(--green)',tp:'p-rel',
+    when:'Visualizar una matriz de valores: correlaciones, confusion matrix, ventas hora x dia.',
+    nope:'No con muchas categorias sin scroll. Evita escala rainbow (usa secuencial o divergente).',
+    cases:['Matriz de correlacion de features','Confusion matrix del modelo','Ventas por hora x dia de semana','CTR por campana x canal'],
+    warns:['Usa escala divergente (azul-blanco-rojo) para correlaciones.','Anota valores numericos en cada celda cuando el dataset es pequeno.','Agrupa filas/columnas por similitud (dendrograma).'],
+    alts:['Scatter matrix','Tabla con color condicional','Bubble heatmap'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\ncorr = df.<span class="fn">corr</span>()\nfig = px.<span class="fn">imshow</span>(corr, text_auto=<span class="st">\'True\'</span>,\n               color_continuous_scale=<span class="st">\'RdBu_r\'</span>,\n               title=<span class="st">\'Matriz de Correlacion\'</span>)'
+  },
+  pie:{n:'Pie / Donut',ic:'&#9711;',type:'part',tl:'Composicion',tc:'var(--orange)',tp:'p-part',
+    when:'Composicion de un todo con 3-6 categorias muy distintas entre si.',
+    nope:'No con +6 categorias. No cuando los porcentajes son similares (24% vs 26%). No para comparar dos periodos.',
+    cases:['Mix de trafico (organico/pagado/social/directo)','Participacion de mercado por canal','Revenue por linea de producto','Clientes por region'],
+    warns:['El donut permite un KPI en el centro.','Muestra siempre los porcentajes en el grafico.','Si una categoria es <5% agrupa en Otros.'],
+    alts:['Barras horizontales (mas preciso)','Treemap si hay jerarquia','Waffle chart'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">pie</span>(df, names=<span class="st">\'canal\'</span>, values=<span class="st">\'revenue\'</span>,\n           hole=<span class="nu">0.4</span>)\nfig.<span class="fn">update_traces</span>(textinfo=<span class="st">\'percent+label\'</span>)'
+  },
+  area:{n:'Area Chart',ic:'&#9651;',type:'time',tl:'Evolucion temporal',tc:'var(--yellow)',tp:'p-time',
+    when:'Como la linea pero enfatizando el volumen. El area apilada muestra composicion en el tiempo.',
+    nope:'No con mas de 5 series apiladas. No cuando las series se solapan mucho.',
+    cases:['Revenue por canal a lo largo del tiempo','Usuarios nuevos vs recurrentes','Composicion de ventas por categoria mensual','Trafico organico + pagado + social'],
+    warns:['Area apilada puede engañar: la categoria del fondo parece constante.','Usa porcentaje-stacked para proporciones, no valores absolutos.','Transparencia ayuda con areas superpuestas.'],
+    alts:['Linea (sin enfasis en volumen)','Barras apiladas','Streamgraph'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">area</span>(df, x=<span class="st">\'mes\'</span>, y=<span class="st">\'revenue\'</span>,\n            color=<span class="st">\'canal\'</span>,\n            title=<span class="st">\'Revenue por Canal (acumulado)\'</span>)'
+  },
+  funnel:{n:'Funnel Chart',ic:'&#9663;',type:'part',tl:'Composicion',tc:'var(--orange)',tp:'p-part',
+    when:'Conversion a lo largo de un proceso secuencial. Cada etapa es subconjunto de la anterior.',
+    nope:'No si las etapas no son secuenciales. No si el usuario puede saltarlas.',
+    cases:['Funnel e-commerce (visita > carrito > pago)','Funnel email (enviado > abierto > click > conversion)','Pipeline de ventas (lead > propuesta > cierre)','Onboarding de usuarios'],
+    warns:['Muestra valor absoluto Y tasa de conversion en cada etapa.','La caida mas grande = mayor oportunidad.','Dos funnels lado a lado para comparar periodos.'],
+    alts:['Barras horizontales','Sankey diagram (flujos multiples)'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">funnel</span>(\n    x=[<span class="nu">10000</span>,<span class="nu">4500</span>,<span class="nu">1200</span>,<span class="nu">380</span>],\n    y=[<span class="st">\'Visita\'</span>,<span class="st">\'Producto\'</span>,<span class="st">\'Carrito\'</span>,<span class="st">\'Pago\'</span>]\n)'
+  },
+  treemap:{n:'Treemap',ic:'&#9632;&#9632;',type:'part',tl:'Composicion',tc:'var(--orange)',tp:'p-part',
+    when:'Composicion jerarquica donde el tamano importa. Categoria > subcategoria > valor.',
+    nope:'No con demasiadas categorias pequeñas ilegibles. No para series de tiempo.',
+    cases:['Revenue por categoria > subcategoria de producto','Gasto en pauta por campana > ad set','Clientes por region > ciudad > segmento','Inventario por categoria > marca'],
+    warns:['Limita a 2-3 niveles de jerarquia.','El color puede ser una segunda dimension (crecimiento YoY).','Titulo con nombre + valor + % del total.'],
+    alts:['Sunburst (jerarquia circular)','Barras apiladas','Icicle chart'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">treemap</span>(df,\n    path=[<span class="st">\'categoria\'</span>,<span class="st">\'subcategoria\'</span>],\n    values=<span class="st">\'revenue\'</span>,\n    color=<span class="st">\'crecimiento_pct\'</span>,\n    color_continuous_scale=<span class="st">\'RdYlGn\'</span>)'
+  },
+  waterfall:{n:'Waterfall',ic:'&#9660;&#9650;',type:'comp',tl:'Comparacion',tc:'var(--blue)',tp:'p-comp',
+    when:'Mostrar incrementos y decrementos que llevan de un valor inicial a uno final. Ideal para P&L y variaciones.',
+    nope:'No para series de tiempo continuas. No si los componentes no suman al total.',
+    cases:['Revenue Q4: nuevos + upsell - churn = total','Usuarios netos: altas - bajas = delta','Descomposicion de diferencia vs año anterior','P&L: ingresos - COGS - marketing = utilidad'],
+    warns:['Verde para incrementos, rojo para decrementos, gris para totales.','Anota valores absolutos Y porcentajes.','El valor inicial y final deben destacarse.'],
+    alts:['Barras con anotaciones','Bridge chart'],
+    code:'<span class="kw">import</span> plotly.graph_objects <span class="kw">as</span> go\nfig = go.<span class="fn">Figure</span>(go.<span class="fn">Waterfall</span>(\n    measure=[<span class="st">\'absolute\'</span>,<span class="st">\'relative\'</span>,<span class="st">\'relative\'</span>,<span class="st">\'total\'</span>],\n    x=[<span class="st">\'Base\'</span>,<span class="st">\'Upsell\'</span>,<span class="st">\'Churn\'</span>,<span class="st">\'Total\'</span>],\n    y=[<span class="nu">80000</span>,<span class="nu">15000</span>,<span class="nu">-8000</span>,<span class="nu">0</span>]\n))'
+  },
+  bullet:{n:'KPI / Bullet',ic:'&#127919;',type:'comp',tl:'Comparacion',tc:'var(--blue)',tp:'p-comp',
+    when:'Mostrar progreso de un KPI vs su meta con contexto (bueno/aceptable/malo).',
+    nope:'No uses gauges en dashboards ejecutivos (son decorativos). No con +8 KPIs juntos.',
+    cases:['Revenue actual vs meta','CTR vs benchmark','Tasa de retencion vs objetivo','NPS actual vs meta'],
+    warns:['Bullet = valor actual + meta + rango de referencia.','Para ejecutivos: KPI grande + delta vs periodo anterior + color semaforo.','Menos es mas: 4-6 KPIs en la parte superior del dashboard.'],
+    alts:['Progress bar','Speedometer (solo decorativo)','Tabla de KPIs con color condicional'],
+    code:'<span class="kw">import</span> plotly.graph_objects <span class="kw">as</span> go\nfig = go.<span class="fn">Figure</span>(go.<span class="fn">Indicator</span>(\n    mode=<span class="st">\'number+delta+gauge\'</span>,\n    value=<span class="nu">87500</span>,\n    delta={<span class="st">\'reference\'</span>:<span class="nu">80000</span>},\n    title={<span class="st">\'text\'</span>:<span class="st">\'Revenue\'</span>}\n))'
+  },
+  sunburst:{n:'Sunburst',ic:'&#9737;',type:'part',tl:'Composicion',tc:'var(--orange)',tp:'p-part',
+    when:'Como el treemap pero en forma circular. Ideal para jerarquias con 3+ niveles donde el espacio es cuadrado.',
+    nope:'No con jerarquias muy profundas (>4 niveles). No con demasiadas subcategorias en el nivel exterior.',
+    cases:['Gasto de marketing: canal > campana > anuncio','Revenue: region > ciudad > tienda','Inventario: categoria > marca > SKU','Trafico: fuente > medio > campana'],
+    warns:['El nivel exterior = el mas detallado. El centro = el total.','Con muchas subcategorias el nivel exterior se vuelve ilegible.','Combina con filtro interactivo para que el usuario explore niveles.'],
+    alts:['Treemap (mas legible para jerarquias planas)','Icicle chart','Barras apiladas con drill-down'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">sunburst</span>(df,\n    path=[<span class="st">\'canal\'</span>,<span class="st">\'campana\'</span>,<span class="st">\'anuncio\'</span>],\n    values=<span class="st">\'gasto\'</span>,\n    color=<span class="st">\'roas\'</span>,\n    color_continuous_scale=<span class="st">\'RdYlGn\'</span>)'
+  },
+  sankey:{n:'Sankey / Diagrama de flujo',ic:'&#9135;&#9135;',type:'rel',tl:'Relacion',tc:'var(--green)',tp:'p-rel',
+    when:'Visualizar flujos entre nodos: como se distribuyen volumenes o dinero a traves de etapas o categorias.',
+    nope:'No con demasiados nodos (>15 nodos = ilegible). No cuando los flujos son simples (usa funnel).',
+    cases:['De donde vienen y a donde van los clientes entre segmentos','Flujo de revenue entre canales de adquisicion y productos','Attribution multicanal (Google > Email > Directo > Conversion)','Migracion de clientes entre planes (free > pro > enterprise)'],
+    warns:['El ancho del flujo es proporcional al volumen. Asegurate de que la escala sea clara.','Colores consistentes para los mismos nodos en todas las etapas.','Agrega tooltip con valores exactos, el grafico solo muestra proporciones.'],
+    alts:['Funnel (flujos secuenciales simples)','Chord diagram (relaciones bidireccionales)','Aluvial diagram'],
+    code:'<span class="kw">import</span> plotly.graph_objects <span class="kw">as</span> go\nfig = go.<span class="fn">Figure</span>(go.<span class="fn">Sankey</span>(\n    node=dict(label=[<span class="st">\'Google\'</span>,<span class="st">\'Email\'</span>,<span class="st">\'Directo\'</span>,<span class="st">\'Conversion\'</span>]),\n    link=dict(\n        source=[<span class="nu">0</span>,<span class="nu">1</span>,<span class="nu">2</span>],\n        target=[<span class="nu">3</span>,<span class="nu">3</span>,<span class="nu">3</span>],\n        value=[<span class="nu">400</span>,<span class="nu">280</span>,<span class="nu">120</span>]\n    )\n))'
+  },
+  violin:{n:'Violin Plot',ic:'&#119070;',type:'dist',tl:'Distribucion',tc:'var(--purple)',tp:'p-dist',
+    when:'Como el boxplot pero mostrando la distribucion completa (forma de la campana). Cuando la forma de la distribucion importa.',
+    nope:'No para audiencias no tecnicas (prefieren boxplot o barra con error). No con menos de 30 obs por grupo.',
+    cases:['Distribucion de revenue por segmento RFM','Tiempo en sesion por tipo de dispositivo','Score del modelo por clase (churn vs no churn)','Distribucion de errores del modelo por horizonte de prediccion'],
+    warns:['Combina violin + boxplot + puntos individuales para maxima informacion.','Si todos los violines tienen la misma forma, usa boxplot (mas simple).','La anchura del violin en cada punto = densidad de datos en ese valor.'],
+    alts:['Boxplot (mas simple)','KDE plot','Beeswarm plot (puntos individuales)'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">violin</span>(df, x=<span class="st">\'segmento\'</span>, y=<span class="st">\'revenue\'</span>,\n               color=<span class="st">\'segmento\'</span>,\n               box=<span class="st">\'True\'</span>, points=<span class="st">\'outliers\'</span>)'
+  },
+  bubble:{n:'Bubble Chart',ic:'&#9898;&#9898;',type:'rel',tl:'Relacion',tc:'var(--green)',tp:'p-rel',
+    when:'Como el scatter pero con una tercera dimension representada en el tamano del punto.',
+    nope:'No con mas de 50 burbujas (se solapan). No si el tamano de las burbujas no tiene significado.',
+    cases:['Paises/tiendas: inversion (x) vs revenue (y) vs clientes (tamaño)','Campanas: CTR (x) vs conversion (y) vs presupuesto (tamaño)','Productos: precio (x) vs margen (y) vs unidades vendidas (tamaño)','Segmentos: recency (x) vs frequency (y) vs monetary (tamaño)'],
+    warns:['El area del circulo debe ser proporcional al valor, no el radio.','Agrega etiquetas solo a los puntos mas relevantes para no saturar.','Usa color para una cuarta dimension (categorica).'],
+    alts:['Scatter (sin tercera dimension)','Scatter matrix (multiples pares)'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">scatter</span>(df,\n    x=<span class="st">\'inversion\'</span>, y=<span class="st">\'revenue\'</span>,\n    size=<span class="st">\'clientes\'</span>, color=<span class="st">\'region\'</span>,\n    hover_name=<span class="st">\'tienda\'</span>, size_max=<span class="nu">60</span>)'
+  },
+  gantt:{n:'Gantt / Timeline',ic:'&#9646;&#9646;&#9645;',type:'time',tl:'Evolucion temporal',tc:'var(--yellow)',tp:'p-time',
+    when:'Visualizar la duracion y solapamiento de tareas, campanas o proyectos en el tiempo.',
+    nope:'No para datos sin duracion temporal. No para mas de 20-25 items (se vuelve ilegible verticalmente).',
+    cases:['Calendario de campanas de marketing (cuando corre cada una)','Roadmap de proyectos de analytics','Cronograma de lanzamientos de producto','Solapamiento de promociones y su impacto en ventas'],
+    warns:['Agrupa por equipo o tipo de campana para facilitar la lectura.','Usa colores para clasificar las tareas (campana brand vs performance).','Agrega hitos (milestones) como diamantes o lineas verticales.'],
+    alts:['Linea de tiempo simple','Calendar heatmap','Barras con fechas en eje X'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">timeline</span>(df,\n    x_start=<span class="st">\'inicio\'</span>, x_end=<span class="st">\'fin\'</span>,\n    y=<span class="st">\'campana\'</span>, color=<span class="st">\'tipo\'</span>,\n    title=<span class="st">\'Calendario de Campanas\'</span>)'
+  },
+  radar:{n:'Radar / Spider',ic:'&#11042;',type:'comp',tl:'Comparacion',tc:'var(--blue)',tp:'p-comp',
+    when:'Comparar multiples dimensiones de 2-4 entidades. Util para perfiles de cliente o benchmarking.',
+    nope:'No con mas de 8 dimensiones (se pierde claridad). No con mas de 4 entidades superpuestas. No para series de tiempo.',
+    cases:['Perfil RFM de segmentos de clientes (Champions vs Lost)','Benchmarking de campanas en 5 dimensiones (CTR, conv, CPA, ROAS, reach)','Perfil de tiendas en indicadores clave','Evaluacion de proveedores en multiples criterios'],
+    warns:['El orden de los ejes importa: agrupa dimensiones relacionadas.','Usa transparencia para que se vean las areas superpuestas.','Para ejecutivos: una tabla de KPIs con colores es mas legible.'],
+    alts:['Barras agrupadas (mas preciso)','Tabla con color condicional','Parallel coordinates'],
+    code:'<span class="kw">import</span> plotly.graph_objects <span class="kw">as</span> go\nfig = go.<span class="fn">Figure</span>()\nfig.<span class="fn">add_trace</span>(go.<span class="fn">Scatterpolar</span>(\n    r=[<span class="nu">85</span>,<span class="nu">72</span>,<span class="nu">90</span>,<span class="nu">68</span>,<span class="nu">78</span>],\n    theta=[<span class="st">\'Recency\'</span>,<span class="st">\'Frequency\'</span>,<span class="st">\'Monetary\'</span>,<span class="st">\'Tenure\'</span>,<span class="st">\'NPS\'</span>],\n    fill=<span class="st">\'toself\'</span>, name=<span class="st">\'Champions\'</span>\n))'
+  },
+  calendar:{n:'Calendar Heatmap',ic:'&#128197;',type:'time',tl:'Evolucion temporal',tc:'var(--yellow)',tp:'p-time',
+    when:'Mostrar un patron temporal diario a lo largo de semanas o meses. Tipico en analisis de comportamiento.',
+    nope:'No para datos que no tienen frecuencia diaria. No para horizontes de tiempo muy cortos (<4 semanas).',
+    cases:['Ventas diarias del año (como GitHub contributions)','Trafico diario por dia de la semana x semana del año','Actividad de usuarios dia a dia','Deteccion de anomalias temporales (dias sin ventas, picos)'],
+    warns:['Usa una escala secuencial (blanco a verde oscuro).','Agrega tooltip con el valor exacto y el dia de la semana.','Resalta dias especiales (feriados, campanas) con borde.'],
+    alts:['Linea con puntos diarios','Heatmap hora x dia de semana','Boxplot por dia de semana'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\n<span class="cm"># Preparar datos con columnas: fecha, valor</span>\nfig = px.<span class="fn">density_heatmap</span>(df,\n    x=<span class="st">\'dia_semana\'</span>, y=<span class="st">\'semana_año\'</span>,\n    z=<span class="st">\'ventas\'</span>, color_continuous_scale=<span class="st">\'Greens\'</span>)'
+  },
+  parallel:{n:'Parallel Coordinates',ic:'&#9145;&#9145;&#9145;',type:'rel',tl:'Relacion',tc:'var(--green)',tp:'p-rel',
+    when:'Ver relaciones y patrones entre muchas variables numericas simultaneamente. Muy util para segmentacion.',
+    nope:'No con mas de 10-12 dimensiones. No para audiencias no tecnicas. No con datos muy ruidosos.',
+    cases:['Perfil completo de segmentos de clientes (edad, saldo, visitas, ticket, conv)','Comparar caracteristicas de clusters de K-Means','Analisis de features para modelo de churn','Benchmarking de campanas en multiples metricas'],
+    warns:['El orden de los ejes cambia las relaciones visibles. Experimenta con distintos ordenes.','Usa color para el target o el cluster.','Agrega filtros interactivos por eje para explorar subgrupos.'],
+    alts:['Radar chart (pocos ejes)','Scatter matrix','Heatmap de correlacion'],
+    code:'<span class="kw">import</span> plotly.express <span class="kw">as</span> px\nfig = px.<span class="fn">parallel_coordinates</span>(df,\n    color=<span class="st">\'churn\'</span>,\n    dimensions=[<span class="st">\'edad\'</span>,<span class="st">\'saldo\'</span>,<span class="st">\'visitas\'</span>,<span class="st">\'ticket\'</span>,<span class="st">\'conv\'</span>],\n    color_continuous_scale=<span class="st">\'RdBu\'</span>)'
+  }
+};
+
+var TYPE_LABELS = {
+  comp:'Comparacion', time:'Evolucion temporal',
+  rel:'Relacion', dist:'Distribucion',
+  part:'Composicion', adv:'Avanzado'
+};
+var TYPE_COLORS = {
+  comp:'var(--blue)', time:'var(--yellow)',
+  rel:'var(--green)', dist:'var(--purple)',
+  part:'var(--orange)', adv:'var(--pink)'
+};
+
+/* ─────────────── TREE ─────────────── */
+var NODES = {
+  q1:{q:'Que quieres comunicar principalmente?',opts:[
+    {l:'Comparar valores entre categorias',n:'q2'},
+    {l:'Mostrar como algo cambia en el tiempo',n:'q_time'},
+    {l:'Ver la relacion o correlacion entre variables',n:'q_rel'},
+    {l:'Ver la distribucion de una variable',n:'q_dist'},
+    {l:'Mostrar la composicion de un todo',n:'q_part'}
+  ]},
+  q2:{q:'Que tipo de comparacion?',opts:[
+    {l:'Comparar magnitudes simples entre categorias',n:'q3'},
+    {l:'Progreso de un KPI vs su meta',r:'bullet'},
+    {l:'Mostrar incrementos y decrementos hasta un total',r:'waterfall'},
+    {l:'Comparar multiples dimensiones de pocos grupos',r:'radar'}
+  ]},
+  q3:{q:'Cuantas categorias tienes?',opts:[
+    {l:'Pocas (2-8)',r:'bar'},
+    {l:'Muchas (9+) sin jerarquia',r:'bar'},
+    {l:'Muchas con jerarquia (categoria > subcategoria)',r:'treemap'}
+  ]},
+  q_time:{q:'Que aspecto del tiempo te importa?',opts:[
+    {l:'La tendencia y los picos en el tiempo',r:'line'},
+    {l:'El volumen acumulado o la composicion por tiempo',r:'area'},
+    {l:'Conversion en un proceso secuencial',r:'funnel'},
+    {l:'Duracion y solapamiento de tareas o campanas',r:'gantt'},
+    {l:'Patron dia a dia a lo largo del año',r:'calendar'}
+  ]},
+  q_rel:{q:'Cuantas variables quieres cruzar?',opts:[
+    {l:'Dos variables numericas',r:'scatter'},
+    {l:'Dos numericas + una tercera en el tamaño del punto',r:'bubble'},
+    {l:'Muchas variables en una matriz',r:'heatmap'},
+    {l:'Flujos entre nodos o etapas',r:'sankey'},
+    {l:'Muchas variables comparando grupos',r:'parallel'}
+  ]},
+  q_dist:{q:'Cuantos grupos quieres comparar?',opts:[
+    {l:'Un solo grupo',r:'histogram'},
+    {l:'Pocos grupos (2-5) comparando medianas y rango',r:'boxplot'},
+    {l:'Pocos grupos y la forma de la distribucion importa',r:'violin'}
+  ]},
+  q_part:{q:'Hay jerarquia en los datos?',opts:[
+    {l:'No, un solo nivel (3-6 categorias)',r:'pie'},
+    {l:'Si, 2 niveles (categoria > subcategoria)',r:'treemap'},
+    {l:'Si, 3+ niveles en formato circular',r:'sunburst'},
+    {l:'Son etapas secuenciales con conversion',r:'funnel'}
+  ]}
+};
+
+var treeHistory = [];
+var currentNode = 'q1';
+
+function renderTree() {
+  var bc = document.getElementById('bc');
+  var body = document.getElementById('tree-body');
+  var html = '';
+  var bcHtml = '<span class="bc-item bc-active" onclick="jumpTree(-1)">Inicio</span>';
+  for (var i = 0; i < treeHistory.length; i++) {
+    bcHtml += '<span class="bc-sep"> &rsaquo; </span>';
+    var isCurrent = (i === treeHistory.length - 1);
+    bcHtml += '<span class="bc-item' + (isCurrent ? ' bc-active' : '') + '" onclick="jumpTree(' + i + ')">' + treeHistory[i].l + '</span>';
+  }
+  bc.innerHTML = bcHtml;
+  var last = treeHistory.length > 0 ? treeHistory[treeHistory.length - 1] : null;
+  if (last && last.r) {
+    renderResult(last.r, body);
+    return;
+  }
+  var node = NODES[currentNode];
+  if (!node) return;
+  html += '<div class="q-text">' + node.q + '</div>';
+  html += '<div class="q-opts">';
+  for (var j = 0; j < node.opts.length; j++) {
+    html += '<button class="q-btn" onclick="chooseOpt(' + j + ')">' + node.opts[j].l + '</button>';
+  }
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+window.chooseOpt = function(idx) {
+  var node = NODES[currentNode];
+  if (!node) return;
+  var opt = node.opts[idx];
+  treeHistory.push(opt);
+  if (opt.r) {
+    renderTree();
+  } else if (opt.n) {
+    currentNode = opt.n;
+    renderTree();
+  }
+};
+
+window.jumpTree = function(idx) {
+  if (idx === -1) {
+    treeHistory = [];
+    currentNode = 'q1';
+  } else {
+    treeHistory = treeHistory.slice(0, idx + 1);
+    var prev = idx > 0 ? treeHistory[idx - 1] : null;
+    if (prev && prev.n) currentNode = prev.n;
+    else currentNode = 'q1';
+    var last = treeHistory[treeHistory.length - 1];
+    if (last && last.n) currentNode = last.n;
+  }
+  renderTree();
+};
+
+window.resetTree = function() {
+  treeHistory = [];
+  currentNode = 'q1';
+  renderTree();
+};
+
+function renderResult(id, container) {
+  var c = C[id];
+  if (!c) return;
+  var casesHtml = c.cases.map(function(cs) {
+    return '<div class="wi"><span style="color:var(--green);flex-shrink:0">+</span><span>' + cs + '</span></div>';
+  }).join('');
+  var warnHtml = c.warns.map(function(w) {
+    return '<div class="wi"><span style="color:var(--yellow);flex-shrink:0">&#9888;</span><span>' + w + '</span></div>';
+  }).join('');
+  var altHtml = c.alts.map(function(a) {
+    return '<span class="alt-chip">' + a + '</span>';
+  }).join('');
+  container.innerHTML = '<div class="result-card">'
+    + '<div class="g2">'
+    + '<div>'
+    + '<div style="font-size:32px;margin-bottom:8px">' + c.ic + '</div>'
+    + '<div class="result-name" style="color:' + c.tc + '">' + c.n + '</div>'
+    + '<span class="result-tag" style="color:' + c.tc + '">' + c.tl + '</span>'
+    + '<div class="chart-h"><canvas id="rc-canvas"></canvas></div>'
+    + '<div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-bottom:10px">Ejemplo con datos e-commerce peruano</div>'
+    + '<div class="rsec">Cuando usarlo</div>'
+    + '<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:8px">' + c.when + '</div>'
+    + '<div class="rsec">No lo uses cuando</div>'
+    + '<div style="font-size:12px;color:var(--text2);line-height:1.7">' + c.nope + '</div>'
+    + '</div>'
+    + '<div>'
+    + '<div class="rsec">Casos de uso tipicos</div>'
+    + casesHtml
+    + '<div class="rsec">Errores comunes</div>'
+    + warnHtml
+    + '<div class="rsec">Alternativas</div>'
+    + altHtml
+    + '<div class="ctog" onclick="toggleCode(this)"><span class="ctog-icon">&#9654;</span> Ver codigo Python / Plotly</div>'
+    + '<div class="cblock">' + c.code + '</div>'
+    + '</div>'
+    + '</div></div>';
+  setTimeout(function() { try { drawChart(id, 'rc-canvas', 200); } catch(e) { console.error('chart error', e); } }, 80);
+}
+
+/* ─────────────── GALLERY ─────────────── */
+var GAL_TYPES = ['todos', 'comp', 'time', 'rel', 'dist', 'part'];
+var GAL_TYPE_LABELS = {todos:'Todos',comp:'Comparacion',time:'Temporal',rel:'Relacion',dist:'Distribucion',part:'Composicion'};
+var activeFilter = 'todos';
+var activeGalChart = null;
+var miniRefs = {};
+var detailRef = null;
+
+function buildGallery() {
+  var fc = document.getElementById('gal-filters');
+  fc.innerHTML = GAL_TYPES.map(function(t) {
+    return '<div class="gf' + (t === activeFilter ? ' on' : '') + '" data-filter="' + t + '">' + GAL_TYPE_LABELS[t] + '</div>';
+  }).join('');
+  renderGrid();
+}
+
+function renderGrid() {
+  var keys = Object.keys(C).filter(function(k) {
+    return activeFilter === 'todos' || C[k].type === activeFilter;
+  });
+  var grid = document.getElementById('gal-grid');
+  grid.innerHTML = keys.map(function(k) {
+    return '<div class="gc' + (activeGalChart === k ? ' on' : '') + '" id="gc-' + k + '" data-chart="' + k + '">'
+      + '<div class="gc-preview"><canvas id="gp-' + k + '"></canvas></div>'
+      + '<div class="gc-name">' + C[k].n + '</div>'
+      + '<div class="gc-type"><span class="pill ' + C[k].tp + '">' + C[k].tl + '</span></div>'
+      + '</div>';
+  }).join('');
+  setTimeout(function() {
+    keys.forEach(function(k) { try { drawChart(k, 'gp-' + k, 100, true); } catch(e) { console.error('mini chart error',k,e); } });
+  }, 80);
+  if (activeGalChart && keys.indexOf(activeGalChart) >= 0) {
+    renderGalDetail(activeGalChart);
+  } else {
+    var det = document.getElementById('gal-detail');
+    det.classList.remove('on'); det.innerHTML = '';
+    activeGalChart = null;
+  }
+}
+
+window.setFilter = function(f) {
+  activeFilter = f;
+  var els = document.querySelectorAll('.gf');
+  for (var i = 0; i < els.length; i++) {
+    els[i].classList.remove('on');
+    if (GAL_TYPES[i] === f) els[i].classList.add('on');
+  }
+  renderGrid();
+};
+
+window.selectGal = function(k) {
+  activeGalChart = k;
+  var cards = document.querySelectorAll('.gc');
+  for (var i = 0; i < cards.length; i++) cards[i].classList.remove('on');
+  var el = document.getElementById('gc-' + k);
+  if (el) { el.classList.add('on'); }
+  renderGalDetail(k);
+  var det = document.getElementById('gal-detail');
+  if (det && det.scrollIntoView) det.scrollIntoView({behavior:'smooth',block:'nearest'});
+};
+
+function renderGalDetail(k) {
+  var c = C[k];
+  var det = document.getElementById('gal-detail');
+  var casesHtml = c.cases.map(function(cs) {
+    return '<div class="wi"><span style="color:var(--green);flex-shrink:0">+</span><span>' + cs + '</span></div>';
+  }).join('');
+  var warnHtml = c.warns.map(function(w) {
+    return '<div class="wi"><span style="color:var(--yellow);flex-shrink:0">&#9888;</span><span>' + w + '</span></div>';
+  }).join('');
+  var altHtml = c.alts.map(function(a) {
+    return '<span class="alt-chip">' + a + '</span>';
+  }).join('');
+  det.innerHTML = '<div class="g2">'
+    + '<div>'
+    + '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'
+    + '<div style="font-size:30px">' + c.ic + '</div>'
+    + '<div><div style="font-family:var(--font-mono);font-size:15px;font-weight:600;color:' + c.tc + '">' + c.n + '</div>'
+    + '<span class="pill ' + c.tp + '">' + c.tl + '</span></div></div>'
+    + '<div style="height:220px;position:relative;margin-bottom:12px"><canvas id="gd-canvas"></canvas></div>'
+    + '<div class="rsec">Cuando usarlo</div>'
+    + '<div style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:8px">' + c.when + '</div>'
+    + '<div class="rsec">No lo uses cuando</div>'
+    + '<div style="font-size:12px;color:var(--text2);line-height:1.7">' + c.nope + '</div>'
+    + '</div>'
+    + '<div>'
+    + '<div class="rsec">Casos de uso tipicos</div>'
+    + casesHtml
+    + '<div class="rsec">Errores comunes</div>'
+    + warnHtml
+    + '<div class="rsec">Alternativas</div>'
+    + altHtml
+    + '<div class="ctog" onclick="toggleCode(this)"><span class="ctog-icon">&#9654;</span> Ver codigo Python / Plotly</div>'
+    + '<div class="cblock">' + c.code + '</div>'
+    + '</div></div>';
+  det.classList.add('on');
+  setTimeout(function() { try { drawChart(k, 'gd-canvas', 220); } catch(e) { console.error('chart error', e); } }, 80);
+}
+
+/* ─────────────── CHARTS ─────────────── */
+var chartRefs = {};
+function drawChart(id, canvasId, height, isMini) {
+  var canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  if (chartRefs[canvasId]) { try { chartRefs[canvasId].destroy(); } catch(e){} }
+  var ctx = canvas.getContext('2d');
+  var base = {
+    responsive:true, maintainAspectRatio:false, animation:false,
+    plugins:{legend:{display:!isMini}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:isMini?7:9},maxTicksLimit:6}},
+      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:isMini?7:9}}}
+    }
+  };
+  var noScale = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:10}}}};
+  var noScaleNoLeg = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}}};
+  var chart;
+
+  if (id==='bar') {
+    chart = new Chart(ctx, {type:'bar', data:{labels:['Lima','Arequipa','Trujillo','Cusco','Piura'],datasets:[{data:[45,18,15,12,10],backgroundColor:['rgba(96,165,250,.8)','rgba(96,165,250,.6)','rgba(96,165,250,.5)','rgba(96,165,250,.5)','rgba(96,165,250,.4)'],borderRadius:4}]}, options:base});
+  } else if (id==='line') {
+    var lw=[],lv=[];for(var i=0;i<12;i++){lw.push('S'+(i+1));lv.push(5000+i*200+Math.sin(i)*600);}
+    chart = new Chart(ctx, {type:'line', data:{labels:lw,datasets:[{data:lv,borderColor:'rgba(251,196,60,.8)',borderWidth:2,pointRadius:isMini?0:2,fill:false,tension:.3}]}, options:base});
+  } else if (id==='scatter') {
+    var sp=[]; for(var k=0;k<(isMini?20:50);k++){var sx=20+Math.random()*80;sp.push({x:Math.round(sx),y:Math.round(sx*8+Math.random()*200-100)});}
+    var so = Object.assign({},base); so.scales.x.title={display:!isMini,text:'Ticket (S/.)',color:'#4d566b',font:{size:8}}; so.scales.y.title={display:!isMini,text:'Revenue',color:'#4d566b',font:{size:8}};
+    chart = new Chart(ctx, {type:'scatter', data:{datasets:[{data:sp,backgroundColor:'rgba(74,240,176,.5)',pointRadius:isMini?3:4,showLine:false}]}, options:so});
+  } else if (id==='histogram') {
+    chart = new Chart(ctx, {type:'bar', data:{labels:[20,35,50,65,80,95,110,125,140,155],datasets:[{data:[3,8,20,35,40,28,15,7,3,1],backgroundColor:'rgba(167,139,250,.6)',borderRadius:3}]}, options:base});
+  } else if (id==='boxplot') {
+    chart = new Chart(ctx, {type:'bar', data:{labels:['Champions','Loyal','At Risk','Lost'],datasets:[{label:'Mediana revenue',data:[850,520,280,90],backgroundColor:['rgba(74,240,176,.6)','rgba(96,165,250,.6)','rgba(251,146,60,.6)','rgba(248,113,113,.6)'],borderRadius:4}]}, options:base});
+  } else if (id==='heatmap') {
+    var hv=['edad','saldo','visitas','ticket']; var hm=[[1,.05,-.12,.08],[.05,1,.04,.18],[-.12,.04,1,.15],[.08,.18,.15,1]];
+    var hd=[]; hv.forEach(function(r,i){hv.forEach(function(col,j){hd.push({x:j,y:i,r:Math.abs(hm[i][j])*18+3,v:hm[i][j]});});});
+    var ho = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{type:'category',labels:hv,grid:{display:false},ticks:{color:'#4d566b',font:{size:isMini?7:9}}},y:{type:'category',labels:hv,grid:{display:false},ticks:{color:'#4d566b',font:{size:isMini?7:9}}}}};
+    chart = new Chart(ctx, {type:'bubble', data:{datasets:[{data:hd.map(function(d){return {x:d.x,y:d.y,r:d.r,v:d.v};}),backgroundColor:hd.map(function(d){return d.v>0?'rgba(96,165,250,'+(0.2+Math.abs(d.v)*0.6)+')':'rgba(248,113,113,'+(0.2+Math.abs(d.v)*0.6)+')';})
+    }]}, options:ho});
+  } else if (id==='pie') {
+    chart = new Chart(ctx, {type:'doughnut', data:{labels:['Organico','Pagado','Social','Directo'],datasets:[{data:[38,32,18,12],backgroundColor:['rgba(74,240,176,.6)','rgba(96,165,250,.6)','rgba(251,146,60,.6)','rgba(167,139,250,.5)'],borderColor:'transparent'}]}, options:noScale});
+  } else if (id==='area') {
+    var ams=['E','F','M','A','M','J','J','A','S','O','N','D'];
+    var ao = Object.assign({},base); ao.plugins = {legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:10}}};
+    chart = new Chart(ctx, {type:'line', data:{labels:ams,datasets:[{label:'Pagado',data:[8,9,11,10,12,13,15,14,16,18,22,25],fill:true,backgroundColor:'rgba(96,165,250,.2)',borderColor:'rgba(96,165,250,.7)',tension:.3,pointRadius:0},{label:'Organico',data:[5,6,6,7,8,8,9,10,11,12,14,16],fill:true,backgroundColor:'rgba(74,240,176,.15)',borderColor:'rgba(74,240,176,.7)',tension:.3,pointRadius:0}]}, options:ao});
+  } else if (id==='funnel') {
+    var fb = Object.assign({},base); fb.indexAxis='y';
+    chart = new Chart(ctx, {type:'bar', data:{labels:['Visita','Producto','Carrito','Pago'],datasets:[{data:[100,45,12,4],backgroundColor:['rgba(96,165,250,.7)','rgba(74,240,176,.6)','rgba(251,196,60,.6)','rgba(251,146,60,.7)'],borderRadius:3,barPercentage:.5}]}, options:fb});
+  } else if (id==='treemap') {
+    var tp2 = Object.assign({},base); tp2.plugins={legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:8}}};
+    chart = new Chart(ctx, {type:'bar', data:{labels:['Ropa','Electro','Hogar','Deportes'],datasets:[{label:'Premium',data:[35,28,18,12],backgroundColor:'rgba(74,240,176,.6)',borderRadius:4},{label:'Mid',data:[22,15,14,10],backgroundColor:'rgba(96,165,250,.5)',borderRadius:4},{label:'Entry',data:[12,8,9,6],backgroundColor:'rgba(251,146,60,.5)',borderRadius:4}]}, options:tp2});
+  } else if (id==='waterfall') {
+    chart = new Chart(ctx, {type:'bar', data:{labels:['Base','Upsell','+Nuevos','-Churn','Total'],datasets:[{data:[80,15,22,-8,109],backgroundColor:['rgba(96,165,250,.5)','rgba(74,240,176,.6)','rgba(74,240,176,.6)','rgba(248,113,113,.6)','rgba(251,196,60,.6)'],borderRadius:4}]}, options:base});
+  } else if (id==='bullet') {
+    var bp = Object.assign({},base); bp.plugins={legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:8}}};
+    chart = new Chart(ctx, {type:'bar', data:{labels:['Revenue','CTR','Retencion'],datasets:[{label:'Meta',data:[100,8,85],backgroundColor:'rgba(255,255,255,.1)',borderRadius:4,barPercentage:.8},{label:'Actual',data:[87,6.2,78],backgroundColor:['rgba(74,240,176,.7)','rgba(251,146,60,.7)','rgba(248,113,113,.6)'],borderRadius:4,barPercentage:.5}]}, options:bp});
+  } else if (id==='sunburst') {
+    chart = new Chart(ctx, {type:'doughnut', data:{labels:['Google','Email','Social','Directo','Referral','Direct'],datasets:[{data:[30,20,15,12,13,10],backgroundColor:['rgba(96,165,250,.7)','rgba(74,240,176,.6)','rgba(251,146,60,.6)','rgba(167,139,250,.6)','rgba(244,114,182,.5)','rgba(45,212,191,.5)'],borderColor:'rgba(10,13,18,.5)',borderWidth:2}]}, options:noScale});
+  } else if (id==='sankey') {
+    // Simulate with stacked bar showing flows
+    var sp2 = Object.assign({},base); sp2.plugins={legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:8}}};
+    chart = new Chart(ctx, {type:'bar', data:{labels:['Adquisicion','Activacion','Retencion'],datasets:[{label:'Google',data:[400,280,180],backgroundColor:'rgba(96,165,250,.6)',borderRadius:3},{label:'Email',data:[200,160,130],backgroundColor:'rgba(74,240,176,.5)',borderRadius:3},{label:'Social',data:[150,90,60],backgroundColor:'rgba(251,146,60,.5)',borderRadius:3}]}, options:sp2});
+  } else if (id==='violin') {
+    // Simulate violin with line/area
+    var vx=[],vy1=[],vy2=[];
+    for(var vi=0;vi<20;vi++){vx.push(vi);vy1.push(400+Math.sin(vi*0.5)*200+Math.random()*100);vy2.push(200+Math.sin(vi*0.5+1)*100+Math.random()*80);}
+    var vo = Object.assign({},base); vo.plugins={legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:8}}};
+    chart = new Chart(ctx, {type:'line', data:{labels:vx,datasets:[{label:'Champions',data:vy1,borderColor:'rgba(74,240,176,.8)',backgroundColor:'rgba(74,240,176,.1)',fill:true,tension:.4,pointRadius:0},{label:'Lost',data:vy2,borderColor:'rgba(248,113,113,.8)',backgroundColor:'rgba(248,113,113,.1)',fill:true,tension:.4,pointRadius:0}]}, options:vo});
+  } else if (id==='bubble') {
+    var bbd=[];
+    var bbr=['Lima','Arequipa','Trujillo','Cusco','Piura'];
+    var bbc=['rgba(96,165,250,.6)','rgba(74,240,176,.6)','rgba(251,146,60,.6)','rgba(167,139,250,.6)','rgba(244,114,182,.6)'];
+    for(var bi=0;bi<5;bi++) bbd.push({x:10+bi*15,y:5+bi*8+Math.random()*10,r:(bi+1)*6,label:bbr[bi]});
+    var bbo = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.raw.label||'';}}}},scales:{x:{title:{display:!isMini,text:'Inversion',color:'#4d566b',font:{size:8}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:isMini?7:9}}},y:{title:{display:!isMini,text:'Revenue',color:'#4d566b',font:{size:8}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:isMini?7:9}}}}};
+    chart = new Chart(ctx, {type:'bubble', data:{datasets:bbd.map(function(d,i){return {data:[d],backgroundColor:bbc[i],label:d.label};})}, options:bbo});
+  } else if (id==='gantt') {
+    var gb = Object.assign({},base); gb.indexAxis='y';
+    chart = new Chart(ctx, {type:'bar', data:{labels:['Camp. Navidad','Camp. Black Friday','Email Retencion','Social Awareness'],datasets:[{label:'Duracion',data:[isMini?[8,12]:[8,14],[5,9],[1,12],[3,11]],backgroundColor:['rgba(96,165,250,.6)','rgba(74,240,176,.6)','rgba(251,146,60,.6)','rgba(167,139,250,.6)'],borderRadius:4,barPercentage:.6}]}, options:gb});
+  } else if (id==='radar') {
+    var rd = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:8}}},scales:{r:{grid:{color:'rgba(255,255,255,.08)'},ticks:{display:false},pointLabels:{color:'#8891a8',font:{size:isMini?7:9}}}}};
+    chart = new Chart(ctx, {type:'radar', data:{labels:['Recency','Frequency','Monetary','Tenure','NPS'],datasets:[{label:'Champions',data:[90,85,95,80,88],backgroundColor:'rgba(74,240,176,.2)',borderColor:'rgba(74,240,176,.8)',borderWidth:2,pointRadius:isMini?2:3},{label:'Lost',data:[20,15,18,35,22],backgroundColor:'rgba(248,113,113,.2)',borderColor:'rgba(248,113,113,.7)',borderWidth:2,pointRadius:isMini?2:3}]}, options:rd});
+  } else if (id==='calendar') {
+    var cd=[]; for(var ci=0;ci<(isMini?20:35);ci++) cd.push({x:ci%7,y:Math.floor(ci/7),r:(Math.random()*0.8+0.1)*12});
+    var co = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:{x:{type:'linear',min:0,max:6,grid:{display:false},ticks:{display:false}},y:{type:'linear',min:0,max:4,grid:{display:false},ticks:{display:false}}}};
+    chart = new Chart(ctx, {type:'bubble', data:{datasets:[{data:cd,backgroundColor:cd.map(function(d){var a=d.r/12;return 'rgba(74,240,176,'+a.toFixed(2)+')';})
+    }]}, options:co});
+  } else if (id==='parallel') {
+    var pdata=[];for(var pi=0;pi<(isMini?15:40);pi++) pdata.push([20+Math.random()*50,1000+Math.random()*9000,2+Math.random()*18,30+Math.random()*120]);
+    var po = Object.assign({},base); po.plugins={legend:{display:false}};
+    chart = new Chart(ctx, {type:'scatter', data:{datasets:[{data:pdata.map(function(d){return {x:d[0],y:d[2]};}),backgroundColor:'rgba(167,139,250,.4)',pointRadius:isMini?2:3,showLine:false}]}, options:po});
+  }
+
+  if (chart) chartRefs[canvasId] = chart;
+}
+
+/* ─────────────── UTILS ─────────────── */
+window.toggleCode = function(btn) {
+  btn.classList.toggle('open');
+  var b = btn.nextElementSibling;
+  if (b) b.classList.toggle('shown');
+};
+
+window.switchTab = function(t) {
+  var tabs = document.querySelectorAll('.tab');
+  var panels = document.querySelectorAll('.panel');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+  for (var i = 0; i < panels.length; i++) panels[i].classList.remove('active');
+  document.querySelector('[data-tab="' + t + '"]').classList.add('active');
+  document.getElementById('panel-' + t).classList.add('active');
+  if (t === 'gallery' && !galBuilt) { buildGallery(); galBuilt = true; }
+};
+var galBuilt = false;
+
+/* ─────────────── EVENT DELEGATION (gallery) ─────────────── */
+document.addEventListener('click', function(e){
+  var f = e.target.closest && e.target.closest('.gf');
+  if (f && f.dataset && f.dataset.filter) { setFilter(f.dataset.filter); return; }
+  var g = e.target.closest && e.target.closest('.gc');
+  if (g && g.dataset && g.dataset.chart) { selectGal(g.dataset.chart); return; }
+});
+
+/* ─────────────── INIT ─────────────── */
+renderTree();
+
+})();
+</script>
+</body>
+</html>

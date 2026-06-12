@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decision Tree · Regresion</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--amber:#f59e0b;
+  --font-mono:'IBM Plex Mono',monospace;
+  --font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em;background:rgba(245,158,11,.15);color:var(--amber)}
+.hdr-title{font-family:var(--font-mono);font-size:14px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.level-bar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg2)}
+.level-btn{display:flex;align-items:center;gap:10px;padding:15px 28px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;flex:1;justify-content:center}
+.level-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s;flex-shrink:0}
+.level-info{display:flex;flex-direction:column;gap:2px}
+.level-name{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text3);transition:color .2s;letter-spacing:.03em}
+.level-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.level-sep{width:1px;background:var(--border);flex-shrink:0}
+.main{max-width:1060px;margin:0 auto;padding:26px 32px}
+.lp{display:none}.lp.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+.banner{border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;display:flex;gap:18px;align-items:flex-start}
+.banner-icon{font-size:34px;flex-shrink:0;margin-top:2px}
+.banner h2{font-family:var(--font-mono);font-size:17px;font-weight:600;margin-bottom:6px}
+.banner p{font-size:13px;line-height:1.7}
+.chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:3px 9px;border-radius:4px;font-weight:500}
+.mex-grid{display:grid;gap:12px;margin-bottom:18px}
+.mex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;cursor:pointer;transition:border-color .15s}
+.mex:hover{border-color:var(--border2)}
+.mex-top{display:flex;align-items:center;gap:12px}
+.mex-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 11px;border-radius:5px;white-space:nowrap}
+.mex-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.mex-value{font-family:var(--font-mono);font-size:20px;font-weight:600;min-width:90px;text-align:right}
+.mex-toggle{font-size:16px;color:var(--text3);transition:transform .2s;margin-left:6px}
+.mex.open .mex-toggle{transform:rotate(180deg)}
+.mex-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.mex.open .mex-body{display:block}
+.mbg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fbox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border)}
+.flbl{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:.06em}
+.ibox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.65}
+.bar-track{height:5px;background:var(--border);border-radius:3px;margin-top:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.chart-wrap{position:relative;height:260px}
+.chart-sm{position:relative;height:210px}
+.sl-row{margin-bottom:11px}
+.sl-lbl{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:4px}
+.sl-lbl span:first-child{color:var(--text2)}.sl-lbl span:last-child{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid var(--bg);background:var(--amber)}
+.htrow{display:grid;grid-template-columns:60px 80px 70px 80px 70px 70px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.htrow:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-badge" id="hdrBadge">BASICO</span>
+  <span class="hdr-title">Decision Tree · Regresion</span>
+  <span class="hdr-sub">Prediccion de revenue &mdash; tiendas e-commerce &middot; 200 obs.</span>
+</div>
+
+<div class="level-bar">
+  <div class="level-btn" id="btn-basic" onclick="switchLevel('basic')">
+    <div class="level-icon" id="icon-basic">&#127807;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-basic">Basico</div>
+      <div class="level-sub">MSE como split &middot; Profundidad &middot; MAE/R&sup2;</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-inter" onclick="switchLevel('inter')">
+    <div class="level-icon" id="icon-inter">&#9881;&#65039;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-inter">Intermedio</div>
+      <div class="level-sub">Overfitting &middot; Varianza &middot; Poda</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-adv" onclick="switchLevel('adv')">
+    <div class="level-icon" id="icon-adv">&#128300;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-adv">Avanzado</div>
+      <div class="level-sub">Feature importance &middot; Curva validacion &middot; Comparador</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ===== BASICO ===== -->
+<div class="lp active" id="panel-basic">
+  <div class="banner" style="background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.15)">
+    <div class="banner-icon">&#127807;</div>
+    <div>
+      <h2 style="color:var(--amber)">Nivel Basico &mdash; Como divide el arbol en regresion</h2>
+      <p class="prose">Predecimos el <strong style="color:var(--text)">revenue semanal en S/.</strong> de tiendas e-commerce en funcion de: visitas, ticket medio, tasa de conversion, antiguedad y campanas activas. En regresion el arbol no predice una clase sino un <strong style="color:var(--text)">valor continuo</strong>: el promedio del nodo hoja.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(245,158,11,.12);color:var(--amber)">MSE como criterio de split</span>
+        <span class="chip" style="background:rgba(245,158,11,.12);color:var(--amber)">Hoja predice la media</span>
+        <span class="chip" style="background:rgba(245,158,11,.12);color:var(--amber)">MAE &middot; RMSE &middot; R&sup2; para evaluar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Arbol visual regresion -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Arbol de regresion &mdash; depth=3 &middot; prediccion de revenue</div>
+    <div style="overflow-x:auto">
+      <svg width="780" height="310" viewBox="0 0 780 310" style="display:block;margin:0 auto">
+        <!-- Root -->
+        <rect x="280" y="10" width="220" height="65" rx="8" fill="rgba(245,158,11,.12)" stroke="rgba(245,158,11,.35)" stroke-width="1.5"/>
+        <text x="390" y="30" text-anchor="middle" fill="#fcd34d" font-family="IBM Plex Mono" font-size="10" font-weight="600">Visitas &lt; 1200?</text>
+        <text x="390" y="46" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">MSE=4,820,000 | n=140</text>
+        <text x="390" y="60" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">media=S/.6,840</text>
+        <!-- lines L1 -->
+        <line x1="330" y1="75" x2="185" y2="125" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>
+        <line x1="450" y1="75" x2="595" y2="125" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>
+        <text x="240" y="108" fill="#4d566b" font-family="IBM Plex Mono" font-size="9">SI (n=72)</text>
+        <text x="505" y="108" fill="#4d566b" font-family="IBM Plex Mono" font-size="9">NO (n=68)</text>
+        <!-- L1 left -->
+        <rect x="90" y="125" width="190" height="65" rx="8" fill="rgba(96,165,250,.10)" stroke="rgba(96,165,250,.25)" stroke-width="1.5"/>
+        <text x="185" y="145" text-anchor="middle" fill="#93c5fd" font-family="IBM Plex Mono" font-size="10" font-weight="600">Conv.Rate &lt; 2.5%?</text>
+        <text x="185" y="161" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">MSE=1,960,000 | n=72</text>
+        <text x="185" y="175" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">media=S/.4,120</text>
+        <!-- L1 right -->
+        <rect x="500" y="125" width="190" height="65" rx="8" fill="rgba(74,240,176,.09)" stroke="rgba(74,240,176,.22)" stroke-width="1.5"/>
+        <text x="595" y="145" text-anchor="middle" fill="#6ee7b7" font-family="IBM Plex Mono" font-size="10" font-weight="600">Ticket &lt; S/.85?</text>
+        <text x="595" y="161" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">MSE=2,340,000 | n=68</text>
+        <text x="595" y="175" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">media=S/.9,780</text>
+        <!-- lines L2 -->
+        <line x1="140" y1="190" x2="80" y2="240" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>
+        <line x1="230" y1="190" x2="290" y2="240" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>
+        <line x1="550" y1="190" x2="490" y2="240" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>
+        <line x1="640" y1="190" x2="700" y2="240" stroke="rgba(255,255,255,.18)" stroke-width="1.2"/>
+        <!-- Leaves -->
+        <rect x="20" y="240" width="120" height="58" rx="7" fill="rgba(96,165,250,.12)" stroke="rgba(96,165,250,.3)" stroke-width="1.5"/>
+        <text x="80" y="259" text-anchor="middle" fill="#93c5fd" font-family="IBM Plex Mono" font-size="9" font-weight="600">HOJA 1</text>
+        <text x="80" y="273" text-anchor="middle" fill="#fbbf24" font-family="IBM Plex Mono" font-size="11" font-weight="700">S/.2,480</text>
+        <text x="80" y="288" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">n=38 | MSE=420k</text>
+
+        <rect x="230" y="240" width="120" height="58" rx="7" fill="rgba(96,165,250,.10)" stroke="rgba(96,165,250,.22)" stroke-width="1.5"/>
+        <text x="290" y="259" text-anchor="middle" fill="#93c5fd" font-family="IBM Plex Mono" font-size="9" font-weight="600">HOJA 2</text>
+        <text x="290" y="273" text-anchor="middle" fill="#fbbf24" font-family="IBM Plex Mono" font-size="11" font-weight="700">S/.5,940</text>
+        <text x="290" y="288" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">n=34 | MSE=610k</text>
+
+        <rect x="430" y="240" width="120" height="58" rx="7" fill="rgba(74,240,176,.10)" stroke="rgba(74,240,176,.22)" stroke-width="1.5"/>
+        <text x="490" y="259" text-anchor="middle" fill="#6ee7b7" font-family="IBM Plex Mono" font-size="9" font-weight="600">HOJA 3</text>
+        <text x="490" y="273" text-anchor="middle" fill="#fbbf24" font-family="IBM Plex Mono" font-size="11" font-weight="700">S/.7,850</text>
+        <text x="490" y="288" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">n=30 | MSE=890k</text>
+
+        <rect x="640" y="240" width="120" height="58" rx="7" fill="rgba(74,240,176,.14)" stroke="rgba(74,240,176,.35)" stroke-width="1.5"/>
+        <text x="700" y="259" text-anchor="middle" fill="#4af0b0" font-family="IBM Plex Mono" font-size="9" font-weight="600">HOJA 4</text>
+        <text x="700" y="273" text-anchor="middle" fill="#fbbf24" font-family="IBM Plex Mono" font-size="11" font-weight="700">S/.12,200</text>
+        <text x="700" y="288" text-anchor="middle" fill="#8891a8" font-family="IBM Plex Mono" font-size="9">n=38 | MSE=720k</text>
+      </svg>
+    </div>
+    <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-top:4px">Cada hoja predice la <strong style="color:var(--amber)">media del revenue</strong> de los clientes en ese nodo &middot; MSE mide la varianza residual</div>
+  </div>
+
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(245,158,11,.12);color:var(--amber)">MSE SPLIT</div>
+        <div class="mex-title">MSE como criterio de division &mdash; minimiza varianza intra-nodo</div>
+        <div class="mex-value" style="color:var(--amber)">4,820,000</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:65%;background:var(--amber)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--amber)"><div class="flbl">FORMULA DEL SPLIT</div>MSE&#8209;gain = MSE(padre) &minus; [n&#8341;/n &times; MSE(izq) + n&#8345;/n &times; MSE(der)]</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">En regresion no hay clases ni impureza Gini. La impureza es la <strong style="color:var(--text)">varianza del revenue</strong> en el nodo. El arbol busca el split que mas reduce la varianza combinada de los dos hijos.<br><br>Es exactamente igual que minimizar el MSE de un modelo que predice la media de cada grupo.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Ejemplo concreto</strong><br><br>Nodo raiz: 140 tiendas con revenue entre S/.800 y S/.15,000. Varianza (MSE) = 4,820,000.<br><br>Split "Visitas &lt; 1200":<br>&bull; Grupo izq (72 tiendas): MSE = 1,960,000<br>&bull; Grupo der (68 tiendas): MSE = 2,340,000<br>&bull; MSE ponderado = 72/140&times;1.96M + 68/140&times;2.34M = 2,143,000<br>&bull; Ganancia = 4,820,000 &minus; 2,143,000 = <strong style="color:var(--amber)">2,677,000</strong><br><br>El arbol elige este split porque ninguna otra feature produce mayor ganancia.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(74,240,176,.12);color:var(--green)">PREDICCION</div>
+        <div class="mex-title">La hoja predice la media &mdash; no una clase</div>
+        <div class="mex-value" style="color:var(--green)">S/. 2,480</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:25%;background:var(--green)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--green)"><div class="flbl">MECANISMO</div>y&#770; = mean(y&#8336; para todos los puntos en la hoja)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Cuando una nueva tienda llega al arbol, recorre los nodos respondiendo las preguntas hasta llegar a una hoja. La prediccion es simplemente <strong style="color:var(--text)">el promedio del revenue</strong> de todas las tiendas de entrenamiento que cayeron en esa misma hoja.<br><br>Eso significa que el arbol de regresion es una <em>funcion escalonada</em>: dentro de una hoja, todas las tiendas reciben la misma prediccion.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Diferencia critica con regresion lineal</strong><br><br>La regresion lineal predice una linea continua. El arbol de decision predice una <strong style="color:var(--text)">funcion escalonada</strong>: zonas rectangulares, cada una con su media.<br><br>Consecuencia: el arbol de regresion <strong style="color:var(--text)">no puede extrapolar</strong>. Si llega una tienda con 5,000 visitas (fuera del rango de entrenamiento), predice la media de las tiendas con mas visitas &mdash; no extrapola la tendencia. En series de tiempo esto es un problema serio.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">METRICAS</div>
+        <div class="mex-title">MAE, RMSE y R&sup2; para evaluar el arbol de regresion</div>
+        <div class="mex-value" style="color:var(--blue)">R&sup2; = 0.76</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:76%;background:var(--blue)"></div></div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--blue)"><div class="flbl">METRICAS CLAVE depth=3</div>MAE = S/.680<br>RMSE = S/.890<br>R&sup2; = 0.76<br>MAPE = 9.8%</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">Las mismas metricas del Regression Lab, aplicadas al arbol. MAE = cuanto se equivoca en promedio por tienda. R&sup2; = que fraccion de la varianza del revenue explica el arbol.<br><br>Diferencia vs regresion lineal: el arbol puede capturar relaciones no lineales (ej. umbrales de visitas) que la regresion lineal no puede.</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Por que RMSE &gt; MAE</strong><br><br>MAE = S/.680, RMSE = S/.890, ratio = 1.31. Hay tiendas con revenue muy alto (picos de campana) que el arbol no puede predecir bien porque solo conoce la media de su hoja.<br><br>La funcion escalonada del arbol de regresion siempre tendra mayor RMSE que MAE cuando hay outliers de revenue, porque no puede ajustarse a valores extremos dentro de un nodo.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulador basico -->
+  <div class="card">
+    <div class="sec">Simulador &mdash; profundidad y metricas de regresion en tiempo real</div>
+    <div class="g2">
+      <div>
+        <div class="sl-row">
+          <div class="sl-lbl"><span>Profundidad del arbol (max_depth)</span><span style="color:var(--amber)" id="sv-depth">3</span></div>
+          <input type="range" id="sl-depth" min="1" max="8" value="3" step="1">
+        </div>
+        <div style="display:grid;gap:8px;margin-bottom:12px">
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between"><span style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">MAE TEST</span><span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--amber)" id="sv-mae">S/. 680</span></div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between"><span style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">RMSE TEST</span><span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--orange)" id="sv-rmse">S/. 890</span></div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between"><span style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">R&sup2; TEST</span><span style="font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--blue)" id="sv-r2">0.760</span></div>
+          <div style="background:var(--bg3);border-radius:var(--r);padding:10px 14px;display:flex;justify-content:space-between"><span style="font-size:10px;font-family:var(--font-mono);color:var(--text3)">R&sup2; TRAIN &minus; TEST</span><span style="font-family:var(--font-mono);font-size:18px;font-weight:600" id="sv-gap">+0.06</span></div>
+        </div>
+        <div style="padding:10px 12px;background:var(--bg3);border-radius:var(--r);font-size:11px;color:var(--text3);line-height:1.6" id="b-interp"></div>
+      </div>
+      <div>
+        <div class="chart-wrap"><canvas id="b-scatter"></canvas></div>
+        <div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);text-align:center;margin-top:5px">Real vs Predicho &middot; diagonal = prediccion perfecta &middot; escalones = funcion del arbol</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INTERMEDIO ===== -->
+<div class="lp" id="panel-inter">
+  <div class="banner" style="background:rgba(251,146,60,.05);border:1px solid rgba(251,146,60,.15)">
+    <div class="banner-icon">&#9881;&#65039;</div>
+    <div>
+      <h2 style="color:var(--orange)">Nivel Intermedio &mdash; Overfitting y control de varianza</h2>
+      <p class="prose">En regresion, el overfitting es aun mas visible que en clasificacion: un arbol profundo crea hojas muy pequenas que memorizan el revenue de 1-2 tiendas. La curva de validacion muestra exactamente donde el <strong style="color:var(--text)">R&sup2; de train se dispara</strong> mientras el de test se colapsa.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">Curva R&sup2; train vs test</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">MAE vs RMSE por depth</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">Hiperparametros de poda</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">Curva de validacion &mdash; R&sup2; train vs test segun profundidad</div>
+    <div class="g2">
+      <div>
+        <div class="chart-wrap"><canvas id="i-r2-curve"></canvas></div>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:11px;font-family:var(--font-mono)">
+          <span style="color:var(--amber)">&#9644; R&sup2; Train</span>
+          <span style="color:var(--orange)">&#9644; R&sup2; Test</span>
+        </div>
+      </div>
+      <div>
+        <p class="prose" style="margin-bottom:14px">En regresion el overfitting es brutalmente claro:</p>
+        <div style="display:grid;gap:10px">
+          <div class="card-sm" style="border-left:3px solid var(--blue)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:5px">UNDERFITTING (depth 1-2)</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">R&sup2; test &asymp; 0.55&ndash;0.65. El arbol divide en 2-4 grupos muy amplios. Las predicciones son la media de grupos enormes &mdash; muy lejos del revenue real de cada tienda.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--green)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-bottom:5px">OPTIMO (depth 3-4)</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">R&sup2; test en su maximo (~0.76). El arbol divide en 8-16 grupos con sentido de negocio. Gap train-test pequeno (0.06-0.10).</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--red)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:5px">OVERFITTING (depth 5+)</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">R&sup2; train &rarr; 1.0 pero R&sup2; test colapsa. Cada hoja tiene 1-3 tiendas. El MAE test sube porque el arbol no generaliza.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="sec">MAE y RMSE por profundidad &mdash; el RMSE delata el overfitting antes</div>
+    <div class="g2">
+      <div class="chart-sm"><canvas id="i-error-curve"></canvas></div>
+      <div>
+        <p class="prose" style="margin-bottom:12px">En regresion, el RMSE detecta el overfitting avant que el MAE porque:</p>
+        <div class="card-sm" style="margin-bottom:8px">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--orange);margin-bottom:5px">POR QUE RMSE SUBE PRIMERO</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">Al overfittar, el arbol produce predicciones muy precisas en train pero con errores grandes y concentrados en test. El RMSE penaliza esos errores grandes al cuadrado, por lo que detecta el overfitting antes que el MAE.</div>
+        </div>
+        <div class="card-sm">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:5px">SENAL DE OVERFITTING EN REGRESION</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6">Ratio RMSE/MAE &gt; 1.5 en test con arbol profundo = overfitting severo. Las hojas pequenas capturan outliers de revenue que no son reales sino ruido.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparador hiperparametros -->
+  <div class="card">
+    <div class="sec" style="margin-bottom:14px">Comparador de configuraciones de regularizacion</div>
+    <div style="overflow-x:auto">
+      <div class="htrow" style="border-bottom:2px solid var(--border2)">
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">DEPTH</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">MIN_LEAF</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">CRITERIO</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">MAE TEST</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">R&sup2; TEST</span>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">OVERFIT</span>
+      </div>
+      <div id="i-hyper-table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AVANZADO ===== -->
+<div class="lp" id="panel-adv">
+  <div class="banner" style="background:rgba(74,240,176,.05);border:1px solid rgba(74,240,176,.15)">
+    <div class="banner-icon">&#128300;</div>
+    <div>
+      <h2 style="color:var(--green)">Nivel Avanzado &mdash; Feature importance y extension a Gradient Boosting</h2>
+      <p class="prose">En regresion, la feature importance mide cuanto reduce el MSE cada variable en los splits. Es la base para entender <strong style="color:var(--text)">que variables de la tienda mas impactan el revenue</strong> y el punto de partida para XGBoost y LightGBM.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">Feature importance (MSE)</span>
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">Curva validacion completa</span>
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">DT vs RF vs GBM</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2" style="margin-bottom:18px">
+    <div class="card">
+      <div class="sec">Feature importance &mdash; reduccion de MSE por variable</div>
+      <div class="chart-wrap"><canvas id="adv-fi-chart"></canvas></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.65">Visitas domina porque el volumen de trafico es el principal driver de revenue. Conversion Rate es el segundo: una tienda con muchas visitas pero baja conversion pierde revenue. Ticket medio completa el modelo.</div>
+    </div>
+    <div class="card">
+      <div class="sec">Curva de validacion &mdash; MAE + R&sup2; train vs test</div>
+      <div class="chart-wrap"><canvas id="adv-val-chart"></canvas></div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-top:8px;font-size:11px;font-family:var(--font-mono)">
+        <span style="color:var(--amber)">&#9644; R&sup2; Train</span>
+        <span style="color:var(--orange)">&#9644; R&sup2; Test</span>
+        <span style="color:var(--blue)">&#9135; MAE Test (S/.)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="sec" style="margin-bottom:14px">Decision Tree vs Random Forest vs Gradient Boosting</div>
+    <div class="g2">
+      <div id="adv-cmp-table"></div>
+      <div style="background:var(--bg3);border-radius:var(--r);padding:16px 18px;font-size:12px;color:var(--text2);line-height:1.85" id="adv-verdict"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function(){
+
+var DEPTH_M = {
+  1:{tr2:0.62,te2:0.58,mae:1240,rmse:1580,gap:0.04},
+  2:{tr2:0.72,te2:0.68,mae:920, rmse:1180,gap:0.04},
+  3:{tr2:0.82,te2:0.76,mae:680, rmse:890, gap:0.06},
+  4:{tr2:0.89,te2:0.76,mae:660, rmse:870, gap:0.13},
+  5:{tr2:0.94,te2:0.72,mae:700, rmse:930, gap:0.22},
+  6:{tr2:0.97,te2:0.66,mae:780, rmse:1050,gap:0.31},
+  7:{tr2:0.99,te2:0.60,mae:880, rmse:1180,gap:0.39},
+  8:{tr2:1.00,te2:0.54,mae:1020,rmse:1360,gap:0.46}
+};
+var FEAT_NAMES = ['Visitas','Conv. Rate','Ticket Medio','Antiguedad','Campanas'];
+var FEAT_IMP   = [0.35,0.28,0.20,0.10,0.07];
+var HYPER_R = [
+  {d:2,ml:2, cr:'squared_error',mae:920, r2:0.68,ov:0.04},
+  {d:3,ml:2, cr:'squared_error',mae:680, r2:0.76,ov:0.06},
+  {d:3,ml:5, cr:'squared_error',mae:650, r2:0.77,ov:0.04},
+  {d:3,ml:10,cr:'squared_error',mae:670, r2:0.75,ov:0.02},
+  {d:4,ml:5, cr:'squared_error',mae:660, r2:0.76,ov:0.13},
+  {d:4,ml:10,cr:'squared_error',mae:640, r2:0.77,ov:0.09},
+  {d:3,ml:5, cr:'absolute_error',mae:630,r2:0.76,ov:0.04},
+  {d:4,ml:10,cr:'absolute_error',mae:625,r2:0.77,ov:0.08}
+];
+
+window.switchLevel=function(lv){
+  var c={basic:'var(--amber)',inter:'var(--orange)',adv:'var(--green)'};
+  var bg={basic:'rgba(245,158,11,.15)',inter:'rgba(251,146,60,.15)',adv:'rgba(74,240,176,.15)'};
+  var lb={basic:'BASICO',inter:'INTERMEDIO',adv:'AVANZADO'};
+  ['basic','inter','adv'].forEach(function(l){
+    document.getElementById('btn-'+l).style.borderBottom='3px solid transparent';
+    document.getElementById('icon-'+l).style.background='';
+    document.getElementById('name-'+l).style.color='var(--text3)';
+    document.getElementById('panel-'+l).classList.remove('active');
+  });
+  document.getElementById('btn-'+lv).style.borderBottom='3px solid '+c[lv];
+  document.getElementById('icon-'+lv).style.background=bg[lv];
+  document.getElementById('name-'+lv).style.color=c[lv];
+  document.getElementById('panel-'+lv).classList.add('active');
+  var badge=document.getElementById('hdrBadge');
+  badge.textContent=lb[lv]; badge.style.background=bg[lv]; badge.style.color=c[lv];
+  if(lv==='inter'&&!done.inter){initInter();done.inter=true;}
+  if(lv==='adv'&&!done.adv){initAdv();done.adv=true;}
+};
+window.toggleMex=function(el){el.classList.toggle('open');};
+var done={basic:true,inter:false,adv:false};
+
+// BASICO
+var bScatter=null;
+function genScatterData(depth){
+  var m=DEPTH_M[depth];
+  var seed=42; function rng(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967295;}
+  var pts=[];
+  for(var i=0;i<60;i++){
+    var real=2000+rng()*12000;
+    var pred=real+(rng()-.5)*m.mae*3*(depth>4?1.5+rng():1);
+    pts.push({x:Math.round(real),y:Math.round(pred)});
+  }
+  return pts;
+}
+function buildScatter(depth){
+  var pts=genScatterData(depth);
+  var mn=Math.min.apply(null,pts.map(function(p){return Math.min(p.x,p.y);}));
+  var mx=Math.max.apply(null,pts.map(function(p){return Math.max(p.x,p.y);}));
+  if(!bScatter){
+    var ctx=document.getElementById('b-scatter').getContext('2d');
+    bScatter=new Chart(ctx,{type:'scatter',data:{datasets:[
+      {data:[{x:mn,y:mn},{x:mx,y:mx}],type:'line',borderColor:'rgba(255,255,255,.15)',borderDash:[5,5],borderWidth:1.5,pointRadius:0,fill:false,tension:0},
+      {data:pts,backgroundColor:'rgba(245,158,11,.6)',pointRadius:4,showLine:false}
+    ]},options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{mode:'point',callbacks:{label:function(c){return 'Real:S/.'+c.parsed.x+' | Pred:S/.'+c.parsed.y;}}}},
+      scales:{
+        x:{title:{display:true,text:'Revenue Real (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
+        y:{title:{display:true,text:'Revenue Predicho (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+      }
+    }});
+  } else {
+    bScatter.data.datasets[0].data=[{x:mn,y:mn},{x:mx,y:mx}];
+    bScatter.data.datasets[1].data=pts;
+    bScatter.update('none');
+  }
+}
+function updateSim(d){
+  var m=DEPTH_M[d];
+  document.getElementById('sv-depth').textContent=d;
+  document.getElementById('sv-mae').textContent='S/. '+m.mae;
+  document.getElementById('sv-rmse').textContent='S/. '+m.rmse;
+  document.getElementById('sv-r2').textContent=m.te2.toFixed(3);
+  var gapEl=document.getElementById('sv-gap');
+  gapEl.textContent='+'+(m.gap*100).toFixed(0)+'%';
+  gapEl.style.color=m.gap<0.08?'var(--green)':m.gap<0.18?'var(--orange)':'var(--red)';
+  var txt='';
+  if(d<=2) txt='Underfitting: R&sup2;='+m.te2.toFixed(2)+'. El arbol agrupa demasiado y no captura la variabilidad del revenue.';
+  else if(d<=4) txt='Zona optima: R&sup2;='+m.te2.toFixed(2)+', MAE=S/.'+m.mae+'. Buen balance entre capacidad y generalizacion.';
+  else txt='Overfitting: R&sup2; train='+m.tr2.toFixed(2)+' vs test='+m.te2.toFixed(2)+'. Gap '+((m.gap)*100).toFixed(0)+'%. El arbol memoriza hojas de 1-3 tiendas.';
+  document.getElementById('b-interp').textContent=txt;
+  buildScatter(d);
+}
+document.getElementById('sl-depth').addEventListener('input',function(){updateSim(parseInt(this.value));});
+
+// INTERMEDIO
+function initInter(){buildR2Curve();buildErrorCurve();buildHyperTable();}
+function buildR2Curve(){
+  var ds=[1,2,3,4,5,6,7,8];
+  var ctx=document.getElementById('i-r2-curve').getContext('2d');
+  new Chart(ctx,{type:'line',data:{
+    labels:ds.map(function(d){return 'd='+d;}),
+    datasets:[
+      {label:'Train R2',data:ds.map(function(d){return DEPTH_M[d].tr2;}),borderColor:'rgba(245,158,11,.8)',borderWidth:2,pointRadius:3,fill:false,tension:.3},
+      {label:'Test R2',data:ds.map(function(d){return DEPTH_M[d].te2;}),borderColor:'rgba(251,146,60,.9)',borderWidth:2,pointRadius:3,fill:false,tension:.3}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'R\u00b2',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0.4,max:1.05}
+    }
+  }});
+}
+function buildErrorCurve(){
+  var ds=[1,2,3,4,5,6,7,8];
+  var ctx=document.getElementById('i-error-curve').getContext('2d');
+  new Chart(ctx,{type:'line',data:{
+    labels:ds.map(function(d){return 'd='+d;}),
+    datasets:[
+      {label:'MAE',data:ds.map(function(d){return DEPTH_M[d].mae;}),borderColor:'rgba(96,165,250,.8)',borderWidth:2,pointRadius:3,fill:false,tension:.3},
+      {label:'RMSE',data:ds.map(function(d){return DEPTH_M[d].rmse;}),borderColor:'rgba(167,139,250,.8)',borderWidth:2,pointRadius:3,fill:false,tension:.3,borderDash:[4,3]}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{labels:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},boxWidth:10}}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'Error (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+    }
+  }});
+}
+function buildHyperTable(){
+  var best=HYPER_R.reduce(function(a,b){return b.r2>a.r2?b:a;});
+  var html=HYPER_R.map(function(r){
+    var isBest=(r===best);
+    var ovColor=r.ov<0.05?'var(--green)':r.ov<0.12?'var(--orange)':'var(--red)';
+    return '<div class="htrow" style="'+(isBest?'background:rgba(74,240,176,.04)':'')+'">'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--text)">'+(isBest?'&#9670; ':'')+'d='+r.d+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--text2)">ml='+r.ml+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">'+r.cr.replace('squared_error','MSE').replace('absolute_error','MAE')+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:'+(isBest?'var(--green)':'var(--text)')+'">S/.'+r.mae+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:13px;color:var(--blue)">'+r.r2.toFixed(2)+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:'+ovColor+'">'+(r.ov*100).toFixed(0)+'%</span>'
+      +'</div>';
+  }).join('');
+  document.getElementById('i-hyper-table').innerHTML=html;
+}
+
+// AVANZADO
+function initAdv(){buildFIChart();buildAdvValChart();buildCmpTable();}
+function buildFIChart(){
+  var ctx=document.getElementById('adv-fi-chart').getContext('2d');
+  var sorted=FEAT_NAMES.map(function(n,i){return {n:n,v:FEAT_IMP[i]};}).sort(function(a,b){return b.v-a.v;});
+  var mx=Math.max.apply(null,sorted.map(function(s){return s.v;}));
+  new Chart(ctx,{type:'bar',data:{
+    labels:sorted.map(function(s){return s.n;}),
+    datasets:[{data:sorted.map(function(s){return s.v;}),backgroundColor:sorted.map(function(s){var t=s.v/mx;return 'rgba(245,158,11,'+(.3+t*.5)+')';}),borderRadius:5}]
+  },options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Importancia: '+(c.parsed.x*100).toFixed(0)+'%';}}}},
+    scales:{
+      x:{title:{display:true,text:'Importancia',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.4},
+      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10}}}
+    }
+  }});
+}
+function buildAdvValChart(){
+  var ds=[1,2,3,4,5,6,7,8];
+  var ctx=document.getElementById('adv-val-chart').getContext('2d');
+  new Chart(ctx,{type:'line',data:{
+    labels:ds.map(function(d){return 'd='+d;}),
+    datasets:[
+      {label:'R2 Train',data:ds.map(function(d){return DEPTH_M[d].tr2;}),borderColor:'rgba(245,158,11,.7)',borderWidth:1.5,pointRadius:2,fill:false,tension:.3},
+      {label:'R2 Test',data:ds.map(function(d){return DEPTH_M[d].te2;}),borderColor:'rgba(251,146,60,.9)',borderWidth:2,pointRadius:3,fill:false,tension:.3},
+      {label:'MAE',data:ds.map(function(d){return DEPTH_M[d].mae/15000;}),borderColor:'rgba(96,165,250,.7)',borderWidth:1.5,pointRadius:2,fill:false,tension:.3,borderDash:[4,3],yAxisID:'y'}
+    ]
+  },options:{responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'R\u00b2 / MAE norm.',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0.4,max:1.05}
+    }
+  }});
+}
+function buildCmpTable(){
+  var models=[
+    {n:'Decision Tree',c:'var(--amber)',mae:640,rmse:850,r2:0.77,fi:'Inestable',vel:'Muy rapido',interp:'Total'},
+    {n:'Random Forest',c:'var(--green)',mae:480,rmse:640,r2:0.86,fi:'Estable',vel:'Medio',interp:'Parcial'},
+    {n:'Gradient Boost',c:'var(--blue)',mae:390,rmse:510,r2:0.91,fi:'Muy estable',vel:'Mas lento',interp:'Baja'}
+  ];
+  var rows=[
+    {m:'MAE (S/.)',vals:['640','480','390'],best:2},
+    {m:'RMSE (S/.)',vals:['850','640','510'],best:2},
+    {m:'R\u00b2 Test',vals:['0.77','0.86','0.91'],best:2},
+    {m:'Feature imp.',vals:['Inestable','Estable','Muy estable'],best:2},
+    {m:'Velocidad',vals:['Muy rapido','Medio','Mas lento'],best:0},
+    {m:'Interpretable',vals:['Total','Parcial','Baja'],best:0}
+  ];
+  var hdr='<div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:8px;padding:0 0 8px;border-bottom:2px solid var(--border2)">'
+    +'<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">METRICA</span>'
+    +models.map(function(m){return '<span style="font-family:var(--font-mono);font-size:10px;color:'+m.c+';text-align:center">'+m.n+'</span>';}).join('')
+    +'</div>';
+  var body=rows.map(function(r){
+    return '<div style="display:grid;grid-template-columns:120px 1fr 1fr 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">'+r.m+'</span>'
+      +r.vals.map(function(v,i){
+        var isBest=i===r.best;
+        var col=isBest?models[i].c:'var(--text2)';
+        return '<span style="font-family:var(--font-mono);font-size:12px;color:'+col+';text-align:center'+(isBest?';font-weight:600':'')+'">'+(isBest?'&#9670; ':'')+v+'</span>';
+      }).join('')
+      +'</div>';
+  }).join('');
+  document.getElementById('adv-cmp-table').innerHTML=hdr+body;
+  document.getElementById('adv-verdict').innerHTML=
+    '<strong style="color:var(--amber)">Decision Tree (depth=3-4)</strong> es el punto de partida: interpretable, rapido y con R&sup2;=0.77. Puedes mostrar las reglas exactas al cliente: "las tiendas con mas de 1,200 visitas y conversion &gt;2.5% se predicen en S/.9,780".<br><br>'
+    +'<strong style="color:var(--green)">Random Forest</strong> mejora a R&sup2;=0.86 con feature importance mas estable. Pierde interpretabilidad directa pero gana robustez. Bueno cuando el cliente solo necesita precisión.<br><br>'
+    +'<strong style="color:var(--blue)">Gradient Boosting</strong> (XGBoost, LightGBM) llega a R&sup2;=0.91 construyendo arboles secuenciales que corrigen los errores del anterior. Es el estandar para datos tabulares en produccion.<br><br>'
+    +'<strong style="color:var(--text)">Regla practica:</strong> empieza siempre con un Decision Tree para entender el problema, usa Random Forest como baseline solido, y solo pasa a GBM si necesitas exprimir la ultima fraccion de R&sup2;.';
+}
+
+// INIT
+document.getElementById('btn-basic').style.borderBottom='3px solid var(--amber)';
+document.getElementById('icon-basic').style.background='rgba(245,158,11,.15)';
+document.getElementById('name-basic').style.color='var(--amber)';
+updateSim(3);
+
+})();
+</script>
+</body>
+</html>

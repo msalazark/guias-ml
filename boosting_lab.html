@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Boosting Lab &mdash; XGBoost, LightGBM, CatBoost</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--magenta:#e879f9;
+  --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;letter-spacing:.07em;background:rgba(232,121,249,.15);color:var(--magenta)}
+.hdr-title{font-family:var(--font-mono);font-size:14px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.level-bar{display:flex;align-items:stretch;border-bottom:1px solid var(--border);background:var(--bg2)}
+.level-btn{display:flex;align-items:center;gap:10px;padding:15px 28px;cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;flex:1;justify-content:center}
+.level-icon{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;transition:background .2s;flex-shrink:0}
+.level-info{display:flex;flex-direction:column;gap:2px}
+.level-name{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text3);transition:color .2s;letter-spacing:.03em}
+.level-sub{font-size:10px;color:var(--text3);font-family:var(--font-mono)}
+.level-sep{width:1px;background:var(--border);flex-shrink:0}
+.main{max-width:1080px;margin:0 auto;padding:26px 32px}
+.lp{display:none}.lp.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px;margin-bottom:16px}
+.card-sm{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.sec{font-family:var(--font-mono);font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.prose{font-size:13px;color:var(--text2);line-height:1.75}
+.banner{border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;display:flex;gap:18px;align-items:flex-start}
+.banner-icon{font-size:34px;flex-shrink:0;margin-top:2px}
+.banner h2{font-family:var(--font-mono);font-size:17px;font-weight:600;margin-bottom:6px}
+.banner p{font-size:13px;line-height:1.7}
+.chips{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.chip{font-family:var(--font-mono);font-size:11px;padding:3px 9px;border-radius:4px;font-weight:500}
+.mex-grid{display:grid;gap:12px;margin-bottom:18px}
+.mex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;cursor:pointer;transition:border-color .15s}
+.mex:hover{border-color:var(--border2)}
+.mex-top{display:flex;align-items:center;gap:12px}
+.mex-badge{font-family:var(--font-mono);font-size:11px;font-weight:600;padding:4px 11px;border-radius:5px;white-space:nowrap}
+.mex-title{font-size:13px;font-weight:500;color:var(--text);flex:1}
+.mex-value{font-family:var(--font-mono);font-size:20px;font-weight:600;min-width:90px;text-align:right}
+.mex-toggle{font-size:16px;color:var(--text3);transition:transform .2s;margin-left:6px}
+.mex.open .mex-toggle{transform:rotate(180deg)}
+.mex-body{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.mex.open .mex-body{display:block}
+.mbg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fbox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-family:var(--font-mono);font-size:12px;border:1px solid var(--border)}
+.flbl{font-size:10px;color:var(--text3);margin-bottom:3px;letter-spacing:.06em}
+.ibox{background:var(--bg3);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text2);line-height:1.65}
+.bar-track{height:5px;background:var(--border);border-radius:3px;margin-top:7px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.chart-wrap{position:relative;height:260px}
+.chart-sm{position:relative;height:210px}
+/* case switcher */
+.case-tabs{display:flex;gap:8px;margin-bottom:16px}
+.case-tab{padding:8px 16px;border-radius:6px;font-family:var(--font-mono);font-size:12px;cursor:pointer;border:1px solid var(--border2);color:var(--text3);transition:all .18s;background:transparent}
+.case-tab:hover{border-color:var(--border2);color:var(--text2)}
+.case-tab.active-churn{background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.3);color:var(--red)}
+.case-tab.active-rev{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3);color:var(--yellow)}
+/* slider */
+.sl-row{margin-bottom:11px}
+.sl-lbl{display:flex;justify-content:space-between;font-size:11px;font-family:var(--font-mono);margin-bottom:4px}
+.sl-lbl span:first-child{color:var(--text2)}.sl-lbl span:last-child{font-weight:500}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border2);border-radius:2px;outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid var(--bg);background:var(--magenta)}
+/* tree sequence viz */
+.tree-seq{display:flex;align-items:center;gap:4px;overflow-x:auto;padding:10px 0}
+.tree-box{flex-shrink:0;width:74px;height:60px;border-radius:6px;border:1.5px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:10px;transition:all .2s}
+.tree-box .tn{font-weight:600;margin-bottom:3px}
+.tree-box .tv{font-size:9px;color:var(--text3)}
+.tree-plus{flex-shrink:0;color:var(--text3);font-size:14px}
+.tree-eq{flex-shrink:0;color:var(--text3);font-size:14px;margin:0 4px}
+/* hyper table */
+.htrow{display:grid;grid-template-columns:90px 90px 70px 70px 70px 70px;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
+.htrow:last-child{border-bottom:none}
+.btn{background:transparent;border:1px solid var(--border2);color:var(--text2);font-family:var(--font-mono);font-size:11px;padding:6px 13px;border-radius:4px;cursor:pointer;letter-spacing:.04em;transition:all .15s}
+.btn:hover{border-color:var(--magenta);color:var(--magenta)}
+/* model cards */
+.model-card{border-radius:var(--rl);border:2px solid var(--border);padding:16px 18px;cursor:pointer;transition:all .2s}
+.model-card:hover{border-color:var(--border2)}
+.model-card.active{border-color:var(--magenta)}
+.model-name{font-family:var(--font-mono);font-size:13px;font-weight:600;margin-bottom:4px}
+.model-tag{font-family:var(--font-mono);font-size:9px;padding:2px 7px;border-radius:3px;font-weight:600;margin-bottom:8px;display:inline-block}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span class="hdr-badge" id="hdrBadge">BASICO</span>
+  <span class="hdr-title">Boosting Lab &mdash; XGBoost / LightGBM / CatBoost</span>
+  <span class="hdr-sub">Churn bancario (clasificacion) &middot; Revenue e-commerce (regresion)</span>
+</div>
+
+<div class="level-bar">
+  <div class="level-btn" id="btn-basic" onclick="switchLevel('basic')">
+    <div class="level-icon" id="icon-basic">&#127807;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-basic">Basico</div>
+      <div class="level-sub">Que es boosting &middot; vs Random Forest</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-inter" onclick="switchLevel('inter')">
+    <div class="level-icon" id="icon-inter">&#9881;&#65039;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-inter">Intermedio</div>
+      <div class="level-sub">Hiperparametros &middot; Overfitting en boosting</div>
+    </div>
+  </div>
+  <div class="level-sep"></div>
+  <div class="level-btn" id="btn-adv" onclick="switchLevel('adv')">
+    <div class="level-icon" id="icon-adv">&#128300;</div>
+    <div class="level-info">
+      <div class="level-name" id="name-adv">Avanzado</div>
+      <div class="level-sub">XGBoost vs LightGBM vs CatBoost &middot; Early Stopping</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+<!-- ===== BASICO ===== -->
+<div class="lp active" id="panel-basic">
+  <div class="banner" style="background:rgba(232,121,249,.05);border:1px solid rgba(232,121,249,.15)">
+    <div class="banner-icon">&#127807;</div>
+    <div>
+      <h2 style="color:var(--magenta)">Nivel Basico &mdash; Que es Boosting</h2>
+      <p class="prose">Random Forest entrena cientos de arboles <strong style="color:var(--text)">en paralelo</strong> y promedia sus votos. Boosting (XGBoost, LightGBM, CatBoost) entrena arboles <strong style="color:var(--text)">en secuencia</strong>: cada arbol nuevo se enfoca en corregir los errores que cometio el conjunto anterior. Es la diferencia entre "muchas opiniones independientes" y "un equipo que aprende de sus propios errores paso a paso".</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(232,121,249,.12);color:var(--magenta)">Arboles secuenciales</span>
+        <span class="chip" style="background:rgba(232,121,249,.12);color:var(--magenta)">Corrige errores del anterior</span>
+        <span class="chip" style="background:rgba(232,121,249,.12);color:var(--magenta)">Bagging vs Boosting</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bagging vs Boosting -->
+  <div class="card">
+    <div class="sec">Bagging (Random Forest) vs Boosting (XGBoost) &mdash; la diferencia fundamental</div>
+    <div class="g2">
+      <div>
+        <div class="card-sm" style="border-left:3px solid var(--blue);margin-bottom:10px">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:6px">BAGGING (Random Forest)</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7">100 arboles entrenados <strong style="color:var(--text)">en paralelo</strong>, cada uno con una muestra aleatoria distinta de datos y features. La prediccion final es el promedio (regresion) o voto mayoritario (clasificacion).<br><br>Cada arbol no sabe que existen los otros. Reduce <strong style="color:var(--text)">varianza</strong>.</div>
+        </div>
+        <div class="card-sm" style="border-left:3px solid var(--magenta)">
+          <div style="font-size:11px;font-family:var(--font-mono);color:var(--magenta);margin-bottom:6px">BOOSTING (XGBoost / LightGBM / CatBoost)</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.7">Arboles entrenados <strong style="color:var(--text)">en secuencia</strong>. El arbol 2 se entrena sobre los <strong style="color:var(--text)">errores residuales</strong> del arbol 1. El arbol 3 corrige los errores de 1+2. Asi sucesivamente.<br><br>Cada arbol es pequeño (poca profundidad) pero la suma es muy precisa. Reduce <strong style="color:var(--text)">bias</strong>.</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:11px;font-family:var(--font-mono);color:var(--text3);margin-bottom:10px;letter-spacing:.06em">SECUENCIA DE BOOSTING &mdash; PREDICCION DE REVENUE</div>
+        <div class="tree-seq">
+          <div class="tree-box" style="border-color:rgba(96,165,250,.4);background:rgba(96,165,250,.06)"><span class="tn" style="color:var(--blue)">Arbol 1</span><span class="tv">pred=4000</span></div>
+          <div class="tree-plus">+</div>
+          <div class="tree-box" style="border-color:rgba(74,240,176,.4);background:rgba(74,240,176,.06)"><span class="tn" style="color:var(--green)">Arbol 2</span><span class="tv">+820</span></div>
+          <div class="tree-plus">+</div>
+          <div class="tree-box" style="border-color:rgba(251,146,60,.4);background:rgba(251,146,60,.06)"><span class="tn" style="color:var(--orange)">Arbol 3</span><span class="tv">-180</span></div>
+          <div class="tree-plus">+</div>
+          <div class="tree-box" style="border-color:rgba(167,139,250,.4);background:rgba(167,139,250,.06)"><span class="tn" style="color:var(--purple)">...</span><span class="tv">arbol N</span></div>
+          <div class="tree-eq">=</div>
+          <div class="tree-box" style="border-color:rgba(232,121,249,.5);background:rgba(232,121,249,.1)"><span class="tn" style="color:var(--magenta)">Final</span><span class="tv">S/.4,720</span></div>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7;margin-top:10px">
+          El Arbol 1 predice S/.4,000 para una tienda con revenue real S/.4,720. El error es +720. El <strong style="color:var(--text)">Arbol 2 aprende a predecir ese error</strong> (no el revenue, sino el residual). Predice +820. El nuevo error es -100. El Arbol 3 aprende a corregir ese -100, y asi sucesivamente hasta que el error converge.
+        </div>
+        <div class="divider"></div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.7">
+          <strong style="color:var(--text)">En clasificacion (churn) el principio es igual</strong>, pero en vez de residuales de revenue, cada arbol corrige los "residuales" de la probabilidad predicha (en escala logit).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEX -->
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(232,121,249,.12);color:var(--magenta)">GRADIENT BOOSTING</div>
+        <div class="mex-title">Por que se llama "gradient" &mdash; el gradiente del error</div>
+        <div class="mex-value" style="color:var(--magenta)">&#8711; perdida</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="bar-body mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--magenta)"><div class="flbl">IDEA CENTRAL</div>F(x) = F&#8320;(x) + &eta;&middot;h&#8321;(x) + &eta;&middot;h&#8322;(x) + ...</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">
+              Cada nuevo arbol h&#8345;(x) se entrena para predecir el <strong style="color:var(--text)">gradiente negativo de la funcion de perdida</strong> respecto a las predicciones actuales. En regresion con MSE, ese gradiente es simplemente el residual: y &minus; y&#770;.<br><br>
+              <strong style="color:var(--text)">&eta; (eta)</strong> es el <strong style="color:var(--magenta)">learning_rate</strong>: cuanto "confiamos" en cada arbol nuevo. Valores tipicos: 0.01&ndash;0.3.
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Por que arboles "debiles"</strong><br><br>
+            En boosting, cada arbol individual suele ser muy poco profundo (max_depth=3-6), a veces llamado "weak learner". Un arbol profundo memorizaria los residuales actuales y no dejaria nada para que los siguientes arboles aprendan.<br><br>
+            La fuerza de XGBoost no esta en cada arbol individual, sino en la <strong style="color:var(--text)">suma de cientos de correcciones pequeñas</strong>, cada una aprendiendo del error remanente.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">BAGGING VS BOOSTING</div>
+        <div class="mex-title">Reduccion de varianza vs reduccion de bias</div>
+        <div class="mex-value" style="color:var(--blue)">Var vs Bias</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--blue)"><div class="flbl">RANDOM FOREST</div>Muchos arboles independientes y profundos<br>Cada uno tiene <strong>bias bajo, varianza alta</strong><br>El promedio reduce la varianza</div>
+            <div class="fbox" style="color:var(--magenta);margin-top:8px"><div class="flbl">BOOSTING</div>Pocos arboles superficiales y secuenciales<br>Cada uno tiene <strong>bias alto, varianza baja</strong><br>La suma reduce el bias acumulado</div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Consecuencia practica</strong><br><br>
+            Random Forest es mas <strong style="color:var(--text)">robusto al overfitting</strong> por defecto: agregar mas arboles casi nunca empeora el resultado.<br><br>
+            Boosting es mas <strong style="color:var(--text)">propenso a overfitting</strong> si entrenas demasiadas rondas: el modelo eventualmente memoriza el ruido del training set. Por eso boosting necesita <strong style="color:var(--magenta)">early stopping</strong> (nivel Avanzado).<br><br>
+            A cambio, boosting suele lograr <strong style="color:var(--text)">mayor precision</strong> cuando esta bien ajustado &mdash; es el estandar en competencias de Kaggle para datos tabulares.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(74,240,176,.12);color:var(--green)">LA FAMILIA</div>
+        <div class="mex-title">XGBoost, LightGBM, CatBoost &mdash; la misma idea, 3 implementaciones</div>
+        <div class="mex-value" style="color:var(--green)">3 librerias</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--green)"><div class="flbl">EN COMUN</div>Las 3 son Gradient Boosting<br>Las 3 usan arboles de decision como base<br>Las 3 tienen learning_rate, n_estimators, max_depth</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">
+              La diferencia esta en <strong style="color:var(--text)">como construyen cada arbol</strong> y que optimizaciones de velocidad/memoria usan. En el nivel Avanzado se comparan en detalle con nuestros dos casos.
+            </div>
+          </div>
+          <div>
+            <div class="ibox">
+              <strong style="color:#60a5fa">XGBoost</strong> &mdash; el original, mas configurable, gran soporte y documentacion. Buen default.<br><br>
+              <strong style="color:#4af0b0">LightGBM</strong> &mdash; mas rapido en datasets grandes, usa menos memoria. Crece arboles "hoja por hoja" en vez de "nivel por nivel".<br><br>
+              <strong style="color:#fb923c">CatBoost</strong> &mdash; maneja variables categoricas automaticamente sin one-hot encoding. Menos overfitting con pocos datos.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== INTERMEDIO ===== -->
+<div class="lp" id="panel-inter">
+  <div class="banner" style="background:rgba(251,146,60,.05);border:1px solid rgba(251,146,60,.15)">
+    <div class="banner-icon">&#9881;&#65039;</div>
+    <div>
+      <h2 style="color:var(--orange)">Nivel Intermedio &mdash; Hiperparametros y Overfitting en Boosting</h2>
+      <p class="prose">Boosting tiene mas hiperparametros que Decision Tree o Random Forest, y son mas sensibles entre si. El mas importante es <strong style="color:var(--text)">learning_rate</strong> (cuanto confia en cada arbol) combinado con <strong style="color:var(--text)">n_estimators</strong> (cuantos arboles entrena). Juntos controlan el trade-off velocidad/precision/overfitting.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">learning_rate</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">n_estimators</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">max_depth</span>
+        <span class="chip" style="background:rgba(251,146,60,.12);color:var(--orange)">subsample / colsample</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Case switcher -->
+  <div class="card-sm" style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">CASO:</span>
+    <div class="case-tabs">
+      <button class="case-tab active-churn" id="case-churn-i" onclick="setCase('churn','i')">&#127919; Churn (clasificacion)</button>
+      <button class="case-tab" id="case-rev-i" onclick="setCase('rev','i')">&#128176; Revenue (regresion)</button>
+    </div>
+  </div>
+
+  <!-- Curva de boosting rounds -->
+  <div class="card">
+    <div class="sec" id="i-curve-title">Curva de aprendizaje &mdash; metrica vs numero de rondas (n_estimators)</div>
+    <div class="g2">
+      <div>
+        <div class="chart-wrap"><canvas id="i-rounds-chart"></canvas></div>
+        <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:11px;font-family:var(--font-mono)">
+          <span style="color:var(--magenta)">&#9644; Train</span>
+          <span style="color:var(--orange)">&#9644; Test</span>
+        </div>
+      </div>
+      <div>
+        <p class="prose" style="margin-bottom:14px">A diferencia de Random Forest (donde agregar arboles casi nunca empeora), en boosting <strong style="color:var(--text)">el test eventualmente empeora</strong> si sigues agregando arboles:</p>
+        <div style="display:grid;gap:10px">
+          <div class="card-sm" style="border-left:3px solid var(--blue)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--blue);margin-bottom:5px">RONDAS 1-10 &mdash; APRENDIENDO</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Train y test mejoran juntos. Cada arbol nuevo corrige errores genuinos del patron.</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--green)" id="i-optimal-card">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--green);margin-bottom:5px">RONDA OPTIMA &mdash; PICO DEL TEST</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6" id="i-optimal-text">El test alcanza su maximo. Esta es la ronda donde deberias detener el entrenamiento (early stopping).</div>
+          </div>
+          <div class="card-sm" style="border-left:3px solid var(--red)">
+            <div style="font-size:11px;font-family:var(--font-mono);color:var(--red);margin-bottom:5px">RONDAS POSTERIORES &mdash; OVERFITTING</div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Train sigue mejorando (acercandose a memorizar) pero test empeora. Cada arbol adicional ahora aprende ruido especifico del training set.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hiperparametros -->
+  <div class="mex-grid">
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(232,121,249,.12);color:var(--magenta)">learning_rate</div>
+        <div class="mex-title">Eta (&eta;) &mdash; cuanto confia el modelo en cada arbol nuevo</div>
+        <div class="mex-value" style="color:var(--magenta)">0.01&ndash;0.3</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--magenta)"><div class="flbl">EFECTO</div>F_nuevo(x) = F_anterior(x) + learning_rate &times; arbol_nuevo(x)</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">
+              learning_rate <strong style="color:var(--text)">alto (0.3)</strong>: cada arbol tiene mucho peso. Convergencia rapida pero riesgo alto de overfitting y de "saltarse" el optimo.<br><br>
+              learning_rate <strong style="color:var(--text)">bajo (0.01)</strong>: cada arbol aporta poco. Necesitas muchas mas rondas (n_estimators alto) pero el modelo final suele ser mas robusto.
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Regla practica: learning_rate &times; n_estimators</strong><br><br>
+            Estos dos hiperparametros estan acoplados. Si bajas learning_rate de 0.1 a 0.01, generalmente necesitas aumentar n_estimators ~10x para llegar al mismo punto de convergencia, pero el resultado final suele generalizar mejor.<br><br>
+            <strong style="color:var(--magenta)">Estrategia recomendada:</strong> fija learning_rate bajo (0.03-0.05), usa <strong style="color:var(--text)">early stopping</strong> para que el numero de arboles se ajuste automaticamente.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(96,165,250,.12);color:var(--blue)">max_depth</div>
+        <div class="mex-title">Profundidad de cada arbol individual (weak learner)</div>
+        <div class="mex-value" style="color:var(--blue)">3&ndash;8</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--blue)"><div class="flbl">DIFERENCIA CLAVE VS DECISION TREE</div>En DT solo: max_depth=3-5 suele ser optimo<br>En Boosting: max_depth=3-6 es tipico, y SIEMPRE bajo</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">
+              En boosting, cada arbol individual debe ser <strong style="color:var(--text)">deliberadamente debil</strong>. Arboles profundos (depth&gt;8) en boosting overfittean mucho mas rapido porque cada uno ya memoriza demasiado de los residuales actuales.
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">LightGBM: leaf-wise en vez de depth-wise</strong><br><br>
+            XGBoost por defecto crece arboles nivel por nivel (todas las hojas del mismo nivel antes de bajar). LightGBM crece <strong style="color:var(--text)">hoja por hoja</strong>, eligiendo siempre la hoja con mayor reduccion de perdida.<br><br>
+            Esto hace que LightGBM converja mas rapido con menos arboles, pero tambien puede overfittear mas facil con datasets pequeños &mdash; usa <strong style="color:var(--blue)">num_leaves</strong> en vez de max_depth como control principal.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mex" onclick="toggleMex(this)">
+      <div class="mex-top">
+        <div class="mex-badge" style="background:rgba(74,240,176,.12);color:var(--green)">subsample / colsample</div>
+        <div class="mex-title">Muestreo aleatorio de filas y columnas por arbol</div>
+        <div class="mex-value" style="color:var(--green)">0.6&ndash;1.0</div>
+        <div class="mex-toggle">&#8964;</div>
+      </div>
+      <div class="mex-body">
+        <div class="mbg">
+          <div>
+            <div class="fbox" style="color:var(--green)"><div class="flbl">QUE HACEN</div>subsample: % de filas usadas para entrenar cada arbol<br>colsample_bytree: % de columnas (features) por arbol</div>
+            <div style="margin-top:10px;font-size:12px;color:var(--text2);line-height:1.7">
+              Con subsample=0.8, cada arbol ve solo el 80% de las filas (muestreadas aleatoriamente). Esto introduce algo de la <strong style="color:var(--text)">aleatoriedad de Random Forest</strong> dentro del boosting &mdash; reduce overfitting y acelera el entrenamiento.
+            </div>
+          </div>
+          <div>
+            <div class="ibox"><strong style="color:var(--text)">Cuando ajustarlos</strong><br><br>
+            Si ves overfitting (gap train-test grande) ademas de bajar learning_rate o max_depth, prueba subsample=0.7-0.8 y colsample_bytree=0.7-0.8.<br><br>
+            En nuestro caso de revenue (200 obs), valores muy bajos (0.5) pueden hacer que cada arbol vea muy pocas muestras &mdash; con datasets pequeños, manten subsample &ge; 0.7.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hyper comparator -->
+  <div class="card">
+    <div class="sec" style="margin-bottom:14px" id="i-hyper-title">Comparador de configuraciones &mdash; learning_rate &times; n_estimators</div>
+    <div style="overflow-x:auto">
+      <div class="htrow" style="border-bottom:2px solid var(--border2)" id="i-hyper-header"></div>
+      <div id="i-hyper-table"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== AVANZADO ===== -->
+<div class="lp" id="panel-adv">
+  <div class="banner" style="background:rgba(74,240,176,.05);border:1px solid rgba(74,240,176,.15)">
+    <div class="banner-icon">&#128300;</div>
+    <div>
+      <h2 style="color:var(--green)">Nivel Avanzado &mdash; XGBoost vs LightGBM vs CatBoost + Early Stopping</h2>
+      <p class="prose">Comparativa directa de las 3 librerias en ambos casos, mas <strong style="color:var(--text)">early stopping</strong>: la tecnica que automaticamente detiene el entrenamiento en la ronda optima detectada en el nivel Intermedio, sin tener que adivinar n_estimators manualmente.</p>
+      <div class="chips">
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">Early Stopping</span>
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">Comparador de librerias</span>
+        <span class="chip" style="background:rgba(74,240,176,.12);color:var(--green)">Feature importance</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Case switcher -->
+  <div class="card-sm" style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+    <span style="font-size:11px;font-family:var(--font-mono);color:var(--text3)">CASO:</span>
+    <div class="case-tabs">
+      <button class="case-tab active-churn" id="case-churn-a" onclick="setCase('churn','a')">&#127919; Churn (clasificacion)</button>
+      <button class="case-tab" id="case-rev-a" onclick="setCase('rev','a')">&#128176; Revenue (regresion)</button>
+    </div>
+  </div>
+
+  <!-- Model selector -->
+  <div class="card">
+    <div class="sec">Selecciona un modelo para ver su configuracion y resultados</div>
+    <div class="g3" style="margin-bottom:16px">
+      <div class="model-card active" id="mc-xgb" onclick="selectModel('xgb')">
+        <span class="model-tag" style="background:rgba(96,165,250,.12);color:var(--blue)">EL ESTANDAR</span>
+        <div class="model-name" style="color:var(--blue)">XGBoost</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">Crece arboles nivel por nivel. Muy configurable, gran ecosistema, regularizacion L1/L2 nativa (alpha, lambda).</div>
+      </div>
+      <div class="model-card" id="mc-lgb" onclick="selectModel('lgb')">
+        <span class="model-tag" style="background:rgba(74,240,176,.12);color:var(--green)">EL RAPIDO</span>
+        <div class="model-name" style="color:var(--green)">LightGBM</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">Crece arboles hoja por hoja (leaf-wise). 2-3x mas rapido que XGBoost en datasets grandes. Maneja categoricas nativamente.</div>
+      </div>
+      <div class="model-card" id="mc-cat" onclick="selectModel('cat')">
+        <span class="model-tag" style="background:rgba(251,146,60,.12);color:var(--orange)">EL ROBUSTO</span>
+        <div class="model-name" style="color:var(--orange)">CatBoost</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6">Manejo automatico de variables categoricas sin encoding. Menos overfitting con pocos datos. Mas lento de entrenar.</div>
+      </div>
+    </div>
+    <div id="model-detail"></div>
+  </div>
+
+  <!-- Comparison table -->
+  <div class="card">
+    <div class="sec" id="adv-cmp-title">Comparativa final &mdash; los 5 modelos en el mismo dataset</div>
+    <div id="adv-cmp-table"></div>
+    <div style="margin-top:14px;background:var(--bg3);border-radius:var(--r);padding:14px 16px;font-size:12px;color:var(--text2);line-height:1.85" id="adv-verdict"></div>
+  </div>
+
+  <!-- Feature importance -->
+  <div class="g2">
+    <div class="card">
+      <div class="sec" id="adv-fi-title">Feature importance &mdash; XGBoost</div>
+      <div class="chart-wrap"><canvas id="adv-fi-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="sec">Early Stopping &mdash; deteccion automatica de la ronda optima</div>
+      <div class="fbox" style="color:var(--green);margin-bottom:10px"><div class="flbl">CODIGO</div>
+        <span id="adv-es-code"></span>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7">
+        Con <strong style="color:var(--text)">early_stopping_rounds=20</strong>, el modelo entrena hasta 1000 rondas pero se detiene si el set de validacion no mejora durante 20 rondas consecutivas. El modelo final usa los pesos de la mejor ronda, no la ultima.<br><br>
+        Esto elimina la necesidad de adivinar n_estimators: el algoritmo encuentra la <strong style="color:var(--green)">ronda optima</strong> automaticamente &mdash; la misma que identificamos visualmente en el nivel Intermedio.
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+(function(){
+
+// ===== DATA =====
+var CHURN_ROUNDS = {
+  train:[0.55,0.58,0.61,0.64,0.67,0.70,0.73,0.755,0.775,0.79,0.805,0.818,0.83,0.84,0.85,0.858,0.865,0.872,0.878,0.883],
+  test: [0.53,0.56,0.585,0.61,0.635,0.655,0.675,0.69,0.70,0.705,0.708,0.71,0.708,0.704,0.698,0.69,0.68,0.668,0.655,0.64],
+  metric:'F1 Score', best:12, bestVal:0.71
+};
+var REV_ROUNDS = {
+  train:[0.58,0.615,0.645,0.67,0.695,0.715,0.735,0.755,0.77,0.785,0.798,0.81,0.821,0.831,0.84,0.848,0.855,0.862,0.868,0.873],
+  test: [0.56,0.595,0.625,0.65,0.673,0.692,0.708,0.72,0.728,0.733,0.735,0.734,0.73,0.723,0.714,0.703,0.69,0.675,0.658,0.64],
+  metric:'R\u00b2', best:11, bestVal:0.735
+};
+
+var HYPER_CHURN = [
+  {lr:0.3, ne:30, md:6, sub:1.0, val:0.69, ov:0.18},
+  {lr:0.1, ne:100,md:4, sub:1.0, val:0.71, ov:0.07},
+  {lr:0.1, ne:100,md:4, sub:0.8, val:0.715,ov:0.04},
+  {lr:0.05,ne:200,md:4, sub:0.8, val:0.72, ov:0.03},
+  {lr:0.05,ne:200,md:6, sub:0.8, val:0.718,ov:0.06},
+  {lr:0.01,ne:500,md:4, sub:0.8, val:0.722,ov:0.02},
+  {lr:0.01,ne:1000,md:3,sub:0.7, val:0.725,ov:0.015}
+];
+var HYPER_REV = [
+  {lr:0.3, ne:30, md:6, sub:1.0, val:0.71, ov:0.20},
+  {lr:0.1, ne:100,md:4, sub:1.0, val:0.735,ov:0.08},
+  {lr:0.1, ne:100,md:4, sub:0.8, val:0.74, ov:0.05},
+  {lr:0.05,ne:200,md:4, sub:0.8, val:0.748,ov:0.035},
+  {lr:0.05,ne:200,md:6, sub:0.8, val:0.745,ov:0.065},
+  {lr:0.01,ne:500,md:4, sub:0.8, val:0.752,ov:0.02},
+  {lr:0.01,ne:1000,md:3,sub:0.7, val:0.755,ov:0.018}
+];
+
+var MODELS_CHURN = {
+  DT:      {name:'Decision Tree', f1:0.71,  time:0.02, color:'#a78bfa'},
+  RF:      {name:'Random Forest', f1:0.79,  time:0.8,  color:'#60a5fa'},
+  XGBoost: {name:'XGBoost',       f1:0.84,  time:1.2,  color:'#60a5fa'},
+  LightGBM:{name:'LightGBM',      f1:0.835, time:0.4,  color:'#4af0b0'},
+  CatBoost:{name:'CatBoost',      f1:0.845, time:1.8,  color:'#fb923c'}
+};
+var MODELS_REV = {
+  DT:      {name:'Decision Tree', r2:0.77,  mae:640, time:0.02, color:'#a78bfa'},
+  RF:      {name:'Random Forest', r2:0.86,  mae:480, time:0.9,  color:'#60a5fa'},
+  XGBoost: {name:'XGBoost',       r2:0.915, mae:390, time:1.3,  color:'#60a5fa'},
+  LightGBM:{name:'LightGBM',      r2:0.91,  mae:395, time:0.45, color:'#4af0b0'},
+  CatBoost:{name:'CatBoost',      r2:0.918, mae:385, time:1.9,  color:'#fb923c'}
+};
+
+var FEAT_CHURN = {names:['Actividad','Edad','Saldo','Antiguedad','N_Productos'], imp:[0.30,0.21,0.19,0.17,0.13]};
+var FEAT_REV   = {names:['Visitas','Conv. Rate','Ticket Medio','Antiguedad','Campanas'], imp:[0.33,0.27,0.21,0.11,0.08]};
+
+var MODEL_INFO = {
+  xgb:{
+    name:'XGBoost', color:'var(--blue)',
+    code:'<span class="kw">import</span> xgboost <span class="kw">as</span> xgb\\n\\nmodel = xgb.XGB{TASK}(\\n    n_estimators=<span class="nu">200</span>,\\n    learning_rate=<span class="nu">0.05</span>,\\n    max_depth=<span class="nu">4</span>,\\n    subsample=<span class="nu">0.8</span>,\\n    colsample_bytree=<span class="nu">0.8</span>,\\n    reg_lambda=<span class="nu">1.0</span>\\n)\\nmodel.<span class="fn">fit</span>(X_train, y_train)',
+    notes:'Configuracion estandar. reg_lambda/reg_alpha agregan regularizacion L2/L1 directamente al objetivo &mdash; util cuando hay muchas features correlacionadas (como saldo y antiguedad en nuestros datos).'
+  },
+  lgb:{
+    name:'LightGBM', color:'var(--green)',
+    code:'<span class="kw">import</span> lightgbm <span class="kw">as</span> lgb\\n\\nmodel = lgb.LGBM{TASK}(\\n    n_estimators=<span class="nu">200</span>,\\n    learning_rate=<span class="nu">0.05</span>,\\n    num_leaves=<span class="nu">31</span>,\\n    subsample=<span class="nu">0.8</span>,\\n    colsample_bytree=<span class="nu">0.8</span>\\n)\\nmodel.<span class="fn">fit</span>(X_train, y_train,\\n    categorical_feature=[<span class="st">\'region\'</span>,<span class="st">\'device\'</span>])',
+    notes:'num_leaves (no max_depth) es el control principal por el crecimiento leaf-wise. categorical_feature evita tener que hacer one-hot encoding manualmente &mdash; LightGBM lo maneja internamente.'
+  },
+  cat:{
+    name:'CatBoost', color:'var(--orange)',
+    code:'<span class="kw">from</span> catboost <span class="kw">import</span> CatBoost{TASK}\\n\\nmodel = CatBoost{TASK}(\\n    iterations=<span class="nu">200</span>,\\n    learning_rate=<span class="nu">0.05</span>,\\n    depth=<span class="nu">4</span>,\\n    cat_features=[<span class="st">\'region\'</span>,<span class="st">\'device\'</span>],\\n    verbose=<span class="nu">False</span>\\n)\\nmodel.<span class="fn">fit</span>(X_train, y_train)',
+    notes:'cat_features le dice a CatBoost cuales columnas son categoricas &mdash; las codifica usando un metodo propio (ordered target encoding) que reduce el data leakage tipico del target encoding manual.'
+  }
+};
+
+var currentCase = 'churn';
+
+// ===== LEVEL SWITCH =====
+window.switchLevel=function(lv){
+  var c={basic:'var(--magenta)',inter:'var(--orange)',adv:'var(--green)'};
+  var bg={basic:'rgba(232,121,249,.15)',inter:'rgba(251,146,60,.15)',adv:'rgba(74,240,176,.15)'};
+  var lb={basic:'BASICO',inter:'INTERMEDIO',adv:'AVANZADO'};
+  ['basic','inter','adv'].forEach(function(l){
+    document.getElementById('btn-'+l).style.borderBottom='3px solid transparent';
+    document.getElementById('icon-'+l).style.background='';
+    document.getElementById('name-'+l).style.color='var(--text3)';
+    document.getElementById('panel-'+l).classList.remove('active');
+  });
+  document.getElementById('btn-'+lv).style.borderBottom='3px solid '+c[lv];
+  document.getElementById('icon-'+lv).style.background=bg[lv];
+  document.getElementById('name-'+lv).style.color=c[lv];
+  document.getElementById('panel-'+lv).classList.add('active');
+  var badge=document.getElementById('hdrBadge');
+  badge.textContent=lb[lv]; badge.style.background=bg[lv]; badge.style.color=c[lv];
+  if(lv==='inter'&&!done.inter){initInter();done.inter=true;}
+  if(lv==='adv'&&!done.adv){initAdv();done.adv=true;}
+};
+window.toggleMex=function(el){el.classList.toggle('open');};
+var done={basic:true,inter:false,adv:false};
+
+// ===== CASE SWITCH =====
+window.setCase=function(c, panel){
+  currentCase=c;
+  ['churn','rev'].forEach(function(cc){
+    var el=document.getElementById('case-'+cc+'-'+panel);
+    if(!el) return;
+    el.classList.remove('active-churn','active-rev');
+    if(cc===c) el.classList.add(c==='churn'?'active-churn':'active-rev');
+  });
+  if(panel==='i') renderInterCase();
+  if(panel==='a') renderAdvCase();
+};
+
+// ===== INTERMEDIO =====
+var roundsChart=null;
+function renderInterCase(){
+  var data = currentCase==='churn'?CHURN_ROUNDS:REV_ROUNDS;
+  var hyper = currentCase==='churn'?HYPER_CHURN:HYPER_REV;
+  var title = currentCase==='churn'
+    ? 'Curva de aprendizaje &mdash; F1 Score vs numero de rondas (n_estimators) &mdash; CHURN'
+    : 'Curva de aprendizaje &mdash; R\u00b2 vs numero de rondas (n_estimators) &mdash; REVENUE';
+  document.getElementById('i-curve-title').innerHTML=title;
+  document.getElementById('i-hyper-title').innerHTML = currentCase==='churn'
+    ? 'Comparador de configuraciones &mdash; CHURN (metrica: F1 Score test)'
+    : 'Comparador de configuraciones &mdash; REVENUE (metrica: R\u00b2 test)';
+
+  var optText = currentCase==='churn'
+    ? 'En la ronda '+data.best+', el F1 test alcanza '+data.bestVal+'. Esta es la ronda donde deberias detener el entrenamiento (early stopping).'
+    : 'En la ronda '+data.best+', el R\u00b2 test alcanza '+data.bestVal+'. Esta es la ronda donde deberias detener el entrenamiento (early stopping).';
+  document.getElementById('i-optimal-text').textContent=optText;
+
+  var rounds=[]; for(var i=1;i<=20;i++) rounds.push('R'+i);
+
+  if(!roundsChart){
+    var ctx=document.getElementById('i-rounds-chart').getContext('2d');
+    roundsChart=new Chart(ctx,{type:'line',data:{
+      labels:rounds,
+      datasets:[
+        {label:'Train',data:data.train,borderColor:'rgba(232,121,249,.8)',borderWidth:2,pointRadius:2,fill:false,tension:.3},
+        {label:'Test',data:data.test,borderColor:'rgba(251,146,60,.9)',borderWidth:2,pointRadius:2,fill:false,tension:.3}
+      ]
+    },options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},maxTicksLimit:10}},
+        y:{title:{display:true,text:data.metric,color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0.4,max:1.0}
+      }
+    }});
+  } else {
+    roundsChart.data.datasets[0].data=data.train;
+    roundsChart.data.datasets[1].data=data.test;
+    roundsChart.options.scales.y.title.text=data.metric;
+    roundsChart.update('none');
+  }
+
+  buildHyperTable(hyper);
+}
+
+function buildHyperTable(hyper){
+  var best=hyper.reduce(function(a,b){return b.val>a.val?b:a;});
+  var metricLabel = currentCase==='churn'?'F1':'R\u00b2';
+  var header='<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">LR</span>'
+    +'<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">N_ESTIM</span>'
+    +'<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">DEPTH</span>'
+    +'<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">SUBSAMP</span>'
+    +'<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">'+metricLabel+'</span>'
+    +'<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">OVERFIT</span>';
+  document.getElementById('i-hyper-header').innerHTML=header;
+  var html=hyper.map(function(r){
+    var isBest=(r===best);
+    var ovColor=r.ov<0.03?'var(--green)':r.ov<0.07?'var(--orange)':'var(--red)';
+    return '<div class="htrow" style="'+(isBest?'background:rgba(74,240,176,.04)':'')+'">'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--text)">'+(isBest?'&#9670; ':'')+r.lr+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--text2)">'+r.ne+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--text2)">'+r.md+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:var(--text2)">'+r.sub+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:'+(isBest?'var(--green)':'var(--text)')+'">'+r.val.toFixed(3)+'</span>'
+      +'<span style="font-family:var(--font-mono);font-size:12px;color:'+ovColor+'">'+(r.ov*100).toFixed(0)+'%</span>'
+      +'</div>';
+  }).join('');
+  document.getElementById('i-hyper-table').innerHTML=html;
+}
+
+function initInter(){
+  renderInterCase();
+}
+
+// ===== AVANZADO =====
+var advFiChart=null;
+var currentModel='xgb';
+
+window.selectModel=function(m){
+  currentModel=m;
+  ['xgb','lgb','cat'].forEach(function(id){
+    var el=document.getElementById('mc-'+id);
+    if(el) el.classList.remove('active');
+  });
+  document.getElementById('mc-'+m).classList.add('active');
+  renderModelDetail();
+};
+
+function renderModelDetail(){
+  var info=MODEL_INFO[currentModel];
+  var task = currentCase==='churn' ? 'Classifier' : 'Regressor';
+  var code = info.code.replace(/\{TASK\}/g, task);
+  document.getElementById('model-detail').innerHTML=
+    '<div class="g2">'
+    +'<div class="fbox" style="color:'+info.color+'"><div class="flbl">CONFIGURACION &mdash; '+(currentCase==='churn'?'CHURN':'REVENUE')+'</div>'+code+'</div>'
+    +'<div class="ibox">'+info.notes+'</div>'
+    +'</div>';
+}
+
+function renderAdvCase(){
+  var models = currentCase==='churn' ? MODELS_CHURN : MODELS_REV;
+  var feat = currentCase==='churn' ? FEAT_CHURN : FEAT_REV;
+  document.getElementById('adv-cmp-title').innerHTML = currentCase==='churn'
+    ? 'Comparativa final &mdash; CHURN (clasificacion) &mdash; los 5 modelos en el mismo dataset'
+    : 'Comparativa final &mdash; REVENUE (regresion) &mdash; los 5 modelos en el mismo dataset';
+  document.getElementById('adv-fi-title').innerHTML = currentCase==='churn'
+    ? 'Feature importance &mdash; XGBoost (CHURN)'
+    : 'Feature importance &mdash; XGBoost (REVENUE)';
+  document.getElementById('adv-es-code').innerHTML = currentCase==='churn'
+    ? '<span class="kw">model.fit</span>(X_train, y_train,<br>&nbsp;&nbsp;eval_set=[(X_val, y_val)],<br>&nbsp;&nbsp;eval_metric=<span class="st">\'logloss\'</span>,<br>&nbsp;&nbsp;early_stopping_rounds=<span class="nu">20</span>)'
+    : '<span class="kw">model.fit</span>(X_train, y_train,<br>&nbsp;&nbsp;eval_set=[(X_val, y_val)],<br>&nbsp;&nbsp;eval_metric=<span class="st">\'rmse\'</span>,<br>&nbsp;&nbsp;early_stopping_rounds=<span class="nu">20</span>)';
+
+  buildCmpTable(models);
+  buildFIChart(feat);
+  renderModelDetail();
+}
+
+function buildCmpTable(models){
+  var isChurn = currentCase==='churn';
+  var order=['DT','RF','XGBoost','LightGBM','CatBoost'];
+  var metricKey = isChurn ? 'f1' : 'r2';
+  var metricLabel = isChurn ? 'F1 Score' : 'R\u00b2';
+  var best = order.reduce(function(a,b){return models[b][metricKey]>models[a][metricKey]?b:a;});
+
+  var hdr='<div style="display:grid;grid-template-columns:140px 1fr 1fr 1fr 1fr 1fr;gap:8px;padding:0 0 8px;border-bottom:2px solid var(--border2)">'
+    +'<span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">METRICA</span>'
+    +order.map(function(k){return '<span style="font-family:var(--font-mono);font-size:10px;color:'+models[k].color+';text-align:center">'+models[k].name+'</span>';}).join('')
+    +'</div>';
+
+  var rows=[];
+  rows.push({label:metricLabel, vals:order.map(function(k){return models[k][metricKey].toFixed(3);}), highlight:best});
+  if(!isChurn){
+    rows.push({label:'MAE (S/.)', vals:order.map(function(k){return models[k].mae;}), highlight:order.reduce(function(a,b){return models[b].mae<models[a].mae?b:a;})});
+  }
+  rows.push({label:'Tiempo train (rel.)', vals:order.map(function(k){return models[k].time+'x';}), highlight:order.reduce(function(a,b){return models[b].time<models[a].time?b:a;})});
+  rows.push({label:'Interpretabilidad', vals:order.map(function(k){return k==='DT'?'Total':k==='RF'?'Parcial':'Baja';}), highlight:'DT'});
+
+  var body=rows.map(function(r){
+    return '<div style="display:grid;grid-template-columns:140px 1fr 1fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<span style="font-family:var(--font-mono);font-size:11px;color:var(--text3)">'+r.label+'</span>'
+      +order.map(function(k,i){
+        var isBest=(k===r.highlight);
+        var col=isBest?models[k].color:'var(--text2)';
+        return '<span style="font-family:var(--font-mono);font-size:12px;color:'+col+';text-align:center'+(isBest?';font-weight:600':'')+'">'+(isBest?'&#9670; ':'')+r.vals[i]+'</span>';
+      }).join('')
+      +'</div>';
+  }).join('');
+
+  document.getElementById('adv-cmp-table').innerHTML=hdr+body;
+
+  var verdict = isChurn
+    ? '<strong style="color:var(--blue)">XGBoost</strong> y <strong style="color:var(--orange)">CatBoost</strong> logran el mejor F1 (0.84-0.845), una mejora de +5pp sobre Random Forest y +13pp sobre un Decision Tree solo.<br><br>'
+      +'<strong style="color:var(--green)">LightGBM</strong> esta muy cerca (0.835) pero entrena <strong style="color:var(--text)">3x mas rapido</strong> que XGBoost &mdash; la opcion ideal si necesitas reentrenar frecuentemente o trabajar con datasets grandes de clientes.<br><br>'
+      +'<strong style="color:var(--orange)">CatBoost</strong> es el mas lento pero maneja "region" y "device" como categoricas sin encoding manual &mdash; util si tu pipeline de datos cambia frecuentemente de categorias.<br><br>'
+      +'<strong style="color:var(--text)">Recomendacion:</strong> para un primer modelo de produccion con 200-2000 clientes, LightGBM con early stopping es el mejor punto de partida: rapido, preciso, facil de reentrenar.'
+    : '<strong style="color:var(--orange)">CatBoost</strong> logra el mejor R\u00b2 (0.918) y menor MAE (S/.385), seguido muy de cerca por <strong style="color:var(--blue)">XGBoost</strong> (0.915, S/.390).<br><br>'
+      +'<strong style="color:var(--green)">LightGBM</strong> (0.91, S/.395) es practicamente equivalente pero entrena <strong style="color:var(--text)">3x mas rapido</strong> que XGBoost y 4x mas rapido que CatBoost.<br><br>'
+      +'Todos los modelos de boosting superan a Random Forest (+5pp de R\u00b2) y a Decision Tree solo (+14pp de R\u00b2). La diferencia entre las 3 librerias de boosting es <strong style="color:var(--text)">marginal (&lt;1pp de R\u00b2)</strong> &mdash; en la practica, la eleccion suele depender de velocidad de entrenamiento y facilidad de manejo de categoricas, no de precision pura.<br><br>'
+      +'<strong style="color:var(--text)">Recomendacion:</strong> con datasets pequeños como el nuestro (200 tiendas), la diferencia de R\u00b2 entre XGBoost/LightGBM/CatBoost no justifica complejidad adicional &mdash; elige LightGBM por velocidad de iteracion durante el desarrollo.';
+
+  document.getElementById('adv-verdict').innerHTML=verdict;
+}
+
+function buildFIChart(feat){
+  if(advFiChart){advFiChart.destroy();advFiChart=null;}
+  var ctx=document.getElementById('adv-fi-chart').getContext('2d');
+  var sorted=feat.names.map(function(n,i){return {n:n,v:feat.imp[i]};}).sort(function(a,b){return b.v-a.v;});
+  var maxFI=Math.max.apply(null,sorted.map(function(s){return s.v;}));
+  advFiChart=new Chart(ctx,{type:'bar',data:{
+    labels:sorted.map(function(s){return s.n;}),
+    datasets:[{
+      data:sorted.map(function(s){return s.v;}),
+      backgroundColor:sorted.map(function(s){var t=s.v/maxFI;return 'rgba(232,121,249,'+(.3+t*.5)+')';}),
+      borderRadius:5
+    }]
+  },options:{
+    indexAxis:'y',
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Importancia: '+(c.parsed.x*100).toFixed(0)+'%';}}}},
+    scales:{
+      x:{title:{display:true,text:'Importancia relativa',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.4},
+      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10}}}
+    }
+  }});
+}
+
+function initAdv(){
+  renderAdvCase();
+}
+
+// ===== INIT =====
+document.getElementById('btn-basic').style.borderBottom='3px solid var(--magenta)';
+document.getElementById('icon-basic').style.background='rgba(232,121,249,.15)';
+document.getElementById('name-basic').style.color='var(--magenta)';
+
+})();
+</script>
+</body>
+</html>
