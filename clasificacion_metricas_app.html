@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ML Classifier Lab</title>
@@ -16,6 +17,12 @@
   --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
   --radius:8px;--radius-lg:14px;
 }
+html[data-theme="light"]{
+  --bg:#eef1f6;--bg2:#ffffff;--bg3:#f4f6fa;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.18);--text:#0f172a;--text2:#475569;--text3:#94a3b8;--accent:#08915c;--accent2:#198a7c;--red:#d10505;--orange:#c25700;--blue:#015ccb;--yellow:#a37600;--purple:#3804d2;
+}
+.theme-toggle{flex-shrink:0;width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.theme-toggle:hover{border-color:var(--yellow);color:var(--yellow)}
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh;line-height:1.5}
 
@@ -101,7 +108,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
 .metric-table td{font-size:12px;padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
 .metric-table td:first-child{font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--text);white-space:nowrap}
 .metric-table td:nth-child(2){font-family:var(--font-mono);font-size:10px;color:var(--accent);white-space:nowrap}
-.metric-table tr:hover td{background:rgba(255,255,255,0.02)}
+.metric-table tr:hover td{background:color-mix(in srgb, var(--text) 2%, transparent)}
 .metric-table tr:last-child td{border-bottom:none}
 
 /* Navegación intro */
@@ -195,6 +202,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
   <span class="header-badge">ML LAB</span>
   <span class="header-title">Classifier Metrics Explorer</span>
   <span class="header-sub">Clasificación Binaria · Guía de Aprendizaje</span>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema"></button>
 </div>
 
 <div class="tabs">
@@ -656,6 +664,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;heigh
 </div><!-- /main -->
 
 <script>
+
+/* ─────────────── THEME ─────────────── */
+function isLightTheme() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+function gridColor(a) { a = a || 0.04; return isLightTheme() ? 'rgba(15,23,42,' + (a*2).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function overlayColor(a) { a = a || 0.1; return isLightTheme() ? 'rgba(15,23,42,' + (a*0.8).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function segBorderColor() { return isLightTheme() ? 'rgba(255,255,255,.8)' : 'rgba(10,13,18,.5)'; }
+function updateThemeIcon() {
+  document.querySelectorAll('.theme-toggle').forEach(function(btn){ btn.textContent = isLightTheme() ? '☀' : '☮'; });
+}
+function rethemeCharts() {
+  if (typeof chartRefs === 'undefined') return;
+  Object.keys(chartRefs).forEach(function(k) {
+    var ch = chartRefs[k];
+    if (!ch || !ch.options || !ch.options.scales) return;
+    Object.keys(ch.options.scales).forEach(function(axKey) {
+      var ax = ch.options.scales[axKey];
+      if (ax.grid && ax.grid.color !== undefined) ax.grid.color = gridColor(axKey === 'r' ? 0.08 : 0.04);
+    });
+    ch.update();
+  });
+}
+window.toggleTheme = function() {
+  var html = document.documentElement;
+  var next = isLightTheme() ? 'dark' : 'light';
+  if (next === 'light') html.setAttribute('data-theme', 'light');
+  else html.removeAttribute('data-theme');
+  try { localStorage.setItem('theme', next); } catch(e) {}
+  updateThemeIcon();
+  rethemeCharts();
+};
+updateThemeIcon();
+
 // ══════════════════════════
 // INTRO — Matriz click
 // ══════════════════════════
@@ -712,8 +752,8 @@ function buildIntroRoc(){
     options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.datasetIndex===2?`FPR:${c.parsed.x.toFixed(2)}, TPR:${c.parsed.y.toFixed(2)}`:''}}},
       scales:{
-        x:{min:0,max:1,title:{display:true,text:'FPR',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
-        y:{min:0,max:1,title:{display:true,text:'TPR',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}}
+        x:{min:0,max:1,title:{display:true,text:'FPR',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:gridColor(0.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+        y:{min:0,max:1,title:{display:true,text:'TPR',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:gridColor(0.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}}
       }
     }
   });
@@ -801,8 +841,8 @@ function buildRocChart(){
     options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.datasetIndex===2?`FPR:${c.parsed.x.toFixed(3)}, TPR:${c.parsed.y.toFixed(3)}`:''}}},
       scales:{
-        x:{min:0,max:1,title:{display:true,text:'FPR (1 − Specificity)',color:'#4d566b',font:{family:'IBM Plex Mono',size:11}},grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:10}}},
-        y:{min:0,max:1,title:{display:true,text:'TPR / Recall',color:'#4d566b',font:{family:'IBM Plex Mono',size:11}},grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:10}}}
+        x:{min:0,max:1,title:{display:true,text:'FPR (1 − Specificity)',color:'#4d566b',font:{family:'IBM Plex Mono',size:11}},grid:{color:gridColor(0.05)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:10}}},
+        y:{min:0,max:1,title:{display:true,text:'TPR / Recall',color:'#4d566b',font:{family:'IBM Plex Mono',size:11}},grid:{color:gridColor(0.05)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:10}}}
       }
     }
   });

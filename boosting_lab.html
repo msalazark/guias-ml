@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Boosting Lab &mdash; XGBoost, LightGBM, CatBoost</title>
@@ -16,6 +17,12 @@
   --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
   --r:8px;--rl:14px;
 }
+html[data-theme="light"]{
+  --bg:#eef1f6;--bg2:#ffffff;--bg3:#f4f6fa;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.18);--text:#0f172a;--text2:#475569;--text3:#94a3b8;--green:#08915c;--blue:#015ccb;--orange:#c25700;--red:#d10505;--purple:#3804d2;--yellow:#a37600;--magenta:#ae04c8;
+}
+.theme-toggle{flex-shrink:0;width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.theme-toggle:hover{border-color:var(--yellow);color:var(--yellow)}
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
 .hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
@@ -101,6 +108,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   <span class="hdr-badge" id="hdrBadge">BASICO</span>
   <span class="hdr-title">Boosting Lab &mdash; XGBoost / LightGBM / CatBoost</span>
   <span class="hdr-sub">Churn bancario (clasificacion) &middot; Revenue e-commerce (regresion)</span>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema"></button>
 </div>
 
 <div class="level-bar">
@@ -484,6 +492,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <script>
 (function(){
 
+
+/* ─────────────── THEME ─────────────── */
+function isLightTheme() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+function gridColor(a) { a = a || 0.04; return isLightTheme() ? 'rgba(15,23,42,' + (a*2).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function overlayColor(a) { a = a || 0.1; return isLightTheme() ? 'rgba(15,23,42,' + (a*0.8).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function segBorderColor() { return isLightTheme() ? 'rgba(255,255,255,.8)' : 'rgba(10,13,18,.5)'; }
+function updateThemeIcon() {
+  document.querySelectorAll('.theme-toggle').forEach(function(btn){ btn.textContent = isLightTheme() ? '☀' : '☮'; });
+}
+function rethemeCharts() {
+  if (typeof chartRefs === 'undefined') return;
+  Object.keys(chartRefs).forEach(function(k) {
+    var ch = chartRefs[k];
+    if (!ch || !ch.options || !ch.options.scales) return;
+    Object.keys(ch.options.scales).forEach(function(axKey) {
+      var ax = ch.options.scales[axKey];
+      if (ax.grid && ax.grid.color !== undefined) ax.grid.color = gridColor(axKey === 'r' ? 0.08 : 0.04);
+    });
+    ch.update();
+  });
+}
+window.toggleTheme = function() {
+  var html = document.documentElement;
+  var next = isLightTheme() ? 'dark' : 'light';
+  if (next === 'light') html.setAttribute('data-theme', 'light');
+  else html.removeAttribute('data-theme');
+  try { localStorage.setItem('theme', next); } catch(e) {}
+  updateThemeIcon();
+  rethemeCharts();
+};
+updateThemeIcon();
+
 // ===== DATA =====
 var CHURN_ROUNDS = {
   train:[0.55,0.58,0.61,0.64,0.67,0.70,0.73,0.755,0.775,0.79,0.805,0.818,0.83,0.84,0.85,0.858,0.865,0.872,0.878,0.883],
@@ -620,8 +660,8 @@ function renderInterCase(){
     },options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false}},
       scales:{
-        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},maxTicksLimit:10}},
-        y:{title:{display:true,text:data.metric,color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0.4,max:1.0}
+        x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},maxTicksLimit:10}},
+        y:{title:{display:true,text:data.metric,color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}},min:0.4,max:1.0}
       }
     }});
   } else {
@@ -769,8 +809,8 @@ function buildFIChart(feat){
     responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Importancia: '+(c.parsed.x*100).toFixed(0)+'%';}}}},
     scales:{
-      x:{title:{display:true,text:'Importancia relativa',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.4},
-      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10}}}
+      x:{title:{display:true,text:'Importancia relativa',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.4},
+      y:{grid:{color:gridColor(.04)},ticks:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10}}}
     }
   }});
 }

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EDA Lab &mdash; Guia de Analisis Exploratorio</title>
@@ -16,6 +17,12 @@
   --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
   --r:8px;--rl:14px;
 }
+html[data-theme="light"]{
+  --bg:#eef1f6;--bg2:#ffffff;--bg3:#f4f6fa;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.18);--text:#0f172a;--text2:#475569;--text3:#94a3b8;--green:#08915c;--blue:#015ccb;--orange:#c25700;--red:#d10505;--purple:#3804d2;--yellow:#a37600;--teal:#198a7c;--pink:#cb0b70;
+}
+.theme-toggle{flex-shrink:0;width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.theme-toggle:hover{border-color:var(--yellow);color:var(--yellow)}
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
 .hdr{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
@@ -54,7 +61,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
 /* checklist */
 .checklist{display:grid;gap:8px}
 .check-item{display:flex;align-items:flex-start;gap:10px;padding:10px 13px;background:var(--bg3);border-radius:var(--r);cursor:pointer;transition:background .15s;border:1px solid transparent}
-.check-item:hover{background:rgba(255,255,255,.03)}
+.check-item:hover{background:color-mix(in srgb, var(--text) 3%, transparent)}
 .check-item.done{background:rgba(74,240,176,.06);border-color:rgba(74,240,176,.18)}
 .check-box{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s}
 .check-item.done .check-box{background:var(--green);border-color:var(--green);color:#0a1a14;font-size:11px;font-weight:700}
@@ -91,6 +98,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
   <span class="hdr-badge">EDA LAB</span>
   <span class="hdr-title">Guia de Analisis Exploratorio de Datos</span>
   <span class="hdr-sub">300 clientes e-commerce &middot; guia para estudiantes</span>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema"></button>
 </div>
 
 <div class="tabs">
@@ -431,6 +439,38 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
 <script>
 (function(){
 
+
+/* ─────────────── THEME ─────────────── */
+function isLightTheme() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+function gridColor(a) { a = a || 0.04; return isLightTheme() ? 'rgba(15,23,42,' + (a*2).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function overlayColor(a) { a = a || 0.1; return isLightTheme() ? 'rgba(15,23,42,' + (a*0.8).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function segBorderColor() { return isLightTheme() ? 'rgba(255,255,255,.8)' : 'rgba(10,13,18,.5)'; }
+function updateThemeIcon() {
+  document.querySelectorAll('.theme-toggle').forEach(function(btn){ btn.textContent = isLightTheme() ? '☀' : '☮'; });
+}
+function rethemeCharts() {
+  if (typeof chartRefs === 'undefined') return;
+  Object.keys(chartRefs).forEach(function(k) {
+    var ch = chartRefs[k];
+    if (!ch || !ch.options || !ch.options.scales) return;
+    Object.keys(ch.options.scales).forEach(function(axKey) {
+      var ax = ch.options.scales[axKey];
+      if (ax.grid && ax.grid.color !== undefined) ax.grid.color = gridColor(axKey === 'r' ? 0.08 : 0.04);
+    });
+    ch.update();
+  });
+}
+window.toggleTheme = function() {
+  var html = document.documentElement;
+  var next = isLightTheme() ? 'dark' : 'light';
+  if (next === 'light') html.setAttribute('data-theme', 'light');
+  else html.removeAttribute('data-theme');
+  try { localStorage.setItem('theme', next); } catch(e) {}
+  updateThemeIcon();
+  rethemeCharts();
+};
+updateThemeIcon();
+
 // ===== TAB SWITCH =====
 window.switchTab=function(t){
   document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');});
@@ -453,8 +493,8 @@ function chartOpts(extra){
     responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false}},
     scales:{
-      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:8},maxTicksLimit:8}},
-      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}}
+      x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:8},maxTicksLimit:8}},
+      y:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:8}}}
     }
   };
   if(extra) Object.assign(base,extra);
@@ -565,7 +605,7 @@ function buildGeneralCharts(){
       datasets:[{data:data.counts,backgroundColor:color,borderRadius:3,borderSkipped:false}]
     },options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false}},
-      scales:{x:{title:{display:true,text:xlabel,color:'#4d566b',font:{family:'IBM Plex Mono',size:8}},grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:6}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:7}}}}
+      scales:{x:{title:{display:true,text:xlabel,color:'#4d566b',font:{family:'IBM Plex Mono',size:8}},grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:6}},y:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:7}}}}
     }});
   }
   mkHist('g-hist-edad',AGE_HIST,'rgba(34,211,238,.6)','Edad');
@@ -579,7 +619,7 @@ function buildGeneralCharts(){
     datasets:[{data:REGION_DATA.counts,backgroundColor:'rgba(167,139,250,.6)',borderRadius:4}]
   },options:{responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false}},
-    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}}}
+    scales:{x:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:9}}},y:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:9}}}}
   }});
 
   // Boxplot simulado con bar chart
@@ -595,7 +635,7 @@ function buildGeneralCharts(){
   },options:{responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.raw?'Rango: '+c.raw[0]+' \u2013 '+c.raw[1]:'';}}},
     annotation:{annotations:{}}},
-    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}}}
+    scales:{x:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:9}}},y:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:9}}}}
   }});
 
   // Churn by region
@@ -605,7 +645,7 @@ function buildGeneralCharts(){
     datasets:[{label:'Churn rate %',data:CHURN_REGION.churn_rate,backgroundColor:CHURN_REGION.churn_rate.map(function(v){return v>6?'rgba(248,113,113,.7)':v>5?'rgba(251,146,60,.7)':'rgba(74,240,176,.6)';}),borderRadius:4}]
   },options:{responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Churn: '+c.parsed.y+'%';}}}},
-    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}},y:{title:{display:true,text:'Churn rate (%)',color:'#4d566b',font:{size:9}},grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:10}}
+    scales:{x:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:9}}},y:{title:{display:true,text:'Churn rate (%)',color:'#4d566b',font:{size:9}},grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:9}},min:0,max:10}}
   }});
 
   // Device bar
@@ -615,7 +655,7 @@ function buildGeneralCharts(){
     datasets:[{data:DEVICE_DATA.counts,backgroundColor:'rgba(244,114,182,.6)',borderRadius:4}]
   },options:{responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false}},
-    scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:9}}}}
+    scales:{x:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:9}}},y:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:9}}}}
   }});
 
   buildChecklist('checklist-general',CHECKS.general);
@@ -641,7 +681,7 @@ var INIT={
       datasets:[{data:vals,borderColor:'rgba(96,165,250,.8)',borderWidth:1.5,pointRadius:0,fill:false,tension:.3}]
     },options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false}},
-      scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:13}},y:{title:{display:true,text:'Ventas S/.',color:'#4d566b',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}}}
+      scales:{x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:13}},y:{title:{display:true,text:'Ventas S/.',color:'#4d566b',font:{size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:8}}}}
     }});
 
     var ctx2=document.getElementById('ts-decomp');
@@ -653,7 +693,7 @@ var INIT={
       ]
     },options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{labels:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},boxWidth:10}}},
-      scales:{x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:13}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}}}
+      scales:{x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:8},maxTicksLimit:13}},y:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:8}}}}
     }});
 
     buildChecklist('checklist-ts',CHECKS.ts);
@@ -674,7 +714,7 @@ var INIT={
       datasets:[{data:[3.2,8.4,8.5,22.3],backgroundColor:['rgba(248,113,113,.7)','rgba(74,240,176,.6)','rgba(248,113,113,.7)','rgba(74,240,176,.6)'],borderRadius:4}]
     },options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Media: '+c.parsed.y;}}}},
-      scales:{x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:8}}},y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#4d566b',font:{size:8}}}}
+      scales:{x:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:8}}},y:{grid:{color:gridColor(.03)},ticks:{color:'#4d566b',font:{size:8}}}}
     }});
 
     buildChecklist('checklist-imb',CHECKS.imb);
@@ -722,8 +762,8 @@ var INIT={
     },options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false}},
       scales:{
-        x:{title:{display:true,text:'Visitas/mes',color:'#4d566b',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}},
-        y:{title:{display:true,text:'Revenue 90d (S/.)',color:'#4d566b',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:8}}}
+        x:{title:{display:true,text:'Visitas/mes',color:'#4d566b',font:{size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:8}}},
+        y:{title:{display:true,text:'Revenue 90d (S/.)',color:'#4d566b',font:{size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:8}}}
       }
     }});
 

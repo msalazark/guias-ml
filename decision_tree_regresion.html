@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Decision Tree · Regresion</title>
@@ -17,6 +18,12 @@
   --font-sans:'IBM Plex Sans',sans-serif;
   --r:8px;--rl:14px;
 }
+html[data-theme="light"]{
+  --bg:#eef1f6;--bg2:#ffffff;--bg3:#f4f6fa;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.18);--text:#0f172a;--text2:#475569;--text3:#94a3b8;--green:#08915c;--blue:#015ccb;--orange:#c25700;--red:#d10505;--purple:#3804d2;--yellow:#a37600;--amber:#ab6c03;
+}
+.theme-toggle{flex-shrink:0;width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.theme-toggle:hover{border-color:var(--yellow);color:var(--yellow)}
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
 .hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
@@ -79,6 +86,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   <span class="hdr-badge" id="hdrBadge">BASICO</span>
   <span class="hdr-title">Decision Tree · Regresion</span>
   <span class="hdr-sub">Prediccion de revenue &mdash; tiendas e-commerce &middot; 200 obs.</span>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema"></button>
 </div>
 
 <div class="level-bar">
@@ -395,6 +403,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <script>
 (function(){
 
+
+/* ─────────────── THEME ─────────────── */
+function isLightTheme() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+function gridColor(a) { a = a || 0.04; return isLightTheme() ? 'rgba(15,23,42,' + (a*2).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function overlayColor(a) { a = a || 0.1; return isLightTheme() ? 'rgba(15,23,42,' + (a*0.8).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function segBorderColor() { return isLightTheme() ? 'rgba(255,255,255,.8)' : 'rgba(10,13,18,.5)'; }
+function updateThemeIcon() {
+  document.querySelectorAll('.theme-toggle').forEach(function(btn){ btn.textContent = isLightTheme() ? '☀' : '☮'; });
+}
+function rethemeCharts() {
+  if (typeof chartRefs === 'undefined') return;
+  Object.keys(chartRefs).forEach(function(k) {
+    var ch = chartRefs[k];
+    if (!ch || !ch.options || !ch.options.scales) return;
+    Object.keys(ch.options.scales).forEach(function(axKey) {
+      var ax = ch.options.scales[axKey];
+      if (ax.grid && ax.grid.color !== undefined) ax.grid.color = gridColor(axKey === 'r' ? 0.08 : 0.04);
+    });
+    ch.update();
+  });
+}
+window.toggleTheme = function() {
+  var html = document.documentElement;
+  var next = isLightTheme() ? 'dark' : 'light';
+  if (next === 'light') html.setAttribute('data-theme', 'light');
+  else html.removeAttribute('data-theme');
+  try { localStorage.setItem('theme', next); } catch(e) {}
+  updateThemeIcon();
+  rethemeCharts();
+};
+updateThemeIcon();
+
 var DEPTH_M = {
   1:{tr2:0.62,te2:0.58,mae:1240,rmse:1580,gap:0.04},
   2:{tr2:0.72,te2:0.68,mae:920, rmse:1180,gap:0.04},
@@ -465,8 +505,8 @@ function buildScatter(depth){
     ]},options:{responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false},tooltip:{mode:'point',callbacks:{label:function(c){return 'Real:S/.'+c.parsed.x+' | Pred:S/.'+c.parsed.y;}}}},
       scales:{
-        x:{title:{display:true,text:'Revenue Real (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
-        y:{title:{display:true,text:'Revenue Predicho (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+        x:{title:{display:true,text:'Revenue Real (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}}},
+        y:{title:{display:true,text:'Revenue Predicho (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}}}
       }
     }});
   } else {
@@ -507,8 +547,8 @@ function buildR2Curve(){
   },options:{responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false}},
     scales:{
-      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
-      y:{title:{display:true,text:'R\u00b2',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0.4,max:1.05}
+      x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'R\u00b2',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}},min:0.4,max:1.05}
     }
   }});
 }
@@ -524,8 +564,8 @@ function buildErrorCurve(){
   },options:{responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{labels:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9},boxWidth:10}}},
     scales:{
-      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
-      y:{title:{display:true,text:'Error (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+      x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'Error (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}}}
     }
   }});
 }
@@ -558,8 +598,8 @@ function buildFIChart(){
   },options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Importancia: '+(c.parsed.x*100).toFixed(0)+'%';}}}},
     scales:{
-      x:{title:{display:true,text:'Importancia',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.4},
-      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10}}}
+      x:{title:{display:true,text:'Importancia',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.4},
+      y:{grid:{color:gridColor(.04)},ticks:{color:'#8891a8',font:{family:'IBM Plex Mono',size:10}}}
     }
   }});
 }
@@ -576,8 +616,8 @@ function buildAdvValChart(){
   },options:{responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false}},
     scales:{
-      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
-      y:{title:{display:true,text:'R\u00b2 / MAE norm.',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0.4,max:1.05}
+      x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'R\u00b2 / MAE norm.',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}},min:0.4,max:1.05}
     }
   }});
 }

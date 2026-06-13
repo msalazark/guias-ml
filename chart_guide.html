@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Guia de Graficos para Dashboards</title>
@@ -16,12 +17,21 @@
   --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
   --r:8px;--rl:14px;
 }
+html[data-theme="light"]{
+  --bg:#eef1f6;--bg2:#ffffff;--bg3:#f4f6fa;
+  --border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.18);
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --green:#08915c;--blue:#015ccb;--orange:#c25700;
+  --red:#d10505;--purple:#3804d2;--yellow:#a37600;--teal:#198a7c;--pink:#cb0b70;
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
 .hdr{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
 .hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;background:rgba(251,196,60,.15);color:var(--yellow)}
 .hdr-title{font-family:var(--font-mono);font-size:13px;font-weight:500}
 .hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.theme-toggle{flex-shrink:0;width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.theme-toggle:hover{border-color:var(--yellow);color:var(--yellow)}
 .tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);overflow-x:auto}
 .tab{padding:13px 22px;font-size:11px;font-family:var(--font-mono);color:var(--text3);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;user-select:none;white-space:nowrap}
 .tab:hover{color:var(--text2)}
@@ -56,7 +66,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
 .reset-btn{padding:7px 16px;border-radius:5px;font-family:var(--font-mono);font-size:11px;border:1px solid var(--border2);color:var(--text3);cursor:pointer;background:transparent;transition:all .15s;margin-top:10px}
 .reset-btn:hover{border-color:var(--yellow);color:var(--yellow)}
 /* CODE */
-.ctog{display:flex;align-items:center;gap:7px;padding:7px 12px;background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:10px;transition:all .15s}
+.ctog{display:flex;align-items:center;gap:7px;padding:7px 12px;background:color-mix(in srgb, var(--text) 3%, transparent);border:1px solid var(--border);border-radius:5px;cursor:pointer;font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-top:10px;transition:all .15s}
 .ctog:hover{border-color:var(--border2);color:var(--text2)}
 .ctog-icon{display:inline-block;transition:transform .2s}
 .ctog.open .ctog-icon{transform:rotate(90deg)}
@@ -96,6 +106,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
   <span class="hdr-badge">CHART GUIDE</span>
   <span class="hdr-title">Guia de Graficos para Dashboards</span>
   <span class="hdr-sub">20 graficos &middot; arbol de decision &middot; galeria interactiva</span>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema"></button>
 </div>
 <div class="tabs">
   <div class="tab ta active" data-tab="tree" onclick="switchTab('tree')">&#129300; Arbol de Decision</div>
@@ -549,6 +560,40 @@ function renderGalDetail(k) {
 }
 
 /* ─────────────── CHARTS ─────────────── */
+/* ─────────────── THEME ─────────────── */
+function isLightTheme() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+function gridColor() { return isLightTheme() ? 'rgba(15,23,42,.08)' : 'rgba(255,255,255,.04)'; }
+function gridColorR() { return isLightTheme() ? 'rgba(15,23,42,.12)' : 'rgba(255,255,255,.08)'; }
+function overlayColor() { return isLightTheme() ? 'rgba(15,23,42,.08)' : 'rgba(255,255,255,.1)'; }
+function segBorderColor() { return isLightTheme() ? 'rgba(255,255,255,.8)' : 'rgba(10,13,18,.5)'; }
+
+function updateThemeIcon() {
+  var btn = document.querySelector('.theme-toggle');
+  if (btn) btn.textContent = isLightTheme() ? '☀' : '☾';
+}
+
+function rethemeCharts() {
+  Object.keys(chartRefs).forEach(function(k) {
+    var ch = chartRefs[k];
+    if (!ch || !ch.options || !ch.options.scales) return;
+    Object.keys(ch.options.scales).forEach(function(axKey) {
+      var ax = ch.options.scales[axKey];
+      if (ax.grid && ax.grid.color !== undefined) ax.grid.color = (axKey === 'r') ? gridColorR() : gridColor();
+    });
+    ch.update();
+  });
+}
+
+window.toggleTheme = function() {
+  var html = document.documentElement;
+  var next = isLightTheme() ? 'dark' : 'light';
+  if (next === 'light') html.setAttribute('data-theme', 'light');
+  else html.removeAttribute('data-theme');
+  try { localStorage.setItem('theme', next); } catch(e) {}
+  updateThemeIcon();
+  rethemeCharts();
+};
+
 var chartRefs = {};
 function drawChart(id, canvasId, height, isMini) {
   var canvas = document.getElementById(canvasId);
@@ -559,8 +604,8 @@ function drawChart(id, canvasId, height, isMini) {
     responsive:true, maintainAspectRatio:false, animation:false,
     plugins:{legend:{display:!isMini}},
     scales:{
-      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:isMini?7:9},maxTicksLimit:6}},
-      y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:isMini?7:9}}}
+      x:{grid:{color:gridColor()},ticks:{color:'#4d566b',font:{size:isMini?7:9},maxTicksLimit:6}},
+      y:{grid:{color:gridColor()},ticks:{color:'#4d566b',font:{size:isMini?7:9}}}
     }
   };
   var noScale = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:10}}}};
@@ -602,9 +647,9 @@ function drawChart(id, canvasId, height, isMini) {
     chart = new Chart(ctx, {type:'bar', data:{labels:['Base','Upsell','+Nuevos','-Churn','Total'],datasets:[{data:[80,15,22,-8,109],backgroundColor:['rgba(96,165,250,.5)','rgba(74,240,176,.6)','rgba(74,240,176,.6)','rgba(248,113,113,.6)','rgba(251,196,60,.6)'],borderRadius:4}]}, options:base});
   } else if (id==='bullet') {
     var bp = Object.assign({},base); bp.plugins={legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:8}}};
-    chart = new Chart(ctx, {type:'bar', data:{labels:['Revenue','CTR','Retencion'],datasets:[{label:'Meta',data:[100,8,85],backgroundColor:'rgba(255,255,255,.1)',borderRadius:4,barPercentage:.8},{label:'Actual',data:[87,6.2,78],backgroundColor:['rgba(74,240,176,.7)','rgba(251,146,60,.7)','rgba(248,113,113,.6)'],borderRadius:4,barPercentage:.5}]}, options:bp});
+    chart = new Chart(ctx, {type:'bar', data:{labels:['Revenue','CTR','Retencion'],datasets:[{label:'Meta',data:[100,8,85],backgroundColor:overlayColor(),borderRadius:4,barPercentage:.8},{label:'Actual',data:[87,6.2,78],backgroundColor:['rgba(74,240,176,.7)','rgba(251,146,60,.7)','rgba(248,113,113,.6)'],borderRadius:4,barPercentage:.5}]}, options:bp});
   } else if (id==='sunburst') {
-    chart = new Chart(ctx, {type:'doughnut', data:{labels:['Google','Email','Social','Directo','Referral','Direct'],datasets:[{data:[30,20,15,12,13,10],backgroundColor:['rgba(96,165,250,.7)','rgba(74,240,176,.6)','rgba(251,146,60,.6)','rgba(167,139,250,.6)','rgba(244,114,182,.5)','rgba(45,212,191,.5)'],borderColor:'rgba(10,13,18,.5)',borderWidth:2}]}, options:noScale});
+    chart = new Chart(ctx, {type:'doughnut', data:{labels:['Google','Email','Social','Directo','Referral','Direct'],datasets:[{data:[30,20,15,12,13,10],backgroundColor:['rgba(96,165,250,.7)','rgba(74,240,176,.6)','rgba(251,146,60,.6)','rgba(167,139,250,.6)','rgba(244,114,182,.5)','rgba(45,212,191,.5)'],borderColor:segBorderColor(),borderWidth:2}]}, options:noScale});
   } else if (id==='sankey') {
     // Simulate with stacked bar showing flows
     var sp2 = Object.assign({},base); sp2.plugins={legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:8}}};
@@ -620,13 +665,13 @@ function drawChart(id, canvasId, height, isMini) {
     var bbr=['Lima','Arequipa','Trujillo','Cusco','Piura'];
     var bbc=['rgba(96,165,250,.6)','rgba(74,240,176,.6)','rgba(251,146,60,.6)','rgba(167,139,250,.6)','rgba(244,114,182,.6)'];
     for(var bi=0;bi<5;bi++) bbd.push({x:10+bi*15,y:5+bi*8+Math.random()*10,r:(bi+1)*6,label:bbr[bi]});
-    var bbo = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.raw.label||'';}}}},scales:{x:{title:{display:!isMini,text:'Inversion',color:'#4d566b',font:{size:8}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:isMini?7:9}}},y:{title:{display:!isMini,text:'Revenue',color:'#4d566b',font:{size:8}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:isMini?7:9}}}}};
+    var bbo = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.raw.label||'';}}}},scales:{x:{title:{display:!isMini,text:'Inversion',color:'#4d566b',font:{size:8}},grid:{color:gridColor()},ticks:{color:'#4d566b',font:{size:isMini?7:9}}},y:{title:{display:!isMini,text:'Revenue',color:'#4d566b',font:{size:8}},grid:{color:gridColor()},ticks:{color:'#4d566b',font:{size:isMini?7:9}}}}};
     chart = new Chart(ctx, {type:'bubble', data:{datasets:bbd.map(function(d,i){return {data:[d],backgroundColor:bbc[i],label:d.label};})}, options:bbo});
   } else if (id==='gantt') {
     var gb = Object.assign({},base); gb.indexAxis='y';
     chart = new Chart(ctx, {type:'bar', data:{labels:['Camp. Navidad','Camp. Black Friday','Email Retencion','Social Awareness'],datasets:[{label:'Duracion',data:[isMini?[8,12]:[8,14],[5,9],[1,12],[3,11]],backgroundColor:['rgba(96,165,250,.6)','rgba(74,240,176,.6)','rgba(251,146,60,.6)','rgba(167,139,250,.6)'],borderRadius:4,barPercentage:.6}]}, options:gb});
   } else if (id==='radar') {
-    var rd = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:8}}},scales:{r:{grid:{color:'rgba(255,255,255,.08)'},ticks:{display:false},pointLabels:{color:'#8891a8',font:{size:isMini?7:9}}}}};
+    var rd = {responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:!isMini,labels:{color:'#8891a8',font:{size:9},boxWidth:8}}},scales:{r:{grid:{color:gridColorR()},ticks:{display:false},pointLabels:{color:'#8891a8',font:{size:isMini?7:9}}}}};
     chart = new Chart(ctx, {type:'radar', data:{labels:['Recency','Frequency','Monetary','Tenure','NPS'],datasets:[{label:'Champions',data:[90,85,95,80,88],backgroundColor:'rgba(74,240,176,.2)',borderColor:'rgba(74,240,176,.8)',borderWidth:2,pointRadius:isMini?2:3},{label:'Lost',data:[20,15,18,35,22],backgroundColor:'rgba(248,113,113,.2)',borderColor:'rgba(248,113,113,.7)',borderWidth:2,pointRadius:isMini?2:3}]}, options:rd});
   } else if (id==='calendar') {
     var cd=[]; for(var ci=0;ci<(isMini?20:35);ci++) cd.push({x:ci%7,y:Math.floor(ci/7),r:(Math.random()*0.8+0.1)*12});
@@ -669,6 +714,7 @@ document.addEventListener('click', function(e){
 });
 
 /* ─────────────── INIT ─────────────── */
+updateThemeIcon();
 renderTree();
 
 })();

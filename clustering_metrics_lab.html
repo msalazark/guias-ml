@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Clustering Metrics Lab</title>
@@ -18,6 +19,12 @@
   --font-sans:'IBM Plex Sans',sans-serif;
   --r:8px;--rl:14px;
 }
+html[data-theme="light"]{
+  --bg:#eef1f6;--bg2:#ffffff;--bg3:#f4f6fa;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.18);--text:#0f172a;--text2:#475569;--text3:#94a3b8;--green:#08915c;--blue:#015ccb;--orange:#c25700;--red:#d10505;--purple:#3804d2;--yellow:#a37600;--teal:#198a7c;--c0:#015ccb;--c1:#08915c;--c2:#c25700;--c3:#d10505;
+}
+.theme-toggle{flex-shrink:0;width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.theme-toggle:hover{border-color:var(--yellow);color:var(--yellow)}
+
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
 .hdr{padding:16px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
@@ -97,6 +104,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
   <span class="hdr-badge" id="hdrBadge" style="background:rgba(45,212,191,.15);color:var(--teal)">BASICO</span>
   <span class="hdr-title">Clustering Metrics Lab</span>
   <span class="hdr-sub">Segmentacion RFM &mdash; 120 clientes e-commerce</span>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema"></button>
 </div>
 
 <div class="level-bar">
@@ -444,6 +452,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;heigh
 <script>
 (function(){
 
+
+/* ─────────────── THEME ─────────────── */
+function isLightTheme() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+function gridColor(a) { a = a || 0.04; return isLightTheme() ? 'rgba(15,23,42,' + (a*2).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function overlayColor(a) { a = a || 0.1; return isLightTheme() ? 'rgba(15,23,42,' + (a*0.8).toFixed(2) + ')' : 'rgba(255,255,255,' + a + ')'; }
+function segBorderColor() { return isLightTheme() ? 'rgba(255,255,255,.8)' : 'rgba(10,13,18,.5)'; }
+function updateThemeIcon() {
+  document.querySelectorAll('.theme-toggle').forEach(function(btn){ btn.textContent = isLightTheme() ? '☀' : '☮'; });
+}
+function rethemeCharts() {
+  if (typeof chartRefs === 'undefined') return;
+  Object.keys(chartRefs).forEach(function(k) {
+    var ch = chartRefs[k];
+    if (!ch || !ch.options || !ch.options.scales) return;
+    Object.keys(ch.options.scales).forEach(function(axKey) {
+      var ax = ch.options.scales[axKey];
+      if (ax.grid && ax.grid.color !== undefined) ax.grid.color = gridColor(axKey === 'r' ? 0.08 : 0.04);
+    });
+    ch.update();
+  });
+}
+window.toggleTheme = function() {
+  var html = document.documentElement;
+  var next = isLightTheme() ? 'dark' : 'light';
+  if (next === 'light') html.setAttribute('data-theme', 'light');
+  else html.removeAttribute('data-theme');
+  try { localStorage.setItem('theme', next); } catch(e) {}
+  updateThemeIcon();
+  rethemeCharts();
+};
+updateThemeIcon();
+
 // ===== DATA =====
 var CUSTOMERS = [[12,22,860],[6,15,850],[5,14,880],[8,20,710],[8,18,620],[10,19,1210],[9,18,1030],[9,21,800],[9,21,950],[8,15,920],[8,20,880],[11,20,700],[10,17,750],[7,19,810],[5,21,900],[8,18,780],[11,16,830],[6,17,770],[10,20,960],[8,19,870],[7,18,820],[9,16,740],[8,21,890],[10,17,800],[9,19,840],[14,14,520],[20,12,480],[18,11,550],[25,13,510],[22,14,490],[19,10,530],[21,12,560],[17,13,500],[23,11,470],[16,14,580],[24,12,450],[20,13,540],[18,11,510],[22,14,500],[19,12,520],[15,13,570],[21,11,490],[17,14,530],[23,12,480],[20,13,510],[18,11,550],[22,14,500],[16,12,570],[24,11,460],[21,13,520],[15,12,590],[19,14,510],[17,11,540],[23,13,490],[20,12,530],[55,5,280],[60,4,260],[50,6,300],[65,5,270],[58,4,250],[52,6,290],[63,5,240],[57,4,270],[48,7,310],[66,5,260],[54,6,280],[61,4,250],[49,7,300],[64,5,270],[56,5,260],[51,6,290],[62,4,250],[58,5,270],[47,7,310],[65,5,250],[53,6,280],[60,4,260],[50,5,300],[64,5,270],[57,6,260],[55,4,280],[59,5,260],[48,7,310],[65,4,250],[52,6,290],[63,5,250],[57,4,270],[49,7,310],[66,5,260],[54,6,280],[90,2,90],[95,1,80],[85,2,100],[100,1,70],[92,2,85],[88,1,95],[97,2,75],[83,2,110],[102,1,65],[89,2,90],[94,1,80],[86,2,100],[99,1,70],[91,2,85],[87,1,95],[96,2,75],[82,2,110],[103,1,65],[90,2,90],[95,1,80],[85,2,100],[100,1,70],[92,2,85],[88,1,95],[97,2,75],[83,2,110],[102,1,65],[89,2,90],[94,1,80],[86,2,100]];
 var LABELS = [];
@@ -507,8 +547,8 @@ function buildBasicScatter(){
     responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false},tooltip:{mode:'point',callbacks:{label:function(c){return c.dataset.label+': R='+c.parsed.x+' M=S/.'+c.parsed.y;}}}},
     scales:{
-      x:{title:{display:true,text:'Recency (dias)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
-      y:{title:{display:true,text:'Monetary (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+      x:{title:{display:true,text:'Recency (dias)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}}},
+      y:{title:{display:true,text:'Monetary (S/.)',color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}}}
     }
   }});
 }
@@ -532,8 +572,8 @@ function buildElbowChart(highlightK){
       responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'WCSS: '+c.parsed.y;}}}},
       scales:{
-        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
-        y:{title:{display:true,text:'WCSS (Inertia)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+        x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+        y:{title:{display:true,text:'WCSS (Inertia)',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}}}
       }
     }});
   } else {
@@ -572,8 +612,8 @@ function buildSilKChart(){
     responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Silhouette: '+c.parsed.y.toFixed(3);}}}},
     scales:{
-      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
-      y:{title:{display:true,text:'Silhouette Score',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.7}
+      x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'Silhouette Score',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.7}
     }
   }});
 }
@@ -591,8 +631,8 @@ function buildSilClusterChart(){
     responsive:true,maintainAspectRatio:false,animation:false,
     plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return 'Silhouette: '+c.parsed.y.toFixed(2);}}}},
     scales:{
-      x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
-      y:{title:{display:true,text:'Silhouette medio',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.8}
+      x:{grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{family:'IBM Plex Mono',size:9}}},
+      y:{title:{display:true,text:'Silhouette medio',color:'#4d566b',font:{family:'IBM Plex Mono',size:9}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}},min:0,max:0.8}
     }
   }});
 }
@@ -658,8 +698,8 @@ function buildAdvScatter(){
       responsive:true,maintainAspectRatio:false,animation:false,
       plugins:{legend:{display:false},tooltip:{mode:'point',callbacks:{label:function(c){return c.dataset.label+': ('+c.parsed.x+', '+c.parsed.y+')';}}}},
       scales:{
-        x:{title:{display:true,text:AXIS_LABELS[axisX],color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}},
-        y:{title:{display:true,text:AXIS_LABELS[axisY],color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#4d566b',font:{size:9}}}
+        x:{title:{display:true,text:AXIS_LABELS[axisX],color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}}},
+        y:{title:{display:true,text:AXIS_LABELS[axisY],color:'#4d566b',font:{family:'IBM Plex Mono',size:10}},grid:{color:gridColor(.04)},ticks:{color:'#4d566b',font:{size:9}}}
       }
     }});
   } else {
