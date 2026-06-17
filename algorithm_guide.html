@@ -67,6 +67,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-hei
 .ctog.open .ctog-icon{transform:rotate(90deg)}
 .cblock{display:none;margin-top:6px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:13px 15px;font-family:var(--font-mono);font-size:11px;line-height:1.8;overflow-x:auto}
 .cblock.shown{display:block}
+.prompt-hdr{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-bottom:1px solid var(--border);font-size:10px;font-family:var(--font-mono);color:var(--text3);gap:8px}
+.prompt-txt{padding:12px 15px;color:var(--text2);font-size:12px;line-height:1.75;white-space:pre-wrap;word-break:break-word;font-family:var(--font-sans);display:block;margin:0}
+.copy-btn{padding:3px 10px;border-radius:4px;font-size:10px;font-family:var(--font-mono);border:1px solid var(--border2);color:var(--text3);cursor:pointer;background:transparent;transition:all .15s;flex-shrink:0}
+.copy-btn:hover{border-color:var(--green);color:var(--green)}
 .kw{color:#a78bfa}.fn{color:#60a5fa}.st{color:#4af0b0}.cm{color:#4d566b}.nu{color:#fb923c}
 /* GALLERY */
 .gal-filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
@@ -246,7 +250,18 @@ var A = {
     cons:['Asume relacion lineal entre variables','Sensible a outliers','No captura interacciones sin feature engineering manual'],
     cx:{train:1,interp:5,data:1},
     alts:['Ridge / Lasso (regularizacion)','Decision Tree Regression','Polynomial Regression'],
-    code:'<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LinearRegression\nmodel = <span class="fn">LinearRegression</span>()\nmodel.<span class="fn">fit</span>(X_train, y_train)\n<span class="cm"># Coeficientes interpretables directamente</span>\n<span class="fn">print</span>(model.coef_, model.intercept_)'
+    prompt:`Genera un script Python completo y ejecutable para probar Regresión Lineal con sklearn.
+
+Dataset: make_regression(n_samples=500, n_features=5, noise=15, random_state=42).
+
+Incluye:
+- Train/test split 80/20 (random_state=42)
+- Entrenamiento con LinearRegression()
+- Métricas: MAE, RMSE y R²
+- Tabla de coeficientes por feature (DataFrame con nombre y valor)
+- Gráfico de valores reales vs predichos (con línea de referencia y=x)
+
+Comenta cada sección en español. Sin archivos ni datasets externos.`
   },
   logreg:{n:'Regresion Logistica',ic:'&#9989;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
     when:'Clasificacion binaria o multiclase cuando necesitas probabilidades interpretables y un modelo rapido como baseline.',
@@ -256,7 +271,18 @@ var A = {
     cons:['Asume frontera de decision lineal (en el espacio logit)','Sensible a outliers y escalas','Performance limitada vs arboles/boosting en datos complejos'],
     cx:{train:1,interp:5,data:1},
     alts:['Decision Tree Classifier','Naive Bayes','SVM con kernel lineal'],
-    code:'<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression\nmodel = <span class="fn">LogisticRegression</span>(class_weight=<span class="st">\'balanced\'</span>)\nmodel.<span class="fn">fit</span>(X_train, y_train)\nproba = model.<span class="fn">predict_proba</span>(X_test)[:,<span class="nu">1</span>]'
+    prompt:`Genera un script Python completo y ejecutable para probar Regresión Logística con sklearn.
+
+Dataset: make_classification(n_samples=1000, n_features=5, weights=[0.8, 0.2], random_state=42) — clases desbalanceadas.
+
+Incluye:
+- Train/test split 80/20
+- Entrenamiento con class_weight="balanced"
+- Métricas: accuracy, precision, recall, F1 y AUC-ROC
+- Matriz de confusión (heatmap con matplotlib)
+- Curva ROC con área bajo la curva
+
+Comenta en español. Sin archivos externos.`
   },
   dtree:{n:'Decision Tree',ic:'&#127795;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
     when:'Cuando necesitas un modelo totalmente interpretable que capture relaciones no lineales e interacciones automaticamente. Sirve para clasificacion y regresion.',
@@ -266,7 +292,18 @@ var A = {
     cons:['Alta varianza: pequeños cambios en datos cambian el arbol','Propenso a overfitting sin poda','Performance inferior a ensambles'],
     cx:{train:1,interp:5,data:1},
     alts:['Random Forest (ensamble)','XGBoost / LightGBM','Reglas de negocio manuales (rule-based)'],
-    code:'<span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeClassifier\nmodel = <span class="fn">DecisionTreeClassifier</span>(max_depth=<span class="nu">4</span>, min_samples_leaf=<span class="nu">10</span>)\nmodel.<span class="fn">fit</span>(X_train, y_train)'
+    prompt:`Genera un script Python completo y ejecutable para probar Decision Tree Classifier con sklearn.
+
+Dataset: make_classification(n_samples=800, n_features=6, n_classes=3, random_state=42).
+
+Incluye:
+- Train/test split 80/20
+- Entrenamiento con max_depth=4, min_samples_leaf=10
+- Reporte de clasificación completo (precision, recall, F1 por clase)
+- Visualización del árbol con plot_tree (matplotlib, figsize grande)
+- Gráfico de importancia de features (barras horizontales)
+
+Comenta en español. Sin archivos externos.`
   },
   rf:{n:'Random Forest',ic:'&#127794;',fam:'ens',famName:'Ensemble (Bagging)',famColor:'var(--green)',famPill:'p-ens',
     when:'Cuando quieres mejorar mucho sobre un solo arbol sin afinar demasiados hiperparametros. Excelente baseline robusto para clasificacion y regresion tabular.',
@@ -276,7 +313,18 @@ var A = {
     cons:['Menos interpretable que un arbol solo','Mas lento y pesado que un DT','Boosting suele superarlo en precision pura'],
     cx:{train:2,interp:3,data:2},
     alts:['XGBoost / LightGBM / CatBoost','Extra Trees','Gradient Boosting clasico'],
-    code:'<span class="kw">from</span> sklearn.ensemble <span class="kw">import</span> RandomForestClassifier\nmodel = <span class="fn">RandomForestClassifier</span>(n_estimators=<span class="nu">200</span>, max_depth=<span class="nu">6</span>, class_weight=<span class="st">\'balanced\'</span>)\nmodel.<span class="fn">fit</span>(X_train, y_train)'
+    prompt:`Genera un script Python completo y ejecutable para probar Random Forest Classifier con sklearn.
+
+Dataset: make_classification(n_samples=1000, n_features=8, weights=[0.75, 0.25], random_state=42).
+
+Incluye:
+- Train/test split 80/20
+- Entrenamiento con n_estimators=200, max_depth=6, class_weight="balanced"
+- Métricas: accuracy, F1 y AUC-ROC
+- Gráfico de importancia de features (barras horizontales)
+- Comparación de AUC vs Decision Tree baseline en los mismos datos
+
+Comenta en español. Sin archivos externos.`
   },
   boosting:{n:'Gradient Boosting (XGBoost/LightGBM/CatBoost)',ic:'&#9889;',fam:'ens',famName:'Ensemble (Boosting)',famColor:'var(--green)',famPill:'p-ens',
     when:'Cuando la precision es prioritaria sobre la interpretabilidad y trabajas con datos tabulares. El estandar en competencias y produccion para churn, pricing, forecast, credit scoring.',
@@ -286,17 +334,40 @@ var A = {
     cons:['Mas hiperparametros y mas sensibles entre si','Menos interpretable (requiere SHAP/feature importance)','Mas lento de entrenar que RF (excepto LightGBM)'],
     cx:{train:3,interp:2,data:2},
     alts:['Random Forest (mas simple)','CatBoost (si hay muchas categoricas)','Stacking de varios modelos'],
-    code:'<span class="kw">import</span> lightgbm <span class="kw">as</span> lgb\nmodel = lgb.<span class="fn">LGBMClassifier</span>(n_estimators=<span class="nu">500</span>, learning_rate=<span class="nu">0.05</span>)\nmodel.<span class="fn">fit</span>(X_train, y_train,\n    eval_set=[(X_val,y_val)], callbacks=[lgb.<span class="fn">early_stopping</span>(<span class="nu">20</span>)])'
+    prompt:`Genera un script Python completo y ejecutable para probar LightGBM en clasificación binaria.
+
+Dataset: make_classification(n_samples=2000, n_features=10, weights=[0.7, 0.3], random_state=42).
+
+Incluye:
+- Split en train/val/test (60/20/20)
+- LGBMClassifier con early stopping en val set (patience=30 rondas)
+- Métricas en test: AUC, F1, precision y recall
+- Curva de pérdida train vs val por época (gráfico)
+- Top-10 features por importancia (gráfico de barras)
+
+Si LightGBM no está instalado: pip install lightgbm
+Comenta en español. Sin archivos externos.`
   },
   svm:{n:'SVM (Support Vector Machine)',ic:'&#9974;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
     when:'Clasificacion con datasets pequeños/medianos donde existe una frontera de separacion clara, especialmente con kernels no lineales (RBF) para fronteras complejas.',
-    nope:'No con datasets muy grandes (escala mal, O(n\u00b2)-O(n\u00b3)). No si necesitas interpretabilidad directa. No sin escalar las features primero.',
+    nope:'No con datasets muy grandes (escala mal, O(n²)-O(n³)). No si necesitas interpretabilidad directa. No sin escalar las features primero.',
     cases:['Clasificacion de texto (con TF-IDF)','Deteccion de imagenes simples (pre-deep learning)','Diagnostico medico con pocas muestras','Clasificacion binaria con margen claro entre clases'],
     pros:['Muy efectivo en alta dimensionalidad','Kernel trick captura fronteras no lineales','Robusto con pocas muestras relativas a features'],
     cons:['Escala mal con datasets grandes (&gt;50k filas)','Requiere escalar features (StandardScaler)','Hiperparametros (C, gamma) sensibles y poco intuitivos'],
     cx:{train:3,interp:1,data:1},
     alts:['Logistic Regression (si es linealmente separable)','Random Forest / Boosting (datasets grandes)','KNN'],
-    code:'<span class="kw">from</span> sklearn.svm <span class="kw">import</span> SVC\n<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler\nX_scaled = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(X_train)\nmodel = <span class="fn">SVC</span>(kernel=<span class="st">\'rbf\'</span>, C=<span class="nu">1.0</span>, probability=<span class="kw">True</span>)\nmodel.<span class="fn">fit</span>(X_scaled, y_train)'
+    prompt:`Genera un script Python completo y ejecutable para probar SVM (SVC con kernel RBF) con sklearn.
+
+Dataset: make_classification(n_samples=500, n_features=4, random_state=42).
+
+Incluye:
+- StandardScaler aplicado antes del SVC
+- Train/test split 80/20
+- GridSearchCV para C=[0.1, 1, 10] y gamma=["scale", "auto"] con cv=3 y scoring="roc_auc"
+- Métricas del mejor modelo: accuracy, AUC y classification_report
+- Si n_features > 2: reducir a 2D con PCA y visualizar la frontera de decisión
+
+Comenta en español. Sin archivos externos.`
   },
   nb:{n:'Naive Bayes',ic:'&#127922;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
     when:'Clasificacion de texto y problemas con muchas features categoricas/binarias donde la independencia entre features es una aproximacion razonable. Extremadamente rapido.',
@@ -306,7 +377,17 @@ var A = {
     cons:['Supuesto de independencia rara vez se cumple','Probabilidades a veces mal calibradas','Performance inferior a modelos modernos en tareas complejas'],
     cx:{train:1,interp:4,data:1},
     alts:['Logistic Regression','SVM con kernel lineal','TF-IDF + LightGBM (mas preciso)'],
-    code:'<span class="kw">from</span> sklearn.naive_bayes <span class="kw">import</span> MultinomialNB\n<span class="kw">from</span> sklearn.feature_extraction.text <span class="kw">import</span> TfidfVectorizer\nX = <span class="fn">TfidfVectorizer</span>().<span class="fn">fit_transform</span>(textos)\nmodel = <span class="fn">MultinomialNB</span>()\nmodel.<span class="fn">fit</span>(X, y_train)'
+    prompt:`Genera un script Python completo y ejecutable para clasificación de texto con Naive Bayes.
+
+Dataset: genera 600 frases sintéticas en Python (sin archivos externos) con 3 categorías: "tecnología", "deportes" y "política". Cada categoría con vocabulario propio y distinto.
+
+Incluye:
+- TfidfVectorizer(max_features=1000, ngram_range=(1,2))
+- MultinomialNB con train/test split 80/20
+- Reporte de clasificación completo y matriz de confusión (heatmap)
+- Top 10 palabras más relevantes por categoría
+
+Comenta en español. Sin archivos externos.`
   },
   knn:{n:'KNN (K-Nearest Neighbors)',ic:'&#128205;',fam:'sup',famName:'Supervisado',famColor:'var(--blue)',famPill:'p-sup',
     when:'Cuando la similitud entre observaciones es el concepto central del problema y el dataset es pequeño. Util tambien como baseline simple para clasificacion y regresion.',
@@ -316,7 +397,17 @@ var A = {
     cons:['Prediccion lenta en datasets grandes','Sensible a la escala de features y a features irrelevantes','Curse of dimensionality con muchas variables'],
     cx:{train:1,interp:3,data:1},
     alts:['Clustering (si no hay etiquetas)','SVM','Arboles de decision'],
-    code:'<span class="kw">from</span> sklearn.neighbors <span class="kw">import</span> KNeighborsClassifier\n<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler\nX_scaled = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(X_train)\nmodel = <span class="fn">KNeighborsClassifier</span>(n_neighbors=<span class="nu">5</span>)\nmodel.<span class="fn">fit</span>(X_scaled, y_train)'
+    prompt:`Genera un script Python completo y ejecutable para probar KNeighborsClassifier con sklearn.
+
+Dataset: make_classification(n_samples=600, n_features=4, n_classes=3, random_state=42).
+
+Incluye:
+- StandardScaler
+- Búsqueda del K óptimo de k=1 a k=20 con cross-validation (cv=5, scoring="accuracy")
+- Gráfico de accuracy promedio vs K (con barras de error = desviación estándar)
+- Entrenamiento final con el mejor K y classification_report completo
+
+Comenta en español. Sin archivos externos.`
   },
   kmeans:{n:'K-Means',ic:'&#127807;',fam:'uns',famName:'No Supervisado',famColor:'var(--purple)',famPill:'p-uns',
     when:'Segmentacion de clientes/productos en grupos cuando conoces aproximadamente cuantos grupos esperas (o usas Elbow/Silhouette para encontrarlo). El clustering mas usado en marketing.',
@@ -326,7 +417,18 @@ var A = {
     cons:['Requiere elegir k de antemano','Asume clusters esfericos de tamano similar','Sensible a outliers y a la inicializacion'],
     cx:{train:1,interp:4,data:1},
     alts:['Hierarchical Clustering (no requiere k fijo)','DBSCAN (clusters de forma irregular)','Gaussian Mixture Models (clusters probabilisticos)'],
-    code:'<span class="kw">from</span> sklearn.cluster <span class="kw">import</span> KMeans\n<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler\nX_scaled = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(rfm_df)\nmodel = <span class="fn">KMeans</span>(n_clusters=<span class="nu">4</span>, random_state=<span class="nu">42</span>)\nlabels = model.<span class="fn">fit_predict</span>(X_scaled)'
+    prompt:`Genera un script Python completo y ejecutable para probar K-Means clustering con sklearn.
+
+Dataset: make_blobs(n_samples=500, n_features=2, centers=4, random_state=42).
+
+Incluye:
+- StandardScaler
+- Método del codo: inercia para k=1 a k=10 (gráfico con línea vertical en el codo)
+- Silhouette score para k=2 a k=8 (gráfico)
+- Entrenamiento final con el k óptimo identificado
+- Scatter 2D coloreado por cluster con centroides marcados con X de mayor tamaño
+
+Comenta en español. Sin archivos externos.`
   },
   dbscan:{n:'DBSCAN',ic:'&#127757;',fam:'uns',famName:'No Supervisado',famColor:'var(--purple)',famPill:'p-uns',
     when:'Clustering basado en densidad cuando los grupos tienen forma irregular, hay ruido/outliers, y no sabes cuantos clusters esperar.',
@@ -336,7 +438,18 @@ var A = {
     cons:['Sensible a los hiperparametros eps y min_samples','No funciona bien con densidades muy variables','Mas lento que K-Means en datasets grandes'],
     cx:{train:2,interp:3,data:1},
     alts:['K-Means (si los clusters son esfericos)','HDBSCAN (densidades variables)','Gaussian Mixture Models'],
-    code:'<span class="kw">from</span> sklearn.cluster <span class="kw">import</span> DBSCAN\nmodel = <span class="fn">DBSCAN</span>(eps=<span class="nu">0.5</span>, min_samples=<span class="nu">5</span>)\nlabels = model.<span class="fn">fit_predict</span>(X_scaled)\n<span class="cm"># labels == -1 son outliers/ruido</span>'
+    prompt:`Genera un script Python completo y ejecutable para probar DBSCAN con sklearn.
+
+Dataset: combina make_moons(n_samples=200, noise=0.05) y make_circles(n_samples=200, noise=0.05) para crear formas no convexas.
+
+Incluye:
+- StandardScaler
+- K-distance graph para estimar eps óptimo (usando los 5 vecinos más cercanos)
+- Entrenamiento DBSCAN con los parámetros eps y min_samples seleccionados
+- Scatter 2D: clusters coloreados, outliers (label=-1) en rojo con marcador distinto
+- Comparación de Silhouette Score vs K-Means en el mismo dataset
+
+Comenta en español. Sin archivos externos.`
   },
   pca:{n:'PCA (Analisis de Componentes Principales)',ic:'&#128201;',fam:'uns',famName:'No Supervisado',famColor:'var(--purple)',famPill:'p-uns',
     when:'Reducir el numero de features antes de modelar (cuando hay multicolinealidad o muchas variables), o para visualizar datos de alta dimension en 2D/3D.',
@@ -346,7 +459,18 @@ var A = {
     cons:['Componentes no son interpretables directamente','Asume relaciones lineales','Requiere escalar features antes de aplicar'],
     cx:{train:1,interp:2,data:1},
     alts:['t-SNE / UMAP (visualizacion no lineal)','Feature selection (mantiene interpretabilidad)','Autoencoders (reduccion no lineal)'],
-    code:'<span class="kw">from</span> sklearn.decomposition <span class="kw">import</span> PCA\n<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler\nX_scaled = <span class="fn">StandardScaler</span>().<span class="fn">fit_transform</span>(X)\npca = <span class="fn">PCA</span>(n_components=<span class="nu">0.95</span>) <span class="cm"># 95% varianza</span>\nX_reduced = pca.<span class="fn">fit_transform</span>(X_scaled)'
+    prompt:`Genera un script Python completo y ejecutable para probar PCA con sklearn.
+
+Dataset: make_classification(n_samples=1000, n_features=20, n_informative=5, random_state=42).
+
+Incluye:
+- StandardScaler
+- PCA con n_components=0.95 (retiene el 95% de la varianza)
+- Gráfico de varianza explicada acumulada vs número de componentes
+- Scatter 2D de los primeros 2 componentes coloreado por clase
+- Comparar accuracy de LogisticRegression antes y después de aplicar PCA
+
+Comenta en español. Sin archivos externos.`
   },
   tsne:{n:'t-SNE / UMAP',ic:'&#127909;',fam:'uns',famName:'No Supervisado',famColor:'var(--purple)',famPill:'p-uns',
     when:'Visualizar datos de alta dimension (decenas/cientos de features) en 2D para detectar agrupamientos visuales, especialmente con embeddings de texto o imagenes.',
@@ -356,7 +480,17 @@ var A = {
     cons:['Las distancias entre clusters en el plot no son confiables','Resultados varian segun hiperparametros (perplexity)','No determinista entre ejecuciones (sin random_state fijo)'],
     cx:{train:2,interp:3,data:1},
     alts:['PCA (si solo necesitas reducir dimensiones)','Pairplot de las features mas importantes'],
-    code:'<span class="kw">from</span> sklearn.manifold <span class="kw">import</span> TSNE\nembedding = <span class="fn">TSNE</span>(n_components=<span class="nu">2</span>, perplexity=<span class="nu">30</span>, random_state=<span class="nu">42</span>).<span class="fn">fit_transform</span>(X_scaled)\n<span class="cm"># Luego: scatter plot coloreado por cluster o segmento</span>'
+    prompt:`Genera un script Python completo y ejecutable para probar t-SNE con sklearn.
+
+Dataset: load_digits() de sklearn — 1797 imágenes de dígitos 0-9, 64 features. Viene incluido en sklearn, sin descarga adicional.
+
+Incluye:
+- Normalización con StandardScaler
+- TSNE(n_components=2, perplexity=30, random_state=42)
+- Scatter 2D coloreado por dígito (0-9) con leyenda y colormap de 10 colores
+- Comparación visual lado a lado: t-SNE vs PCA en 2D (subplots 1x2 en la misma figura)
+
+Comenta en español.`
   },
   mlp:{n:'Redes Neuronales (MLP)',ic:'&#129504;',fam:'dl',famName:'Deep Learning',famColor:'var(--pink)',famPill:'p-dl',
     when:'Cuando tienes datos tabulares con relaciones muy complejas y un dataset grande (decenas de miles de filas+), o cuando boosting ya no mejora y quieres explorar otra familia.',
@@ -366,7 +500,18 @@ var A = {
     cons:['Requiere muchos datos para superar a boosting','Caja negra: dificil de interpretar','Mas complejo de tunear (arquitectura, regularizacion, learning rate)'],
     cx:{train:4,interp:1,data:3},
     alts:['XGBoost / LightGBM (datos tabulares medianos)','TabNet (arquitectura DL especifica para tabular)'],
-    code:'<span class="kw">import</span> tensorflow <span class="kw">as</span> tf\nmodel = tf.keras.<span class="fn">Sequential</span>([\n    tf.keras.layers.<span class="fn">Dense</span>(<span class="nu">64</span>, activation=<span class="st">\'relu\'</span>),\n    tf.keras.layers.<span class="fn">Dropout</span>(<span class="nu">0.3</span>),\n    tf.keras.layers.<span class="fn">Dense</span>(<span class="nu">1</span>, activation=<span class="st">\'sigmoid\'</span>)\n])\nmodel.<span class="fn">compile</span>(optimizer=<span class="st">\'adam\'</span>, loss=<span class="st">\'binary_crossentropy\'</span>)'
+    prompt:`Genera un script Python completo y ejecutable para probar MLPClassifier (red neuronal densa) con sklearn.
+
+Dataset: make_classification(n_samples=2000, n_features=10, random_state=42).
+
+Incluye:
+- StandardScaler
+- MLPClassifier(hidden_layer_sizes=(64, 32), max_iter=200, early_stopping=True, random_state=42)
+- Curva de pérdida durante el entrenamiento (loss_curve_)
+- Métricas finales: accuracy, AUC-ROC y classification_report
+- Comparación de accuracy vs LogisticRegression como baseline
+
+Comenta en español. Sin archivos externos.`
   },
   cnn:{n:'CNN (Redes Convolucionales)',ic:'&#128247;',fam:'dl',famName:'Deep Learning',famColor:'var(--pink)',famPill:'p-dl',
     when:'Cualquier problema con imagenes: clasificacion, deteccion de objetos, segmentacion. Tambien aplicable a series de tiempo y audio con adaptaciones (Conv1D).',
@@ -376,7 +521,19 @@ var A = {
     cons:['Requiere GPU para entrenar eficientemente','Necesita muchos datos etiquetados (o transfer learning)','Caja negra, dificil de auditar decisiones'],
     cx:{train:4,interp:1,data:4},
     alts:['Transfer Learning (ResNet, EfficientNet pre-entrenados)','APIs de vision en la nube (Google Vision, AWS Rekognition)'],
-    code:'<span class="kw">import</span> tensorflow <span class="kw">as</span> tf\nbase = tf.keras.applications.<span class="fn">EfficientNetB0</span>(\n    include_top=<span class="kw">False</span>, weights=<span class="st">\'imagenet\'</span>)\nbase.trainable = <span class="kw">False</span> <span class="cm"># transfer learning</span>\nmodel = tf.keras.<span class="fn">Sequential</span>([base, tf.keras.layers.<span class="fn">GlobalAveragePooling2D</span>(),\n    tf.keras.layers.<span class="fn">Dense</span>(<span class="nu">10</span>, activation=<span class="st">\'softmax\'</span>)])'
+    prompt:`Genera un script Python completo y ejecutable para probar una CNN básica con TensorFlow/Keras.
+
+Dataset: MNIST — tf.keras.datasets.mnist.load_data() (se descarga automáticamente la primera vez, ~11 MB).
+
+Incluye:
+- Normalización y reshape de imágenes a (28, 28, 1)
+- Arquitectura: Conv2D(32) → MaxPooling2D → Conv2D(64) → MaxPooling2D → Flatten → Dense(128) → Dropout(0.3) → Dense(10, softmax)
+- Entrenamiento 5 épocas con validation_split=0.1 y EarlyStopping(patience=2)
+- Subplots de curvas accuracy y loss (train vs val)
+- Grid 3x3 mostrando imágenes del test con etiqueta real vs predicha (rojo si es error)
+
+Si TensorFlow no está instalado: pip install tensorflow
+Comenta en español.`
   },
   rnn:{n:'RNN / LSTM',ic:'&#128257;',fam:'dl',famName:'Deep Learning',famColor:'var(--pink)',famPill:'p-dl',
     when:'Datos secuenciales donde el orden importa: series de tiempo complejas con multiples variables, texto (antes de Transformers), audio.',
@@ -386,7 +543,21 @@ var A = {
     cons:['Lento de entrenar comparado con modelos clasicos de series de tiempo','Requiere bastante data para evitar overfitting','Mayormente superado por Transformers en tareas de secuencia'],
     cx:{train:4,interp:1,data:3},
     alts:['Prophet / ARIMA (series simples)','Transformers para series de tiempo (PatchTST, Informer)','LightGBM con features de lag (a menudo igual de bueno)'],
-    code:'<span class="kw">import</span> tensorflow <span class="kw">as</span> tf\nmodel = tf.keras.<span class="fn">Sequential</span>([\n    tf.keras.layers.<span class="fn">LSTM</span>(<span class="nu">50</span>, return_sequences=<span class="kw">False</span>),\n    tf.keras.layers.<span class="fn">Dense</span>(<span class="nu">1</span>)\n])\nmodel.<span class="fn">compile</span>(optimizer=<span class="st">\'adam\'</span>, loss=<span class="st">\'mse\'</span>)'
+    prompt:`Genera un script Python completo y ejecutable para probar LSTM en predicción de serie de tiempo.
+
+Dataset: serie senoidal sintética de 2000 puntos con ruido gaussiano (generada con numpy, sin archivos externos).
+
+Incluye:
+- MinMaxScaler para normalizar la serie
+- Función para crear secuencias de ventana deslizante (window_size=30)
+- Train/test split temporal 80/20 (sin mezclar el orden del tiempo)
+- Arquitectura: LSTM(50, return_sequences=False) → Dense(1)
+- Entrenamiento 20 épocas, batch_size=32
+- Gráfico: valores reales vs predichos en el conjunto de test
+- Métricas: MAE y RMSE en escala original (desescalados con inverse_transform)
+
+Si TensorFlow no está instalado: pip install tensorflow
+Comenta en español.`
   },
   tfidf:{n:'TF-IDF + Modelo Clasico',ic:'&#128221;',fam:'nlp',famName:'NLP',famColor:'var(--yellow)',famPill:'p-nlp',
     when:'Clasificacion o analisis de texto cuando necesitas un modelo rapido, interpretable y que no requiere GPU. Excelente baseline para cualquier tarea de NLP.',
@@ -396,7 +567,19 @@ var A = {
     cons:['No captura significado ni contexto (orden de palabras se pierde)','Vocabulario fijo: palabras nuevas no vistas en train se ignoran','Performance limitada en tareas semanticamente complejas'],
     cx:{train:1,interp:4,data:1},
     alts:['Word2Vec / embeddings preentrenados','BERT / modelos transformer','spaCy para NLP estructurado (NER, POS tagging)'],
-    code:'<span class="kw">from</span> sklearn.feature_extraction.text <span class="kw">import</span> TfidfVectorizer\n<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression\nX = <span class="fn">TfidfVectorizer</span>(max_features=<span class="nu">5000</span>, ngram_range=(<span class="nu">1</span>,<span class="nu">2</span>)).<span class="fn">fit_transform</span>(textos)\nmodel = <span class="fn">LogisticRegression</span>().<span class="fn">fit</span>(X, y_train)'
+    prompt:`Genera un script Python completo y ejecutable para clasificación de texto con TF-IDF + Logistic Regression.
+
+Dataset: genera 600 frases sintéticas en Python (sin archivos) con 3 categorías: "positivo", "negativo" y "neutro". Cada categoría con vocabulario propio y distinto.
+
+Incluye:
+- TfidfVectorizer(max_features=500, ngram_range=(1, 2))
+- LogisticRegression(class_weight="balanced")
+- Train/test split 80/20
+- Reporte de clasificación completo (precision, recall, F1 por categoría)
+- Matriz de confusión con heatmap (seaborn)
+- Top 5 palabras más discriminativas por clase
+
+Comenta en español. Sin archivos externos.`
   },
   transformers:{n:'Transformers / BERT / LLMs',ic:'&#129302;',fam:'nlp',famName:'NLP',famColor:'var(--yellow)',famPill:'p-nlp',
     when:'Tareas de NLP que requieren entender contexto y significado: clasificacion semantica avanzada, extraccion de informacion, generacion de texto, chatbots, resumenes.',
@@ -406,7 +589,19 @@ var A = {
     cons:['Costoso computacionalmente (GPU para fine-tuning, latencia en inferencia)','Requiere mas expertise para implementar y mantener','Riesgo de alucinaciones en modelos generativos'],
     cx:{train:4,interp:1,data:2},
     alts:['TF-IDF + modelo clasico (si la tarea es simple)','APIs de LLM (Claude, GPT) sin fine-tuning propio','spaCy + reglas para extraccion estructurada'],
-    code:'<span class="kw">from</span> transformers <span class="kw">import</span> pipeline\nclassifier = <span class="fn">pipeline</span>(<span class="st">\'sentiment-analysis\'</span>,\n    model=<span class="st">\'nlptown/bert-base-multilingual-uncased-sentiment\'</span>)\nresultado = classifier(<span class="st">\'Excelente atencion, volveria a comprar\'</span>)'
+    prompt:`Genera un script Python completo y ejecutable para análisis de sentimiento con Hugging Face Transformers.
+
+Modelo: pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
+Soporta texto en español, inglés y otros idiomas. Primera ejecución descarga ~700 MB.
+
+Incluye:
+- Lista de 12 frases de ejemplo en español (mix de positivas, negativas y neutras)
+- Análisis de cada frase con el pipeline (label + score de confianza)
+- Tabla de resultados con pandas (frase, sentimiento, score formateado)
+- Agrupación y conteo de resultados (cuántas positivas, negativas, neutras)
+
+Si Transformers no está instalado: pip install transformers torch
+Comenta en español.`
   },
   arima:{n:'ARIMA / SARIMA',ic:'&#128202;',fam:'ts',famName:'Series de Tiempo',famColor:'var(--teal)',famPill:'p-ts',
     when:'Series de tiempo univariadas (una sola variable), estacionarias o que se pueden hacer estacionarias mediante diferenciacion, con horizonte de prediccion corto-mediano.',
@@ -416,7 +611,20 @@ var A = {
     cons:['Requiere que la serie sea (o se vuelva) estacionaria','Seleccion de p,d,q,P,D,Q,s puede ser tediosa (auto_arima ayuda)','No incorpora facilmente variables externas (eventos, promociones)'],
     cx:{train:2,interp:4,data:1},
     alts:['ETS / Exponential Smoothing (mas simple)','Prophet (mas flexible con feriados/eventos)','LightGBM con features de lag (enfoque ML)'],
-    code:'<span class="kw">from</span> statsmodels.tsa.arima.model <span class="kw">import</span> ARIMA\nmodel = <span class="fn">ARIMA</span>(serie, order=(<span class="nu">1</span>,<span class="nu">1</span>,<span class="nu">1</span>), seasonal_order=(<span class="nu">1</span>,<span class="nu">1</span>,<span class="nu">1</span>,<span class="nu">12</span>))\nfit = model.<span class="fn">fit</span>()\nforecast = fit.<span class="fn">forecast</span>(steps=<span class="nu">12</span>)'
+    prompt:`Genera un script Python completo y ejecutable para probar ARIMA con statsmodels y pmdarima.
+
+Dataset: genera 5 años de datos mensuales sintéticos en Python (tendencia lineal + estacionalidad anual con seno + ruido gaussiano). Sin archivos externos.
+
+Incluye:
+- Plot de la serie original
+- Test ADF de estacionariedad con interpretación del p-value en consola
+- auto_arima de pmdarima para selección automática de (p,d,q)(P,D,Q,12)
+- Entrenamiento en el 80% inicial, test en el 20% final
+- Gráfico de forecast con intervalos de confianza al 95%
+- Métricas MAE y RMSE en el conjunto de test
+
+Si pmdarima no está instalado: pip install pmdarima statsmodels
+Comenta en español.`
   },
   prophet:{n:'Prophet',ic:'&#127807;',fam:'ts',famName:'Series de Tiempo',famColor:'var(--teal)',famPill:'p-ts',
     when:'Forecast de negocio con estacionalidad multiple (semanal + anual), feriados, y cambios de tendencia, cuando necesitas resultados rapidos sin ser experto en estadistica.',
@@ -426,7 +634,21 @@ var A = {
     cons:['Menos preciso que ARIMA bien afinado en series simples','Menos preciso que ML con features de lag en datasets grandes','Puede sobre-suavizar cambios abruptos recientes'],
     cx:{train:1,interp:3,data:1},
     alts:['ARIMA/SARIMA (mayor control estadistico)','ETS (mas simple, sin regresores externos)','LightGBM con features de calendario y lags'],
-    code:'<span class="kw">from</span> prophet <span class="kw">import</span> Prophet\nmodel = <span class="fn">Prophet</span>(yearly_seasonality=<span class="kw">True</span>, weekly_seasonality=<span class="kw">True</span>)\nmodel.<span class="fn">add_country_holidays</span>(country_name=<span class="st">\'PE\'</span>)\nmodel.<span class="fn">fit</span>(df) <span class="cm"># columnas: ds, y</span>\nforecast = model.<span class="fn">predict</span>(future_df)'
+    prompt:`Genera un script Python completo y ejecutable para probar Prophet en forecast de ventas.
+
+Dataset: genera 3 años de datos diarios sintéticos en Python (tendencia creciente + estacionalidad semanal y anual + ruido gaussiano). Sin archivos externos.
+
+Incluye:
+- Formato requerido por Prophet (columnas ds y y)
+- Prophet(yearly_seasonality=True, weekly_seasonality=True)
+- add_country_holidays(country_name="PE") para feriados peruanos
+- Entrenamiento en el 80% del período, forecast de 90 días futuros
+- Gráfico del forecast con intervalos de incertidumbre
+- Gráfico de componentes (tendencia, semanal, anual)
+- MAE y RMSE en los últimos 30 días del período histórico (holdout)
+
+Si Prophet no está instalado: pip install prophet
+Comenta en español.`
   },
   ets:{n:'ETS / Exponential Smoothing',ic:'&#128201;',fam:'ts',famName:'Series de Tiempo',famColor:'var(--teal)',famPill:'p-ts',
     when:'Series de tiempo simples con tendencia y/o estacionalidad clara, cuando necesitas un modelo rapido, robusto e interpretable como primer intento.',
@@ -436,7 +658,17 @@ var A = {
     cons:['No incorpora variables externas','Limitado con patrones estacionales multiples o complejos','Menos preciso que Prophet/ML en series con eventos especiales'],
     cx:{train:1,interp:4,data:1},
     alts:['ARIMA (mas flexible estadisticamente)','Prophet (con feriados y eventos)','Naive forecast (benchmark minimo)'],
-    code:'<span class="kw">from</span> statsmodels.tsa.holtwinters <span class="kw">import</span> ExponentialSmoothing\nmodel = <span class="fn">ExponentialSmoothing</span>(serie, trend=<span class="st">\'add\'</span>, seasonal=<span class="st">\'add\'</span>, seasonal_periods=<span class="nu">12</span>)\nfit = model.<span class="fn">fit</span>()\nforecast = fit.<span class="fn">forecast</span>(<span class="nu">12</span>)'
+    prompt:`Genera un script Python completo y ejecutable para probar Exponential Smoothing (ETS) con statsmodels.
+
+Dataset: genera 4 años de datos mensuales sintéticos en Python (tendencia aditiva + estacionalidad aditiva con período 12). Sin archivos externos.
+
+Incluye:
+- ExponentialSmoothing(trend="add", seasonal="add", seasonal_periods=12)
+- Entrenamiento en los primeros 3 años, forecast de 12 meses
+- Gráfico: serie real + valores ajustados (fitted) + forecast
+- Comparación de MAE y RMSE contra baseline Naive (persistencia del último valor conocido)
+
+Comenta en español.`
   },
   cf:{n:'Sistemas de Recomendacion (Collaborative Filtering)',ic:'&#127919;',fam:'rec',famName:'Recomendacion',famColor:'var(--red)',famPill:'p-sup',
     when:'Recomendar productos/contenido basado en el comportamiento de usuarios similares (que compraron/vieron cosas similares).',
@@ -446,10 +678,20 @@ var A = {
     cons:['Cold start: usuarios/items nuevos sin historial','Requiere suficiente densidad de interacciones','Puede reforzar burbujas de filtro (siempre lo mismo)'],
     cx:{train:2,interp:2,data:2},
     alts:['Content-based filtering (usa atributos de producto)','Hybrid (combina ambos enfoques)','Matrix Factorization (SVD, ALS)'],
-    code:'<span class="kw">from</span> implicit.als <span class="kw">import</span> AlternatingLeastSquares\nmodel = <span class="fn">AlternatingLeastSquares</span>(factors=<span class="nu">50</span>)\nmodel.<span class="fn">fit</span>(user_item_matrix)\nrecomendaciones = model.<span class="fn">recommend</span>(user_id, user_item_matrix, N=<span class="nu">10</span>)'
+    prompt:`Genera un script Python completo y ejecutable para un sistema de recomendación con Collaborative Filtering.
+
+Dataset: genera ratings sintéticos de 200 usuarios y 100 productos (valores 1-5, densidad ~15%) usando numpy. Sin archivos externos.
+
+Incluye:
+- SVD (Matrix Factorization) con scikit-surprise
+- Cross-validation 5-fold: RMSE y MAE
+- Función get_top10_recommendations(user_id) que retorne los 10 productos más recomendados (excluyendo los ya valorados por ese usuario)
+- Comparación de RMSE contra NormalPredictor como baseline
+
+Si scikit-surprise no está instalado: pip install scikit-surprise
+Comenta en español.`
   }
 };
-
 var FAM_LABELS = {todos:'Todos',sup:'Supervisado',uns:'No Supervisado',ens:'Ensembles',dl:'Deep Learning',nlp:'NLP',ts:'Series de Tiempo'};
 var FAM_TYPES = ['todos','sup','uns','ens','dl','nlp','ts'];
 
@@ -611,8 +853,8 @@ function renderResult(id, container) {
     + consHtml
     + '<div class="rsec">Alternativas a considerar</div>'
     + altHtml
-    + '<div class="ctog" onclick="toggleCode(this)"><span class="ctog-icon">&#9654;</span> Ver codigo Python</div>'
-    + '<div class="cblock">' + c.code + '</div>'
+    + '<div class="ctog" onclick="toggleCode(this)"><span class="ctog-icon">&#9654;</span> Prompt para generar script Python</div>'
+    + '<div class="cblock"><div class="prompt-hdr"><span>Copia este prompt y pégalo en Claude, ChatGPT u otro LLM</span><button class="copy-btn" onclick="event.stopPropagation();copyPrompt(this)">Copiar</button></div><pre class="prompt-txt">' + c.prompt + '</pre></div>'
     + '</div>'
     + '</div></div>';
 }
@@ -722,8 +964,8 @@ function renderGalDetail(k) {
     + consHtml
     + '<div class="rsec">Alternativas</div>'
     + altHtml
-    + '<div class="ctog" onclick="toggleCode(this)"><span class="ctog-icon">&#9654;</span> Ver codigo Python</div>'
-    + '<div class="cblock">' + c.code + '</div>'
+    + '<div class="ctog" onclick="toggleCode(this)"><span class="ctog-icon">&#9654;</span> Prompt para generar script Python</div>'
+    + '<div class="cblock"><div class="prompt-hdr"><span>Copia este prompt y pégalo en Claude, ChatGPT u otro LLM</span><button class="copy-btn" onclick="event.stopPropagation();copyPrompt(this)">Copiar</button></div><pre class="prompt-txt">' + c.prompt + '</pre></div>'
     + '</div></div>';
   det.classList.add('on');
 }
@@ -733,6 +975,18 @@ window.toggleCode = function(btn) {
   btn.classList.toggle('open');
   var b = btn.nextElementSibling;
   if (b) b.classList.toggle('shown');
+};
+
+window.copyPrompt = function(btn) {
+  var pre = btn.closest('.cblock').querySelector('.prompt-txt');
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.textContent.trim()).then(function() {
+    btn.textContent = '✓ Copiado';
+    setTimeout(function(){ btn.textContent = 'Copiar'; }, 2000);
+  }).catch(function() {
+    btn.textContent = 'Error';
+    setTimeout(function(){ btn.textContent = 'Copiar'; }, 2000);
+  });
 };
 
 window.switchTab = function(t) {

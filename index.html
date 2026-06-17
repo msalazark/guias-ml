@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<script>(function(){try{var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');}catch(e){}})();</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guías ML — Índice</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0d12;--bg2:#111520;--bg3:#181e2d;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.13);
+  --text:#e8eaf0;--text2:#8891a8;--text3:#4d566b;
+  --green:#4af0b0;--blue:#60a5fa;--orange:#fb923c;
+  --red:#f87171;--purple:#a78bfa;--yellow:#fbbf24;--teal:#2dd4bf;--pink:#f472b6;--indigo:#818cf8;
+  --font-mono:'IBM Plex Mono',monospace;--font-sans:'IBM Plex Sans',sans-serif;
+  --r:8px;--rl:14px;
+}
+html[data-theme="light"]{
+  --bg:#eef1f6;--bg2:#ffffff;--bg3:#f4f6fa;--border:rgba(15,23,42,.10);--border2:rgba(15,23,42,.18);--text:#0f172a;--text2:#475569;--text3:#94a3b8;--green:#08915c;--blue:#015ccb;--orange:#c25700;--red:#d10505;--purple:#3804d2;--yellow:#a37600;--teal:#198a7c;--pink:#cb0b70;--indigo:#071bdf;
+}
+.theme-toggle{flex-shrink:0;width:30px;height:30px;border-radius:7px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s}
+.theme-toggle:hover{border-color:var(--yellow);color:var(--yellow)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh}
+.hdr{padding:14px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200;background:var(--bg);backdrop-filter:blur(12px)}
+.hdr-badge{font-family:var(--font-mono);font-size:10px;font-weight:600;padding:3px 9px;border-radius:4px;background:rgba(129,140,248,.15);color:var(--indigo)}
+.hdr-title{font-family:var(--font-mono);font-size:13px;font-weight:500}
+.hdr-sub{font-size:11px;color:var(--text3);margin-left:auto;font-family:var(--font-mono)}
+.main{max-width:1080px;margin:0 auto;padding:28px 28px 60px}
+.intro{font-size:13px;color:var(--text2);line-height:1.75;margin-bottom:28px;max-width:760px}
+.sec-block{margin-bottom:34px}
+.sec-hdr{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.sec-num{font-family:var(--font-mono);font-size:11px;color:var(--text3);border:1px solid var(--border2);border-radius:4px;padding:2px 7px}
+.sec-title{font-family:var(--font-mono);font-size:13px;font-weight:600;letter-spacing:.02em}
+.sec-desc{font-size:12px;color:var(--text3);margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{display:block;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:16px 18px;text-decoration:none;color:inherit;transition:all .18s;position:relative}
+.card:hover{border-color:var(--border2);transform:translateY(-2px)}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.card-icon{font-size:18px}
+.pill{display:inline-block;font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600}
+.card-name{font-family:var(--font-mono);font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.4}
+.card-desc{font-size:11.5px;color:var(--text2);line-height:1.55}
+.card-file{position:absolute;top:14px;right:16px;font-family:var(--font-mono);font-size:9px;color:var(--text3)}
+.footer-note{font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-top:10px;text-align:center}
+@media(max-width:900px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="hdr-badge">GUIAS ML</span>
+  <span class="hdr-title">Índice de Guías &mdash; Machine Learning</span>
+  <span class="hdr-sub">15 documentos &middot; ordenados por ruta de aprendizaje</span>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Cambiar tema" aria-label="Cambiar tema"></button>
+</div>
+<div class="main">
+  <p class="intro">Colección de guías y laboratorios interactivos de Machine Learning. El orden sigue una ruta de aprendizaje: visión ejecutiva → fundamentos de datos en Python → modelos supervisados (clasificación y regresión) → modelos no supervisados → series de tiempo → despliegue en producción.</p>
+
+  <div class="sec-block">
+    <div class="sec-hdr">
+      <span class="sec-num">01</span>
+      <span class="sec-title">Visión General</span>
+      <span class="sec-desc">Para orientarse antes de entrar en detalle</span>
+    </div>
+    <div class="grid">
+      <a class="card" href="ml_executive_guide.html">
+        <div class="card-top"><span class="card-icon">&#127919;</span><span class="pill" style="background:rgba(129,140,248,.15);color:var(--indigo)">EJECUTIVO</span></div>
+        <div class="card-name">ML para C-Levels</div>
+        <div class="card-desc">Guía ejecutiva para tomar decisiones de negocio sobre proyectos de ML, sin jerga técnica.</div>
+      </a>
+      <a class="card" href="algorithm_guide.html">
+        <div class="card-top"><span class="card-icon">&#129504;</span><span class="pill" style="background:rgba(129,140,248,.15);color:var(--indigo)">MAPA</span></div>
+        <div class="card-name">Guía de Algoritmos de ML</div>
+        <div class="card-desc">Árbol de decisión y galería de familias de algoritmos para elegir el punto de partida correcto.</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="sec-block">
+    <div class="sec-hdr">
+      <span class="sec-num">02</span>
+      <span class="sec-title">Fundamentos de Datos</span>
+      <span class="sec-desc">Python, exploración y preparación</span>
+    </div>
+    <div class="grid">
+      <a class="card" href="guia_python_data_marketing.html">
+        <div class="card-top"><span class="card-icon">&#128013;</span><span class="pill" style="background:rgba(74,240,176,.15);color:var(--green)">PYTHON</span></div>
+        <div class="card-name">Python para Datos de Marketing</div>
+        <div class="card-desc">Guía de estudio de Python aplicado a análisis de datos y marketing.</div>
+      </a>
+      <a class="card" href="chart_guide.html">
+        <div class="card-top"><span class="card-icon">&#128202;</span><span class="pill" style="background:rgba(74,240,176,.15);color:var(--green)">VIZ</span></div>
+        <div class="card-name">Guía de Gráficos para Dashboards</div>
+        <div class="card-desc">Catálogo de tipos de gráfico y cuándo usar cada uno en un dashboard.</div>
+      </a>
+      <a class="card" href="eda_lab.html">
+        <div class="card-top"><span class="card-icon">&#128269;</span><span class="pill" style="background:rgba(74,240,176,.15);color:var(--green)">LAB</span></div>
+        <div class="card-name">EDA Lab</div>
+        <div class="card-desc">Laboratorio de análisis exploratorio de datos: distribución, outliers, correlaciones.</div>
+      </a>
+      <a class="card" href="train_test_split_lab.html">
+        <div class="card-top"><span class="card-icon">&#9986;&#65039;</span><span class="pill" style="background:rgba(74,240,176,.15);color:var(--green)">LAB</span></div>
+        <div class="card-name">Train Test Split Lab</div>
+        <div class="card-desc">Cómo dividir datos correctamente para entrenamiento, validación y prueba.</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="sec-block">
+    <div class="sec-hdr">
+      <span class="sec-num">03</span>
+      <span class="sec-title">Supervisado &mdash; Clasificación</span>
+      <span class="sec-desc">Predecir categorías</span>
+    </div>
+    <div class="grid">
+      <a class="card" href="decision_tree_clasificacion.html">
+        <div class="card-top"><span class="card-icon">&#127795;</span><span class="pill" style="background:rgba(96,165,250,.15);color:var(--blue)">SUPERVISADO</span></div>
+        <div class="card-name">Decision Tree · Clasificación</div>
+        <div class="card-desc">Árboles de decisión aplicados a problemas de clasificación.</div>
+      </a>
+      <a class="card" href="clasificacion_metricas_app.html">
+        <div class="card-top"><span class="card-icon">&#9989;</span><span class="pill" style="background:rgba(96,165,250,.15);color:var(--blue)">LAB</span></div>
+        <div class="card-name">ML Classifier Lab</div>
+        <div class="card-desc">Métricas de clasificación: accuracy, precision, recall, F1, matriz de confusión.</div>
+      </a>
+      <a class="card" href="boosting_lab.html">
+        <div class="card-top"><span class="card-icon">&#9889;</span><span class="pill" style="background:rgba(74,240,176,.15);color:var(--green)">ENSEMBLE</span></div>
+        <div class="card-name">Boosting Lab</div>
+        <div class="card-desc">XGBoost, LightGBM y CatBoost &mdash; comparación práctica de modelos de boosting.</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="sec-block">
+    <div class="sec-hdr">
+      <span class="sec-num">04</span>
+      <span class="sec-title">Supervisado &mdash; Regresión</span>
+      <span class="sec-desc">Predecir valores continuos</span>
+    </div>
+    <div class="grid">
+      <a class="card" href="decision_tree_regresion.html">
+        <div class="card-top"><span class="card-icon">&#127795;</span><span class="pill" style="background:rgba(96,165,250,.15);color:var(--blue)">SUPERVISADO</span></div>
+        <div class="card-name">Decision Tree · Regresión</div>
+        <div class="card-desc">Árboles de decisión aplicados a problemas de regresión.</div>
+      </a>
+      <a class="card" href="regresion_niveles.html">
+        <div class="card-top"><span class="card-icon">&#128201;</span><span class="pill" style="background:rgba(96,165,250,.15);color:var(--blue)">LAB</span></div>
+        <div class="card-name">Regression Metrics Lab</div>
+        <div class="card-desc">Métricas de regresión: MAE, MSE, RMSE, R² y su interpretación de negocio.</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="sec-block">
+    <div class="sec-hdr">
+      <span class="sec-num">05</span>
+      <span class="sec-title">No Supervisado</span>
+      <span class="sec-desc">Patrones sin etiquetas</span>
+    </div>
+    <div class="grid">
+      <a class="card" href="clustering_metrics_lab.html">
+        <div class="card-top"><span class="card-icon">&#128300;</span><span class="pill" style="background:rgba(167,139,250,.15);color:var(--purple)">NO SUPERVISADO</span></div>
+        <div class="card-name">Clustering Metrics Lab</div>
+        <div class="card-desc">Métricas de clustering: silhouette, inercia, índice de Davies-Bouldin.</div>
+      </a>
+      <a class="card" href="association_rules_lab.html">
+        <div class="card-top"><span class="card-icon">&#128279;</span><span class="pill" style="background:rgba(167,139,250,.15);color:var(--purple)">NO SUPERVISADO</span></div>
+        <div class="card-name">Association Rules Lab</div>
+        <div class="card-desc">Reglas de asociación: soporte, confianza y lift para análisis de canasta.</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="sec-block">
+    <div class="sec-hdr">
+      <span class="sec-num">06</span>
+      <span class="sec-title">Series de Tiempo</span>
+      <span class="sec-desc">Forecast y patrones temporales</span>
+    </div>
+    <div class="grid">
+      <a class="card" href="timeseries_forecast_lab.html">
+        <div class="card-top"><span class="card-icon">&#128197;</span><span class="pill" style="background:rgba(45,212,191,.15);color:var(--teal)">SERIES</span></div>
+        <div class="card-name">Time Series Forecast Lab</div>
+        <div class="card-desc">Modelos de pronóstico: ARIMA, ETS, Prophet y su evaluación.</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="sec-block">
+    <div class="sec-hdr">
+      <span class="sec-num">07</span>
+      <span class="sec-title">Deployment</span>
+      <span class="sec-desc">Llevar el modelo a producción</span>
+    </div>
+    <div class="grid">
+      <a class="card" href="ml_deployment_lab.html">
+        <div class="card-top"><span class="card-icon">&#128640;</span><span class="pill" style="background:rgba(251,196,60,.12);color:var(--yellow)">DEPLOY</span></div>
+        <div class="card-name">ML Deployment Lab</div>
+        <div class="card-desc">Estrategias y consideraciones para desplegar modelos de ML en producción.</div>
+      </a>
+    </div>
+  </div>
+
+  <div class="footer-note">Miguel Salazar &middot; Guías ML</div>
+</div>
+<script>
+function isLightTheme() { return document.documentElement.getAttribute('data-theme') === 'light'; }
+function updateThemeIcon() {
+  document.querySelectorAll('.theme-toggle').forEach(function(btn){ btn.textContent = isLightTheme() ? '☀' : '☮'; });
+}
+window.toggleTheme = function() {
+  var html = document.documentElement;
+  var next = isLightTheme() ? 'dark' : 'light';
+  if (next === 'light') html.setAttribute('data-theme', 'light');
+  else html.removeAttribute('data-theme');
+  try { localStorage.setItem('theme', next); } catch(e) {}
+  updateThemeIcon();
+};
+updateThemeIcon();
+</script>
+</body>
+</html>
